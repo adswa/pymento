@@ -198,15 +198,6 @@ def read_data_original(directory,
     return raw
 
 
-def read_bids(bidsdir,
-              subject):
-    """
-    Read raw MEG data from a BIDS directory
-    :param bidsdir: Bids directory
-    :param subject: subject identifier
-    :return:
-    """
-
 def motion_estimation(subject,
                       raw,
                       head_pos_outdir='/tmp/'):
