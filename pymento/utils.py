@@ -317,7 +317,9 @@ def maxwellfilter(raw,
                                      subject=subject,
                                      outpath=figdir
                                      )
-    print(f'Signal Space Seperation starting for subject sub-{subject}')
+    print(f'Signal Space Separation with movement compensation '
+          f'starting for subject sub-{subject}')
+    ## TODO: movement compensation can be done during maxwell filtering but also during
     raw_sss = mne.preprocessing.maxwell_filter(raw,
                                                cross_talk=crosstalk_file,
                                                calibration=fine_cal_file,
