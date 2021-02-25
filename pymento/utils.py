@@ -18,6 +18,9 @@ mne.set_log_level('info')
 
 # Set a few global variables
 
+# The data is not preconditioned unless this variable is reset
+preconditioned = False
+
 # set channel types explicitly
 channel_types = {
     'EOG001': 'eog',
@@ -207,6 +210,31 @@ def motion_estimation(subject,
     return head_pos
 
 
+# TODO: We could do maxwell filtering without applying a filter when we remove
+# chpi and line noise beforehand.
+# mne.chpi.filter_chpi is able to do this
+def filter_chpi_and_line(raw):
+    """
+    Remove Chpi and line noise from the data. This can be useful in order to
+    use no filtering during bad channel detection for maxwell filtering.
+    :param raw: Raw data, preloaded
+    :return:
+    """
+    from mne.chpi import filter_chpi
+    # make sure the data is loaded first
+    print('Loading data for CHPI and line noise filtering')
+    raw.load_data()
+    print('Applying CHPI and line noise filter')
+    # all parameters are set to the defaults of 0.23dev
+    filter_chpi(raw, include_line=True, t_step=0.01, t_window='auto',
+                ext_order=1, allow_line_only=False, verbose=None)
+    # the data is now preconditioned, hence we change the state of the global
+    # variable
+    global preconditioned
+    preconditioned = True
+    return raw
+
+
 def maxwellfilter(raw,
                   crosstalk_file,
                   fine_cal_file,
@@ -243,9 +271,20 @@ def maxwellfilter(raw,
 
     raw.info['bads'] = []
     raw_check = raw.copy()
-    auto_noisy_chs, auto_flat_chs, auto_scores = find_bad_channels_maxwell(
-        raw_check, cross_talk=crosstalk_file, calibration=fine_cal_file,
-        return_scores=True, verbose=True)
+    if preconditioned:
+        # preconditioned is a global variable that is set to True if some form
+        # of filtering (CHPI and line noise removal or general filtering) has
+        # been applied.
+        # the data has been filtered, and we can pass h_freq=None
+        auto_noisy_chs, auto_flat_chs, auto_scores = find_bad_channels_maxwell(
+            raw_check, cross_talk=crosstalk_file, calibration=fine_cal_file,
+            return_scores=True, verbose=True, h_freq=None)
+    else:
+        # the data still contains line noise (50Hz) and CHPI coils. It will
+        # filter the data before extracting bad channels
+        auto_noisy_chs, auto_flat_chs, auto_scores = find_bad_channels_maxwell(
+            raw_check, cross_talk=crosstalk_file, calibration=fine_cal_file,
+            return_scores=True, verbose=True)
     print(f'Found the following noisy channels: {auto_noisy_chs} \n '
           f'and the following flat channels: {auto_flat_chs} \n'
           f'for subject sub-{subject}')
