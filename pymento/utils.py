@@ -17,32 +17,15 @@ matplotlib.use('Qt5Agg')
 mne.set_log_level('info')
 
 # Set a few global variables
-
 # The data is not preconditioned unless this variable is reset
 preconditioned = False
 
-# set channel types explicitly
-channel_types = {
-    'EOG001': 'eog',
-    'EOG002': 'eog',
-    'ECG003': 'ecg',
-}
-
-# criteria for bad or flat data
-# TODO: check if these criteria make sense. Taken from
-# https://github.com/hoechenberger/pybrain_mne/blob/main/04-cleaning_data.ipynb
-reject_criteria = dict(mag=3000e-15,     # 3000 fT
-                       grad=3000e-13,    # 3000 fT/cm
-                       eog=200e-6)       # 200 µV
-
-flat_criteria = dict(mag=1e-15,          # 1 fT
-                     grad=1e-13,         # 1 fT/cm
+from .config import (channel_types,
+                     reject_criteria,
+                     flat_criteria,
+                     crosstalk_file,
+                     fine_cal_file
                      )
-
-# Configuration file names from the Elekta system
-crosstalk_file = 'ct_sparse.fif'
-fine_cal_file = 'sss_cal.data'
-
 
 # Define data processing functions and helper functions
 
