@@ -46,6 +46,33 @@ fine_cal_file = 'sss_cal.data'
 
 # Define data processing functions and helper functions
 
+def _filter_data(raw,
+                 l_freq=None,
+                 h_freq=40,
+                 fir_window='hamming',
+                 filter_length='auto',
+                 phase='zero',
+                 l_trans_bandwidth='auto',
+                 h_trans_bandwidth='auto',
+                 fir_design='firwin'):
+    """
+    Filter raw data
+    :param raw:
+    :param l_freq:
+    :param h_freq:
+    :param fir_window:
+    :param filter_length:
+    :param phase:
+    :param l_trans_bandwidth:
+    :param h_trans_bandwidth:
+    :param fir_design:
+    :return:
+    """
+    raw.filter(raw, l_freq, h_freq, fir_window, filter_length, phase,
+               l_trans_bandwidth, h_trans_bandwidth, fir_design)
+    return raw
+
+
 def _get_first_file(files):
     """
     Helper function to return the first split of a range of files.
