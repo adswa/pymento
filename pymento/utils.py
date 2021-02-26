@@ -24,7 +24,8 @@ from .config import (channel_types,
                      reject_criteria,
                      flat_criteria,
                      crosstalk_file,
-                     fine_cal_file
+                     fine_cal_file,
+                     subject_list
                      )
 
 # Define data processing functions and helper functions
