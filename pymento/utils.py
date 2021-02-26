@@ -237,7 +237,14 @@ def motion_estimation(subject,
     print(f'Saving head positions as {outpath}')
     mne.chpi.write_head_pos(outpath, head_pos)
     figpath = Path(head_pos_outdir) / f'sub-{subject}_ses-01_headmovement.png'
-    fig = mne.viz.plot_head_positions(head_pos, mode='traces')
+    fig = mne.viz.plot_head_positions(head_pos,
+                                      mode='traces')
+    fig.savefig(figpath)
+    figpath = Path(head_pos_outdir) / f'sub-{subject}_ses-01_headmovement_scaled.png'
+    fig = mne.viz.plot_head_positions(head_pos,
+                                      mode='traces',
+                                      destination=raw.info['dev_head_t'],
+                                      info=raw.info)
     fig.savefig(figpath)
     return head_pos
 
