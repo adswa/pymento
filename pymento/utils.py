@@ -211,7 +211,8 @@ def read_data_original(directory,
 
 def motion_estimation(subject,
                       raw,
-                      head_pos_outdir='/tmp/'):
+                      head_pos_outdir='/tmp/',
+                      figdir='/tmp/'):
     """
     Calculate head positions from HPI coils as a prerequisite for movement
     correction.
@@ -241,8 +242,9 @@ def motion_estimation(subject,
     fig = mne.viz.plot_head_positions(head_pos,
                                       mode='traces')
     fig.savefig(figpath)
-    figpath = Path(head_pos_outdir) / f'sub-{subject}' / 'meg' / \
+    figpath = Path(figdir) / f'sub-{subject}' / 'meg' / \
               f'sub-{subject}_ses-01_headmovement_scaled.png'
+    _check_if_bids_directory_exists(figpath, subject)
     fig = mne.viz.plot_head_positions(head_pos,
                                       mode='traces',
                                       destination=raw.info['dev_head_t'],
@@ -318,14 +320,14 @@ def maxwellfilter(raw,
         if not headpos_file or not os.path.exists(headpos_file):
             print(f'Could not find or read head position files under the supplied'
                   f'path: {headpos_file}. Recalculating from scratch.')
-            head_pos = motion_estimation(subject, raw, head_pos_outdir)
+            head_pos = motion_estimation(subject, raw, head_pos_outdir, figdir)
         print(f'Reading in head positions for subject sub-{subject} '
               f'from {headpos_file}.')
         head_pos = mne.chpi.read_head_pos(headpos_file)
 
     else:
         print(f'Starting motion estimation for subject sub-{subject}.')
-        head_pos = motion_estimation(subject, raw, head_pos_outdir)
+        head_pos = motion_estimation(subject, raw, head_pos_outdir, figdir)
 
     raw.info['bads'] = []
     raw_check = raw.copy()
