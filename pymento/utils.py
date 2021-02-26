@@ -33,14 +33,21 @@ from .config import (channel_types,
 def _filter_data(raw,
                  l_freq=None,
                  h_freq=40,
+                 picks=None,
                  fir_window='hamming',
                  filter_length='auto',
+                 iir_params=None,
+                 method='fir',
                  phase='zero',
                  l_trans_bandwidth='auto',
                  h_trans_bandwidth='auto',
+                 pad='reflect_limited',
+                 skip_by_annotation=('edge', 'bad_acq_skip'),
                  fir_design='firwin'):
     """
-    Filter raw data
+    Filter raw data. This is an exact invocation of the filter function of mne 0.23 dev.
+    It uses all defaults of this version to ensure future updates to the defaults will not
+    break the analysis result reproducibility.
     :param raw:
     :param l_freq:
     :param h_freq:
@@ -52,8 +59,23 @@ def _filter_data(raw,
     :param fir_design:
     :return:
     """
-    raw.filter(raw, l_freq, h_freq, fir_window, filter_length, phase,
-               l_trans_bandwidth, h_trans_bandwidth, fir_design)
+    # make sure that the data is loaded
+    raw.load_data()
+    raw.filter(h_freq=h_freq,
+               l_freq=l_freq,
+               picks=picks,
+               filter_length=filter_length,
+               l_trans_bandwidth=l_trans_bandwidth,
+               h_trans_bandwidth=h_trans_bandwidth,
+               iir_params=iir_params,
+               method=method,
+               phase=phase,
+               skip_by_annotation=skip_by_annotation,
+               pad=pad,
+               fir_window=fir_window,
+               fir_design=fir_design,
+               verbose=True
+               )
     return raw
 
 
