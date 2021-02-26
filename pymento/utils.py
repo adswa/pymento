@@ -167,6 +167,7 @@ def read_data_original(directory,
     # transferred from Hilbert as is, and have a non-BIDS and partially
     # inconsistent naming and directory structure
     # First, construct a Path to a preprocessed or Raw directory
+    directory = Path(directory) / f'memento_{subject}'
     path = Path(directory) / preprocessing / '*.fif' if preprocessing \
             else Path(directory) / '*.fif'
     if not os.path.exists(os.path.split(path)[0]): # TODO: test this
@@ -236,11 +237,12 @@ def motion_estimation(subject,
     _check_if_bids_directory_exists(outpath, subject)
     print(f'Saving head positions as {outpath}')
     mne.chpi.write_head_pos(outpath, head_pos)
-    figpath = Path(head_pos_outdir) / f'sub-{subject}_ses-01_headmovement.png'
+    figpath = Path(outpath)
     fig = mne.viz.plot_head_positions(head_pos,
                                       mode='traces')
     fig.savefig(figpath)
-    figpath = Path(head_pos_outdir) / f'sub-{subject}_ses-01_headmovement_scaled.png'
+    figpath = Path(head_pos_outdir) / f'sub-{subject}' / 'meg' / \
+              f'sub-{subject}_ses-01_headmovement_scaled.png'
     fig = mne.viz.plot_head_positions(head_pos,
                                       mode='traces',
                                       destination=raw.info['dev_head_t'],
