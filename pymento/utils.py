@@ -425,7 +425,8 @@ def plot_noisy_channel_detection(auto_scores,
 
     # The figure title should not overlap with the subplots.
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    fname = outpath + '/' + f'noise_detection_sub-{subject}_{ch_type}.png'
+    fname = Path(outpath) / f'{subject}' / 'meg' / f'noise_detection_sub-{subject}_{ch_type}.png'
+    _check_if_bids_directory_exists(fname, subject)
     fig.savefig(fname)
 
 
