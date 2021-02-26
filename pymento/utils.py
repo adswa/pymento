@@ -291,16 +291,22 @@ def maxwellfilter(raw,
                   subject,
                   headpos_file=None,
                   compute_motion_params=True,
-                  head_pos_outfile='/tmp/',
+                  head_pos_outdir='/tmp/',
                   figdir='/tmp/',
-                  outdir='/tmp/'):
+                  outdir='/tmp/',
+                  filtering=False,
+                  filter_args=None):
     """
 
     :param raw:
     :param crosstalk_file: crosstalk compensation file from the Elekta system to
      reduce interference between gradiometers and magnetometers
     :param calibration_file: site-specific sensor orientation and calibration
-    :param figdir; str, path to directory to save figures in
+    :param figdir: str, path to directory to save figures in
+    :param filtering: if True, a filter function is ran on the data after SSS.
+    By default, it is a 40Hz low-pass filter.
+    :param filter_args: dict; if filtering is True, initializes a filter with the
+    arguments provided
     :return:
     """
     from mne.preprocessing import find_bad_channels_maxwell
@@ -310,22 +316,24 @@ def maxwellfilter(raw,
         if not headpos_file or not os.path.exists(headpos_file):
             print(f'Could not find or read head position files under the supplied'
                   f'path: {headpos_file}. Recalculating from scratch.')
-            head_pos = motion_estimation(subject, raw, head_pos_outfile)
+            head_pos = motion_estimation(subject, raw, head_pos_outdir)
         print(f'Reading in head positions for subject sub-{subject} '
               f'from {headpos_file}.')
         head_pos = mne.chpi.read_head_pos(headpos_file)
 
     else:
         print(f'Starting motion estimation for subject sub-{subject}.')
-        head_pos = motion_estimation(subject, raw, head_pos_outfile)
+        head_pos = motion_estimation(subject, raw, head_pos_outdir)
 
     raw.info['bads'] = []
     raw_check = raw.copy()
+
     if preconditioned:
         # preconditioned is a global variable that is set to True if some form
         # of filtering (CHPI and line noise removal or general filtering) has
         # been applied.
         # the data has been filtered, and we can pass h_freq=None
+        print('Performing bad channel detection without filtering')
         auto_noisy_chs, auto_flat_chs, auto_scores = find_bad_channels_maxwell(
             raw_check, cross_talk=crosstalk_file, calibration=fine_cal_file,
             return_scores=True, verbose=True, h_freq=None)
@@ -358,8 +366,16 @@ def maxwellfilter(raw,
                                                head_pos=head_pos,
                                                verbose=True)
     # save sss files
-    fname = Path(outdir) / f'sub-{subject}_task-memento_proc-sss.fif'
-    raw_sss.save(fname, split_naming='bids')
+    fname = Path(outdir) / f'sub-{subject}' / 'meg' /\
+            f'sub-{subject}_task-memento_proc-sss.fif'
+    raw_sss.save(fname, split_naming='bids', overwrite=True)
+    if filtering:
+        print(f'Filtering raw SSS data for subject {subject}. The following'
+              f'additional parameters were passed: {filter_args}')
+        raw_sss_filtered = raw_sss.copy()
+        raw_sss_filtered = _filter_data(raw_sss, **filter_args)
+        return raw_sss_filtered
+
     return raw_sss
 
 
