@@ -145,7 +145,7 @@ def _get_first_file(files):
 
 def read_data_original(directory,
                        subject,
-                       savetonewdir,
+                       savetonewdir=False,
                        bidsdir=None,
                        preprocessing='Raw'):
     """
