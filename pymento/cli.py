@@ -74,11 +74,13 @@ def main():
         raw = raw.crop(tmax=600)
 
     raw_sss = ut.maxwellfilter(raw=raw,
+                               subject=args.subject,
                                crosstalk_file=crosstalk_file,
                                fine_cal_file=fine_cal_file,
                                headpos_file=None,
                                compute_motion_params=True,
                                head_pos_outdir=args.bids_dir,
+                               figdir=args.diagnostics_dir,
                                outdir=args.bids_dir,
                                filtering=True,
                                filter_args={'h_freq': 45}
