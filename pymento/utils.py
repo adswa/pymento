@@ -193,14 +193,18 @@ def read_data_original(directory,
     raw.set_channel_types(channel_types)
 
     if savetonewdir:
-        if not newdir:
+        if not bidsdir:
             print("I was instructed to save BIDS conform raw data into a"
                   "different directory, but did not get a path.")
             return raw
-        outpath = Path(bidsdir) / f'sub-{subject}' / 'meg' / f'sub-{subject}_task-memento_meg.fif'
+
+        outpath = Path(bidsdir) / f'sub-{subject}' / 'meg' / \
+                  f'sub-{subject}_task-memento_meg.fif'
+        # make sure there is a directory to save into
+        _check_if_bids_directory_exists(outpath, subject)
         print(f"Saving BIDS-compliant raw data from subject {subject} into "
               f"{outpath}")
-        raw.save(outpath, split_naming="bids")
+        raw.save(outpath, split_naming="bids", overwrite=True)
     return raw
 
 
@@ -225,13 +229,27 @@ def motion_estimation(subject,
     print(f'Computing head positions for subject sub-{subject}')
     head_pos = mne.chpi.compute_head_pos(raw.info, chpi_locs, verbose=True)
     # save head positions
-    outpath = Path(head_pos_outdir) / f'sub-{subject}_ses-01_headshape.pos'
+    outpath = Path(head_pos_outdir) / f'sub-{subject}' / 'meg' / \
+              f'sub-{subject}_task-memento_headshape.pos'
+    # make sure there is a directory to save into
+    _check_if_bids_directory_exists(outpath, subject)
     print(f'Saving head positions as {outpath}')
     mne.chpi.write_head_pos(outpath, head_pos)
     figpath = Path(head_pos_outdir) / f'sub-{subject}_ses-01_headmovement.png'
     fig = mne.viz.plot_head_positions(head_pos, mode='traces')
     fig.savefig(figpath)
     return head_pos
+
+
+def _check_if_bids_directory_exists(outpath, subject):
+    """
+    Helper function that checks if a directory exists, and if not, creates it.
+    """
+    check_dir = os.path.dirname(outpath)
+    if not os.path.isdir(Path(check_dir) / f'sub-{subject}' / 'meg'):
+        print(f"The BIDS directory {check_dir} does not seem to exist. "
+              f"Attempting creation...")
+        os.makedirs(Path(check_dir) / f'sub-{subject}' / 'meg')
 
 
 # TODO: We could do maxwell filtering without applying a filter when we remove
