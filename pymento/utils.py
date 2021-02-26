@@ -217,7 +217,8 @@ def motion_estimation(subject,
     :param subject: str, subject identifier; used for writing file names &
     logging
     :param raw: Raw data object
-    :param head_pos_outdir: directory to save the head position file to
+    :param head_pos_outdir: directory to save the head position file to. Should
+    be the root of a bids directory
     :return: head_pos: head positions estimates from HPI coils
     """
     # Calculate head motion parameters to remove them during maxwell filtering
