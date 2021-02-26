@@ -38,9 +38,8 @@ def parse_args():
                         help="""A path to a directory where diagnostic figures
                         will be saved under"""
                         )
-    parser.add_argument('crop',
-                        type=bool,
-                        default=False,
+    parser.add_argument('--crop',
+                        action='store_true',
                         help="""If true, the data is cropped to 10 minutes to
                         do less computationally intensive test-runs."""
                         )
