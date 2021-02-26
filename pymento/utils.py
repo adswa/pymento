@@ -488,28 +488,3 @@ def artifacts(raw):
     # heartbeat artifacts
     ecg_epochs = mne.preprocessing.create_ecg_epochs(raw)
     avg_ecg_epochs = ecg_epochs.average().apply_baseline((-0.5, -0.2))
-
-
-# run everything
-def main(subject,
-         preprocessing='Raw',
-         ):
-    """
-    Do a computation
-    :param subject:
-    :param preprocessing:
-    :return:
-    """
-
-    directory = 'memento_' + subject
-    raw = read_data(directory, preprocessing)
-    raw_sss = maxwellfilter(raw,
-                            crosstalk_file,
-                            fine_cal_file,
-                            subject,
-                            compute_motion_params=True,
-                            head_pos_outfile=directory)
-    fname = directory + '/' + f'sub-{subject}_ses-01_raw_sss.fif'
-    raw_sss.save(fname)
-
-main('008')
