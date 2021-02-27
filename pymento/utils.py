@@ -81,6 +81,34 @@ def _filter_data(raw,
     return raw
 
 
+def _get_channel_subsets(raw):
+    """
+    Return defined sensor locations as a list of relevant sensors
+    """
+    # TODO: fill in with sensor names for left and right
+    parietal_left = mne.read_selection(name=['Left-parietal'], info=raw.info)
+    parietal_right = mne.read_selection(name=['Right-parietal'], info=raw.info)
+    occipital_left = mne.read_selection(name=['Left-occipital'], info=raw.info)
+    occipital_right = mne.read_selection(name=['Right-occipital'], info=raw.info)
+    frontal_left = mne.read_selection(name=['Left-frontal'], info=raw.info)
+    frontal_right = mne.read_selection(name=['Right-frontal'], info=raw.info)
+    vertex_sensors = mne.read_selection(name=['Vertex'], info=raw.info)
+    temporal_left = mne.read_selection(name=['Left-temporal'], info=raw.info)
+    temporal_right = mne.read_selection(name=['Right-temporal'], info=raw.info)
+    sensors = {
+        'lpar': parietal_left,
+        'rpar': parietal_right,
+        'locc': occipital_left,
+        'rocc': occipital_right,
+        'lfro': frontal_left,
+        'rfro': frontal_right,
+        'ltem': temporal_left,
+        'rtem': temporal_right,
+        'ver': vertex_sensors
+    }
+    return sensors
+
+
 def _downsample(raw, frequency):
     """
     Downsample data using MNE's built-in resample function
