@@ -81,6 +81,14 @@ def _filter_data(raw,
     return raw
 
 
+def _downsample(raw, frequency):
+    """
+    Downsample data using MNE's built-in resample function
+    """
+    raw_downsampled = raw.copy().resample(sfreq=frequency)
+    return raw_downsampled
+
+
 def _get_first_file(files):
     """
     Helper function to return the first split of a range of files.
