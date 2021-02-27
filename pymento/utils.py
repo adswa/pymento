@@ -550,6 +550,139 @@ def eventreader(raw,
     return events, epochs, event_dict
 
 
+def epoch_data(raw,
+               events,
+               event_dict,
+               subject,
+               conditionname,
+               sensor_picks,
+               pick_description,
+               figdir,
+               reject_criteria,
+               tmin,
+               tmax,
+               reject_bad_epochs=True,
+               autoreject = False,
+               ):
+    """
+    Create epochs from specified events.
+    :param tmin: int, start time before event. Defaults to -0.2 in MNE 0.23dev
+    :param tmax: int, end time after event. Defaults to 0.5 in MNE 0.23dev
+    :param sensor_picks: list, all sensors that should be plotted and used for
+    epoching
+    :param pick_description: str, a short description (no spaces) of the picks,
+    e.g., 'occipital' or 'motor'.
+    :param figdir: str, Path to where diagnostic plots should be saved.
+
+    TODO: we could include a baseline correction
+    TODO: figure out projections
+    """
+
+    epoch_params = {'raw': raw, 'events': events, 'event_id': event_dict,
+                    'tmin': tmin, 'tmax': tmax, 'preload': True,
+                    'on_missing': 'warn', 'verbose': True,
+                    'picks': sensor_picks}
+
+    if reject_bad_epochs and not autoreject:
+        # we can reject based on predefined criteria. Add it as an argument to
+        # the parameter list
+        epoch_params['reject'] = reject_criteria
+    else:
+        epoch_params['reject'] = None
+
+    epochs = mne.Epochs(**epoch_params)
+
+    if autoreject:
+        # if we want to perform autorejection of epochs using the autoreject tool
+        for condition in conditionname:
+            # do this for all relevant conditions
+            epochs = autoreject_bad_epochs(epochs=epochs,
+                                           picks=sensor_picks,
+                                           key=condition)
+
+    for condition in conditionname:
+        _plot_epochs(raw,
+                     epochs=epochs,
+                     subject=subject,
+                     key=condition,
+                     figdir=figdir,
+                     picks=sensor_picks,
+                     pick_description=pick_description
+                     )
+    return epochs
+
+
+
+
+def _plot_epochs(raw,
+                 epochs,
+                 subject,
+                 key,
+                 figdir,
+                 picks,
+                 pick_description,
+                 ):
+    """
+
+    TODO: decide for the right kinds of plots, and whether to plot left and right
+    seperately,
+    :param picks: list, all channels that should be plotted. You can also select
+    predefined locations: lpar, rpar, locc, rocc, lfro, rfro, ltem, rtem, ver.
+    :param pick_description: str, a short description (no spaces) of the picks,
+    e.g., 'occipital' or 'motor'.
+    """
+    # subselect the required condition. For example visuals = epochs['visualfirst']
+    wanted_epochs = epochs[key]
+    average = wanted_epochs.average()
+
+    # Some general plots over  all channels
+    # make joint plot of topographies and sensors
+    figpath = _construct_path([Path(figdir), f'{subject}', 'meg',
+                               f'sub-{subject}_task-memento_avg-epoch_cond-{key}_joint.png'],
+                              subject)
+    fig = average.plot_joint()
+    fig.save(figpath)
+    # also plot topographies
+    figpath = _construct_path([Path(figdir), f'{subject}', 'meg',
+                               f'sub-{subject}_task-memento_avg-epoch_cond-{key}_topography.png'],
+                              subject)
+    fig = average.plot_topo()
+    fig.savefig(figpath)
+    # also save the data as an image
+    figpath = _construct_path([Path(figdir), f'{subject}', 'meg',
+              f'sub-{subject}_task-memento_avg-epoch_cond-{key}_image.png'])
+    fig = average.plot_image()
+    fig.savefig(figpath)
+
+    if picks:
+        # If we want to plot a predefined sensor space, e.g., right parietal or left
+        # temporal, load in those lists of sensors
+        if picks in ['lpar', 'rpar', 'locc', 'rocc', 'lfro', 'rfro', 'ltem', 'rtem',
+                    'ver']:
+            sensors = _get_channel_subsets(raw)
+            picks = sensors[picks]
+
+
+
+
+def autoreject_bad_epochs(epochs,
+                          picks,
+                          key):
+    import autoreject
+    import numpy as np
+    # these values come straight from the tutorial:
+    # http://autoreject.github.io/auto_examples/plot_auto_repair.html
+    n_interpolates = np.array([1, 4, 32])
+    consensus_percs = np.linspace(0, 1.0, 11)
+
+    ar = AutoReject(n_interpolates, consensus_percs, picks=picks,
+                    thresh_method='random_search', random_state=42)
+    subset = epochs[key]
+    ar.fit(subset)
+    epochs_clean = ar.transform(subset)
+    return epochs_clean
+
+
 def artifacts(raw):
     # see https://mne.tools/stable/auto_tutorials/preprocessing/plot_10_preprocessing_overview.html#sphx-glr-auto-tutorials-preprocessing-plot-10-preprocessing-overview-py
     # low frequency drifts in magnetometers

@@ -7,3 +7,4 @@ seaborn
 PyQt5
 pyvista
 mne-bids
+autoreject
