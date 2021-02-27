@@ -477,7 +477,10 @@ def plot_noisy_channel_detection(auto_scores,
     fig.savefig(fname)
 
 
-def eventreader(raw, outputdir = '/tmp'):
+def eventreader(raw,
+                subject,
+                event_dict,
+                outputdir = '/tmp/'):
     """
     the Triggers 32790 32792 seem spurious. TODO.
     :param raw:
