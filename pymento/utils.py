@@ -400,9 +400,31 @@ def maxwellfilter(raw,
               f'additional parameters were passed: {filter_args}')
         raw_sss_filtered = raw_sss.copy()
         raw_sss_filtered = _filter_data(raw_sss, **filter_args)
+        # TODO: Downsample
+        _plot_psd(raw_sss_filtered, subject, figdir, filtering)
         return raw_sss_filtered
 
+    _plot_psd(raw_sss, subject, figdir, filtering)
     return raw_sss
+
+
+def _plot_psd(raw, subject, figdir, filtering):
+    """
+    Helper to plot spectral densities
+    """
+    print(f'Plotting spectral density plots for subject sub-{subject}'
+          f'after Maxwell filtering.')
+    if filtering:
+        # append a 'filtered' suffix to the file name
+        fname = _construct_path([Path(figdir), f'{subject}', 'meg',
+                                 f'sub-{subject}_task-memento_spectral-density_filtered.png'],
+                                subject)
+    else:
+        fname = _construct_path([Path(figdir), f'{subject}', 'meg',
+                                 f'sub-{subject}_task-memento_spectral-density.png'],
+                                subject)
+    fig = raw.plot_psd()
+    fig.savefig(fname)
 
 
 def plot_noisy_channel_detection(auto_scores,
