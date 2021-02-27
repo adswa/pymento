@@ -20,13 +20,15 @@ mne.set_log_level('info')
 # The data is not preconditioned unless this variable is reset
 preconditioned = False
 
-from .config import (channel_types,
-                     reject_criteria,
-                     flat_criteria,
-                     crosstalk_file,
-                     fine_cal_file,
-                     subject_list
-                     )
+from .config import (
+    channel_types,
+    reject_criteria,
+    flat_criteria,
+    crosstalk_file,
+    fine_cal_file,
+    subject_list,
+    event_dict,
+    )
 
 # Define data processing functions and helper functions
 
@@ -444,14 +446,7 @@ def eventreader(raw, outputdir = '/tmp'):
                              uint_cast=True,    # workaround an Elekta acquisition bug that causes negative values
                              #initial_event=True # unsure - the first on is 32772
                              )
-    # TriggerName description based on experiment matlab files
-    # lOpt10 and rOpt1 don't seem to exist (for sub 4 at least?)
-    event_dict = {'end': 2, 'fixCross': 10, 'lOpt1': 12, 'lOpt2': 13,
-                  'lOpt3': 14, 'lOpt4': 15, 'lOpt5': 16, 'lOpt6': 17,
-                  'lOpt7': 18, 'lOpt8': 19, 'lOpt9': 20, 'lOpt10': 21,
-                  'rOpt': 24, 'delay': 22, 'empty_screen': 26,
-                  'pauseStart': 25, 'feedback': 27,
-                  'weirdone': 32790, 'weirdtwo': 32792}
+
     # plot events. This works without raw data
     fig = mne.viz.plot_events(events,
                               sfreq=raw.info['sfreq'],

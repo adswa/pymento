@@ -211,3 +211,19 @@ flat_criteria = dict(mag=1e-15,          # 1 fT
 # Configuration file names from the Elekta system
 crosstalk_file = 'ct_sparse.fif'
 fine_cal_file = 'sss_cal.data'
+
+
+# human readable names for MEG triggers
+# TriggerName description based on experiment matlab files.
+# all left options (shown first in each trial) are summarized as "visualfirst".
+# lOpt10 and rOpt1 don't seem to exist (for sub 4 at least?)
+event_dict = {'end': 2, 'visualfix/fixCross': 10, 'visualfirst/lOpt1': 12,
+              'visualfirst/lOpt2': 13, 'visualfirst/lOpt3': 14,
+              'visualfirst/lOpt4': 15, 'visualfirst/lOpt5': 16,
+              'visualfirst/lOpt6': 17, 'visualfirst/lOpt7': 18,
+              'visualfirst/lOpt8': 19, 'visualfirst/lOpt9': 20,
+              'visualfirst/lOpt10': 21, 'visualsecond/rOpt': 24,
+              'delay': 22, 'empty_screen': 26, 'pauseStart': 25,
+              'feedback': 27,
+              'weirdone': 32790, 'weirdtwo': 32792
+              }
