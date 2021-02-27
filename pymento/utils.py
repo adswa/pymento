@@ -201,10 +201,9 @@ def read_data_original(directory,
                   "different directory, but did not get a path.")
             return raw
 
-        outpath = Path(bidsdir) / f'sub-{subject}' / 'meg' / \
-                  f'sub-{subject}_task-memento_meg.fif'
-        # make sure there is a directory to save into
-        _check_if_bids_directory_exists(outpath, subject)
+        outpath = _construct_path([Path(bidsdir), f'sub-{subject}', 'meg',
+                                   f'sub-{subject}_task-memento_meg.fif'],
+                                  subject)
         print(f"Saving BIDS-compliant raw data from subject {subject} into "
               f"{outpath}")
         raw.save(outpath, split_naming="bids", overwrite=True)
@@ -234,19 +233,18 @@ def motion_estimation(subject,
     print(f'Computing head positions for subject sub-{subject}')
     head_pos = mne.chpi.compute_head_pos(raw.info, chpi_locs, verbose=True)
     # save head positions
-    outpath = Path(head_pos_outdir) / f'sub-{subject}' / 'meg' / \
-              f'sub-{subject}_task-memento_headshape.pos'
-    # make sure there is a directory to save into
-    _check_if_bids_directory_exists(outpath, subject)
+    outpath = _construct_path([Path(head_pos_outdir), f'sub-{subject}', 'meg',
+                               f'sub-{subject}_task-memento_headshape.pos'],
+                              subject)
     print(f'Saving head positions as {outpath}')
     mne.chpi.write_head_pos(outpath, head_pos)
     figpath = Path(outpath)
     fig = mne.viz.plot_head_positions(head_pos,
                                       mode='traces')
     fig.savefig(figpath)
-    figpath = Path(figdir) / f'sub-{subject}' / 'meg' / \
-              f'sub-{subject}_ses-01_headmovement_scaled.png'
-    _check_if_bids_directory_exists(figpath, subject)
+    figpath = _construct_path([Path(figdir), f'sub-{subject}', 'meg',
+                               f'sub-{subject}_ses-01_headmovement_scaled.png'],
+                              subject)
     fig = mne.viz.plot_head_positions(head_pos,
                                       mode='traces',
                                       destination=raw.info['dev_head_t'],
@@ -264,6 +262,19 @@ def _check_if_bids_directory_exists(outpath, subject):
         print(f"The BIDS directory {check_dir} does not seem to exist. "
               f"Attempting creation...")
         os.makedirs(Path(check_dir) / f'sub-{subject}' / 'meg')
+
+
+def _construct_path(components,
+                    subject):
+    """
+    Helper function to construct a path to save a file or figure in, check if
+    the directory exists, and create the path recursively, if necessary.
+
+    :params components: list, path components
+    """
+    fpath = os.path.join(*components)
+    _check_if_bids_directory_exists(fpath, subject)
+    return fpath
 
 
 # TODO: We could do maxwell filtering without applying a filter when we remove
@@ -372,8 +383,9 @@ def maxwellfilter(raw,
                                                head_pos=head_pos,
                                                verbose=True)
     # save sss files
-    fname = Path(outdir) / f'sub-{subject}' / 'meg' /\
-            f'sub-{subject}_task-memento_proc-sss.fif'
+    fname = _construct_path([Path(outdir), f'sub-{subject}', 'meg',
+                             f'sub-{subject}_task-memento_proc-sss.fif'],
+                            subject)
     raw_sss.save(fname, split_naming='bids', overwrite=True)
     if filtering:
         print(f'Filtering raw SSS data for subject {subject}. The following'
@@ -429,8 +441,9 @@ def plot_noisy_channel_detection(auto_scores,
 
     # The figure title should not overlap with the subplots.
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    fname = Path(outpath) / f'{subject}' / 'meg' / f'noise_detection_sub-{subject}_{ch_type}.png'
-    _check_if_bids_directory_exists(fname, subject)
+    fname = _construct_path([Path(outpath), f'{subject}', 'meg',
+                             f'noise_detection_sub-{subject}_{ch_type}.png'],
+                            subject)
     fig.savefig(fname)
 
 
@@ -457,8 +470,9 @@ def eventreader(raw, outputdir = '/tmp'):
         raw.info['subject_info']['first_name'],
         raw.info['subject_info']['last_name'])
     )
-    # TODO: How do I increase/set the size of the plot?
-    fpath = Path(outputdir) / 'eventplot_{}.png'.format(raw.info['subject_info']['first_name'])
+    fpath = _construct_path([Path(outputdir), f'sub-{subject}', 'meg',
+                             f'sub-{subject}_task-memento_eventplot.png'],
+                            subject)
     fig.savefig(str(fpath))
 
     # TODO: MNE crashes when it tries to plot events on top of raw data, doesn't plot any events
