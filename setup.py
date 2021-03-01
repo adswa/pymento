@@ -19,7 +19,7 @@ test_requirements = ['pytest>=3', ]
 setup(
     author="Adina Wagner",
     author_email='adina.wagner@t-online.de',
-    python_requires='>=3.5',
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
