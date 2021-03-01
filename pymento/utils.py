@@ -309,7 +309,16 @@ def motion_estimation(subject, raw, head_pos_outdir="/tmp/", figdir="/tmp/"):
     )
     print(f"Saving head positions as {outpath}")
     mne.chpi.write_head_pos(outpath, head_pos)
-    figpath = Path(outpath)
+
+    figpath = _construct_path(
+        [
+            Path(figdir),
+            f"sub-{subject}",
+            "meg",
+            f"sub-{subject}_task-memento_headmovement.png",
+        ],
+        subject,
+    )
     fig = mne.viz.plot_head_positions(head_pos, mode="traces")
     fig.savefig(figpath)
     figpath = _construct_path(
@@ -317,7 +326,7 @@ def motion_estimation(subject, raw, head_pos_outdir="/tmp/", figdir="/tmp/"):
             Path(figdir),
             f"sub-{subject}",
             "meg",
-            f"sub-{subject}_ses-01_headmovement_scaled.png",
+            f"sub-{subject}_task-memento_headmovement_scaled.png",
         ],
         subject,
     )
@@ -524,7 +533,7 @@ def _plot_psd(raw, subject, figdir, filtering):
         fname = _construct_path(
             [
                 Path(figdir),
-                f"{subject}",
+                f"sub-{subject}",
                 "meg",
                 f"sub-{subject}_task-memento_spectral-density_filtered.png",
             ],
@@ -534,7 +543,7 @@ def _plot_psd(raw, subject, figdir, filtering):
         fname = _construct_path(
             [
                 Path(figdir),
-                f"{subject}",
+                f"sub-{subject}",
                 "meg",
                 f"sub-{subject}_task-memento_spectral-density.png",
             ],
@@ -600,7 +609,7 @@ def plot_noisy_channel_detection(
     fname = _construct_path(
         [
             Path(outpath),
-            f"{subject}",
+            f"sub-{subject}",
             "meg",
             f"noise_detection_sub-{subject}_{ch_type}.png",
         ],
@@ -759,25 +768,36 @@ def _plot_epochs(
     # subselect the required condition. For example visuals = epochs['visualfirst']
     wanted_epochs = epochs[key]
     average = wanted_epochs.average()
-
     # Some general plots over  all channels
     # make joint plot of topographies and sensors
-    figpath = _construct_path(
+    figpath_grad = _construct_path(
         [
             Path(figdir),
-            f"{subject}",
+            f"sub-{subject}",
             "meg",
-            f"sub-{subject}_task-memento_avg-epoch_cond-{key}_joint.png",
+            f"sub-{subject}_task-memento_avg-epoch_cond-{key}_joint-grad.png",
+        ],
+        subject,
+    )
+    figpath_mag = _construct_path(
+        [
+            Path(figdir),
+            f"sub-{subject}",
+            "meg",
+            f"sub-{subject}_task-memento_avg-epoch_cond-{key}_joint-mag.png",
         ],
         subject,
     )
     fig = average.plot_joint()
-    fig.save(figpath)
+    fig1 = fig[0]
+    fig2 = fig[1]
+    fig1.savefig(figpath_grad)
+    fig2.savefig(figpath_grad)
     # also plot topographies
     figpath = _construct_path(
         [
             Path(figdir),
-            f"{subject}",
+            f"sub-{subject}",
             "meg",
             f"sub-{subject}_task-memento_avg-epoch_cond-{key}_topography.png",
         ],
@@ -789,10 +809,11 @@ def _plot_epochs(
     figpath = _construct_path(
         [
             Path(figdir),
-            f"{subject}",
+            f"sub-{subject}",
             "meg",
             f"sub-{subject}_task-memento_avg-epoch_cond-{key}_image.png",
-        ]
+        ],
+        subject
     )
     fig = average.plot_image()
     fig.savefig(figpath)
