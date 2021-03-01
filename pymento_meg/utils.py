@@ -14,6 +14,7 @@ from pathlib import Path
 import matplotlib
 interactive(True)
 mne.set_log_level("info")
+#matplotlib.use('QT5Agg')
 
 # Set a few global variables
 # The data is not preconditioned unless this variable is reset
