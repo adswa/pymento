@@ -65,7 +65,7 @@ def parse_args():
 def main():
     """pymento is a library of Python functions to analyze MEG data
     from the memento project."""
-    from pymento import utils as ut
+    from pymento_meg import utils as ut
 
     args = parse_args()
 

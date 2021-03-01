@@ -34,7 +34,7 @@ setup(
     description="A Python package to analyze Memento MEG data",
     entry_points={
         'console_scripts': [
-            'pymento=pymento.cli:main',
+            'pymento=pymento_meg.cli:main',
         ],
     },
     install_requires=requirements,
@@ -42,8 +42,8 @@ setup(
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords='pymento',
-    name='pymento',
-    packages=find_packages(include=['pymento', 'pymento.*']),
+    name='pymento_meg',
+    packages=find_packages(include=['pymento_meg', 'pymento_meg.*']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
