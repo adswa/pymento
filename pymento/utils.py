@@ -656,24 +656,7 @@ def eventreader(raw, subject, event_dict, outputdir="/tmp/"):
         subject,
     )
     fig.savefig(str(fpath))
-
-    # epochs TODO how and which?
-    epochs = epoch_data(TODO)
-    import autoreject
-
-    # TODO: autoreject bad segments
-    epochs = mne.Epochs(
-        raw,
-        events,
-        tmin=-0.3,  # TODO: change
-        tmax=0.7,  # TODO: change
-        event_id=event_dict,
-        on_missing="warn",
-    )
-    # plotting epochs crashes (too many?)
-    # which epoch is actually relevant? delay?
-
-    return events, epochs, event_dict
+    return events
 
 
 def epoch_data(
@@ -862,6 +845,7 @@ def evoked_visual_potentials(raw,
                                autoreject=False)
 
 
+def autoreject_bad_epochs(epochs, key):
     import autoreject
     import numpy as np
 
@@ -869,11 +853,10 @@ def evoked_visual_potentials(raw,
     # http://autoreject.github.io/auto_examples/plot_auto_repair.html
     n_interpolates = np.array([1, 4, 32])
     consensus_percs = np.linspace(0, 1.0, 11)
-
-    ar = AutoReject(
+    #important: Requires epochs with only MEG sensors, selected during epoching!
+    ar = autoreject.AutoReject(
         n_interpolates,
         consensus_percs,
-        picks=picks,
         thresh_method="random_search",
         random_state=42,
     )
