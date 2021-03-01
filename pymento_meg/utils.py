@@ -11,10 +11,8 @@ from matplotlib import interactive
 from pathlib import Path
 
 # plotting settings
-interactive(True)
 import matplotlib
-
-matplotlib.use("Qt5Agg")
+interactive(True)
 mne.set_log_level("info")
 
 # Set a few global variables
