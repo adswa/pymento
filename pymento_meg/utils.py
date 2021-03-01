@@ -663,13 +663,14 @@ def epoch_data(
     events,
     event_dict,
     subject,
-    conditionname,
-    sensor_picks,
-    pick_description,
-    figdir,
-    reject_criteria,
-    tmin,
-    tmax,
+    conditionname=None,
+    sensor_picks=None,
+    picks=None,
+    pick_description=None,
+    figdir='/tmp',
+    reject_criteria=None,
+    tmin=-0.2,
+    tmax=0.7,
     reject_bad_epochs=True,
     autoreject=False,
 ):
@@ -677,8 +678,8 @@ def epoch_data(
     Create epochs from specified events.
     :param tmin: int, start time before event. Defaults to -0.2 in MNE 0.23dev
     :param tmax: int, end time after event. Defaults to 0.5 in MNE 0.23dev
-    :param sensor_picks: list, all sensors that should be plotted and used for
-    epoching
+    :param sensor_picks: list, sensors that should be plotted separately
+    :param picks: list, sensors that epoching should be restricted to
     :param pick_description: str, a short description (no spaces) of the picks,
     e.g., 'occipital' or 'motor'.
     :param figdir: str, Path to where diagnostic plots should be saved.
@@ -697,7 +698,7 @@ def epoch_data(
         "preload": True,
         "on_missing": "warn",
         "verbose": True,
-        "picks": sensor_picks,
+        "picks": picks,
     }
 
     if reject_bad_epochs and not autoreject:
@@ -715,7 +716,7 @@ def epoch_data(
         for condition in conditionname:
             # do this for all relevant conditions
             epochs = autoreject_bad_epochs(
-                epochs=epochs, picks=sensor_picks, key=condition
+                epochs=epochs, picks=picks, key=condition
             )
 
     for condition in conditionname:
@@ -752,14 +753,50 @@ def _plot_epochs(
     # subselect the required condition. For example visuals = epochs['visualfirst']
     wanted_epochs = epochs[key]
     average = wanted_epochs.average()
-    # Some general plots over  all channels
+    # Some general plots over all channels
+    _plot_evoked_fields(data=average,
+                        subject=subject,
+                        figdir=figdir,
+                        key=key,
+                        location='avg-epoch-all')
+    if picks:
+        # If we want to plot a predefined sensor space, e.g., right parietal or left
+        # temporal, load in those lists of sensors
+        assert type(picks) == list
+        if len(picks) >= 2:
+            # more than one selection in this list
+            sensors = _get_channel_subsets(raw)
+            mypicklist = []
+            for p in picks:
+                if p in sensors.keys():
+                    mypicklist.extend(sensors[p])
+                else:
+                    mypicklist.extend(p)
+            subset = epochs.pick_channels(mypicklist)
+            subset_average = subset.average()
+            _plot_evoked_fields(data=subset_average,
+                                subject=subject,
+                                figdir=figdir,
+                                key=key,
+                                location=pick_description)
+
+            #TODO plot with pick_description
+
+    return
+
+
+def _plot_evoked_fields(data, subject, figdir, key='unnamed', location='avg-epoch-all'):
+    """
+    Helper to plot evoked field with all available plots
+    :return:
+    """
     # make joint plot of topographies and sensors
     figpath_grad = _construct_path(
         [
             Path(figdir),
             f"sub-{subject}",
             "meg",
-            f"sub-{subject}_task-memento_avg-epoch_cond-{key}_joint-grad.png",
+            f"sub-{subject}_task-memento_{location}_cond-{key}_joint-grad.png",
         ],
         subject,
     )
@@ -768,26 +805,26 @@ def _plot_epochs(
             Path(figdir),
             f"sub-{subject}",
             "meg",
-            f"sub-{subject}_task-memento_avg-epoch_cond-{key}_joint-mag.png",
+            f"sub-{subject}_task-memento_{location}_cond-{key}_joint-mag.png",
         ],
         subject,
     )
-    fig = average.plot_joint()
+    fig = data.plot_joint()
     fig1 = fig[0]
     fig2 = fig[1]
     fig1.savefig(figpath_grad)
-    fig2.savefig(figpath_grad)
+    fig2.savefig(figpath_mag)
     # also plot topographies
     figpath = _construct_path(
         [
             Path(figdir),
             f"sub-{subject}",
             "meg",
-            f"sub-{subject}_task-memento_avg-epoch_cond-{key}_topography.png",
+            f"sub-{subject}_task-memento_{location}_cond-{key}_topography.png",
         ],
         subject,
     )
-    fig = average.plot_topo()
+    fig = data.plot_topo()
     fig.savefig(figpath)
     # also save the data as an image
     figpath = _construct_path(
@@ -795,22 +832,12 @@ def _plot_epochs(
             Path(figdir),
             f"sub-{subject}",
             "meg",
-            f"sub-{subject}_task-memento_avg-epoch_cond-{key}_image.png",
+            f"sub-{subject}_task-memento_{location}_cond-{key}_image.png",
         ],
         subject
     )
-    fig = average.plot_image()
+    fig = data.plot_image()
     fig.savefig(figpath)
-
-    if picks:
-        # If we want to plot a predefined sensor space, e.g., right parietal or left
-        # temporal, load in those lists of sensors
-        sensors = _get_channel_subsets(raw)
-        if picks in sensors.keys():
-            picks = sensors[picks]
-            #TODO plot with pick_description
-
-    return
 
 
 def evoked_visual_potentials(raw,
@@ -830,8 +857,9 @@ def evoked_visual_potentials(raw,
                                event_dict=event_dict,
                                subject=subject,
                                conditionname=['visualfirst'],
-                               sensor_picks=None,
-                               pick_description=None,
+                               sensor_picks=['locc', 'rocc'],
+                               picks=None,
+                               pick_description='occipital',
                                figdir=figdir,
                                tmax=0.7,
                                tmin=-0.2,
