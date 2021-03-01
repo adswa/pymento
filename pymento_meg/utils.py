@@ -227,8 +227,9 @@ def read_data_original(
     # correctly
     unsorted_files = glob(str(path))
     first, second, third = _get_first_file(unsorted_files)
-    if subject != '005':
-        # subject five doesn't have consistent subject identifiers in the name.
+    if subject not in ['001', '005']:
+        # subjects one and five don't have consistent subject identifiers or
+        # file names.
         # automatic reading in would only load the first.
         try:
             raw = mne.io.read_raw_fif(first)
