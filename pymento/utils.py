@@ -118,7 +118,8 @@ def _downsample(raw, frequency):
     """
     Downsample data using MNE's built-in resample function
     """
-    raw_downsampled = raw.copy().resample(sfreq=frequency)
+    raw_downsampled = raw.copy().resample(sfreq=frequency,
+                                          verbose=True)
     return raw_downsampled
 
 
