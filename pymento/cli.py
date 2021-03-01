@@ -102,6 +102,12 @@ def main():
         filter_args={"h_freq": 45},
     )
 
+    from .config import event_dict
+    ut.evoked_visual_potentials(raw=raw_sss,
+                                subject=args.subject,
+                                event_dict=event_dict,
+                                figdir=args.diagnostics_dir)
+
 
 if __name__ == "__main__":
     main()

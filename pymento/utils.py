@@ -835,8 +835,33 @@ def _plot_epochs(
             sensors = _get_channel_subsets(raw)
             picks = sensors[picks]
 
+def evoked_visual_potentials(raw,
+                             subject,
+                             event_dict,
+                             figdir="/tmp/"):
+    """
+    Function to plot visual potentials from the first visual option (left) as a
+    sanity check
+    """
 
-def autoreject_bad_epochs(epochs, picks, key):
+    events = eventreader(raw=raw, subject=subject, outputdir=figdir,
+                         event_dict=event_dict)
+
+    visual_epochs = epoch_data(raw=raw,
+                               events=events,
+                               event_dict=event_dict,
+                               subject=subject,
+                               conditionname=['visualfirst'],
+                               sensor_picks=None,
+                               pick_description=None,
+                               figdir=figdir,
+                               tmax=0.7,
+                               tmin=-0.2,
+                               reject_criteria=reject_criteria,
+                               reject_bad_epochs=True,
+                               autoreject=False)
+
+
     import autoreject
     import numpy as np
 
