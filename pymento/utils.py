@@ -685,7 +685,8 @@ def epoch_data(
     :param figdir: str, Path to where diagnostic plots should be saved.
 
     TODO: we could include a baseline correction
-    TODO: figure out projections
+    TODO: figure out projections -> don't use if you can use SSS
+    TODO: autoreject requires picking only MEG channels in epoching
     """
 
     epoch_params = {
@@ -708,7 +709,8 @@ def epoch_data(
         epoch_params["reject"] = None
 
     epochs = mne.Epochs(**epoch_params)
-
+    if reject_bad_epochs and not autoreject:
+        epochs.plot_drop_log()
     if autoreject:
         # if we want to perform autorejection of epochs using the autoreject tool
         for condition in conditionname:
@@ -804,19 +806,13 @@ def _plot_epochs(
     if picks:
         # If we want to plot a predefined sensor space, e.g., right parietal or left
         # temporal, load in those lists of sensors
-        if picks in [
-            "lpar",
-            "rpar",
-            "locc",
-            "rocc",
-            "lfro",
-            "rfro",
-            "ltem",
-            "rtem",
-            "ver",
-        ]:
-            sensors = _get_channel_subsets(raw)
+        sensors = _get_channel_subsets(raw)
+        if picks in sensors.keys():
             picks = sensors[picks]
+            #TODO plot with pick_description
+
+    return
+
 
 def evoked_visual_potentials(raw,
                              subject,
