@@ -86,7 +86,7 @@ def main():
     raw = ut.read_data_original(directory=args.raw_data_dir, subject=args.subject)
 
     if args.crop:
-        raw = raw.crop(tmax=600)
+        raw = raw.crop(tmax=100)
 
     raw_sss = ut.maxwellfilter(
         raw=raw,
