@@ -322,12 +322,13 @@ def _check_if_bids_directory_exists(outpath, subject):
     Helper function that checks if a directory exists, and if not, creates it.
     """
     check_dir = os.path.dirname(outpath)
-    if not os.path.isdir(Path(check_dir) / f"sub-{subject}" / "meg"):
+    print(check_dir)
+    if not os.path.isdir(Path(check_dir)):
         print(
             f"The BIDS directory {check_dir} does not seem to exist. "
             f"Attempting creation..."
         )
-        os.makedirs(Path(check_dir) / f"sub-{subject}" / "meg")
+        os.makedirs(Path(check_dir))
 
 
 def _construct_path(components, subject):
