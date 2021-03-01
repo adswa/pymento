@@ -228,13 +228,23 @@ def read_data_original(
     # correctly
     unsorted_files = glob(str(path))
     first, second, third = _get_first_file(unsorted_files)
-    try:
-        raw = mne.io.read_raw_fif(first)
-    except ValueError:
-        print(
-            f"WARNING Irregular file naming. Will read files in sequentially "
-            f"in the following order: {first}{second}{third}"
-        )
+    if subject != '005':
+        # subject five doesn't have consistent subject identifiers in the name.
+        # automatic reading in would only load the first.
+        try:
+            raw = mne.io.read_raw_fif(first)
+        except ValueError:
+            print(
+                f"WARNING Irregular file naming. Will read files in sequentially "
+                f"in the following order: {first}{second}{third}"
+            )
+            # read the splits
+            split1 = mne.io.read_raw_fif(first, on_split_missing="warn")
+            split2 = mne.io.read_raw_fif(second, on_split_missing="warn")
+            split3 = mne.io.read_raw_fif(third, on_split_missing="warn")
+            # concatenate all three split files
+            raw = mne.concatenate_raws([split1, split2, split3])
+    else:
         # read the splits
         split1 = mne.io.read_raw_fif(first, on_split_missing="warn")
         split2 = mne.io.read_raw_fif(second, on_split_missing="warn")
