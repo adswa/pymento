@@ -95,6 +95,7 @@ def eventreader(raw, subject, event_dict, outputdir="/tmp/"):
     :return:
     """
     # for some reason, events only start at sample 628416 (sub 4)
+    # TODO: repsonses may be in STI102, denoted as 1 and 4
     events = mne.find_events(
         raw,
         min_duration=0.002,  # ignores spurious events
