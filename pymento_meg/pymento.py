@@ -44,16 +44,25 @@ def restructure_to_bids(rawdir,
                              preprocessing="Raw")
 
 
-def signal_space_separation(bidspath, subject):
+def signal_space_separation(bidspath,
+                            subject,
+                            figdir,
+                            derived_path):
     """
-    Reads in the raw data from a bids structured directory.
+    Reads in the raw data from a bids structured directory, applies a basic
+    signal space separation with motion correction, and saves the result in a
+    derivatives BIDS directory
     :param bidspath:
+    :param subject: str, subject identifier, e.g., '001'
+    :param figdir: str, path to a diagnostics directory to save figures into
+    :param derived_path: str, path to where a derivatives dataset with sss data
+    shall be saved
     :return:
     """
 
 
     bids_path = BIDSPath(subject=subject, task='memento', suffix='meg',
-                         datatype='meg', root=directory)
+                         datatype='meg', root=bidspath)
 
     raw = read_raw_bids(bids_path)
     # Events are now Annotations!
@@ -70,6 +79,6 @@ def signal_space_separation(bidspath, subject):
                             compute_motion_params=True,
                             head_pos_outdir=bidsdir,
                             figdir=figdir,
-                            outdir=bidsdir,
+                            outdir=derived_path,
                             filtering=False,
                             filter_args=None,)
