@@ -83,7 +83,7 @@ def signal_space_separation(bidspath,
                             subject=subject,
                             headpos_file=None,
                             compute_motion_params=True,
-                            head_pos_outdir=bidsdir,
+                            head_pos_outdir=None,  # isn't saved atm
                             figdir=figdir,
                             outdir=derived_path,
                             filtering=False,
