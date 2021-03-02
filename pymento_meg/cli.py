@@ -1,13 +1,23 @@
 import argparse
 from pathlib import Path
 import os.path as op
+import pymento_meg
 
+version = pymento_meg.__version__
+# TODO: redo this with less duplication in argparsing
 
-def parse_args():
+def parse_args_main():
 
-    parser = argparse.ArgumentParser()
-    prog = "pymento"
-    description = "{}".format(main.__doc__)
+    formatter_class = argparse.RawDescriptionHelpFormatter
+    parser = argparse.ArgumentParser(
+        formatter_class=formatter_class,
+        prog="pymento",
+        description="{}".format(main.__doc__)
+    )
+    parser.add_argument(
+        "--version",
+        action="store_true"
+    )
     parser.add_argument(
         "--subject",
         "-s",
