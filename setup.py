@@ -33,6 +33,8 @@ setup(
     entry_points={
         'console_scripts': [
             'pymento=pymento_meg.cli:main',
+            'pymento-restructure=pymento_meg.cli:restructure',
+            'pymento-sss=pymento_meg.cli:sss'
         ],
     },
     install_requires=requirements,
