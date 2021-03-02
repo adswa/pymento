@@ -76,7 +76,7 @@ def _check_if_bids_directory_exists(outpath):
         os.makedirs(Path(check_dir))
 
 
-def _construct_path(components, subject):
+def _construct_path(components):
     """
     Helper function to construct a path to save a file or figure in, check if
     the directory exists, and create the path recursively, if necessary.
@@ -122,8 +122,7 @@ def eventreader(raw, subject, event_dict, outputdir="/tmp/"):
             f"sub-{subject}",
             "meg",
             f"sub-{subject}_task-memento_eventplot.png",
-        ],
-        subject,
+        ]
     )
     fig.savefig(str(fpath))
     return events
@@ -268,8 +267,7 @@ def _plot_evoked_fields(data, subject, figdir, key='unnamed', location='avg-epoc
             f"sub-{subject}",
             "meg",
             f"sub-{subject}_task-memento_{location}_cond-{key}_joint-grad.png",
-        ],
-        subject,
+        ]
     )
     figpath_mag = _construct_path(
         [
@@ -277,8 +275,7 @@ def _plot_evoked_fields(data, subject, figdir, key='unnamed', location='avg-epoc
             f"sub-{subject}",
             "meg",
             f"sub-{subject}_task-memento_{location}_cond-{key}_joint-mag.png",
-        ],
-        subject,
+        ]
     )
     fig = data.plot_joint()
     fig1 = fig[0]
@@ -292,8 +289,7 @@ def _plot_evoked_fields(data, subject, figdir, key='unnamed', location='avg-epoc
             f"sub-{subject}",
             "meg",
             f"sub-{subject}_task-memento_{location}_cond-{key}_topography.png",
-        ],
-        subject,
+        ]
     )
     fig = data.plot_topo()
     fig.savefig(figpath)
@@ -304,8 +300,7 @@ def _plot_evoked_fields(data, subject, figdir, key='unnamed', location='avg-epoc
             f"sub-{subject}",
             "meg",
             f"sub-{subject}_task-memento_{location}_cond-{key}_image.png",
-        ],
-        subject
+        ]
     )
     fig = data.plot_image()
     fig.savefig(figpath)
