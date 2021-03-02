@@ -34,6 +34,9 @@ def restructure_to_bids(rawdir,
     :return:
     """
 
+    print(f"Starting to restructure original memento data into BIDS for"
+          f"subject sub-{subject}.")
+
     raw = read_data_original(directory=rawdir,
                              subject=subject,
                              savetonewdir=True,
@@ -59,7 +62,8 @@ def signal_space_separation(bidspath,
     shall be saved
     :return:
     """
-
+    print(f"Starting to read in raw memento data from BIDS directory for"
+          f"subject sub-{subject}.")
 
     bids_path = BIDSPath(subject=subject, task='memento', suffix='meg',
                          datatype='meg', root=bidspath)
@@ -70,6 +74,8 @@ def signal_space_separation(bidspath,
     fine_cal_file = bids_path.meg_calibration_fpath
     crosstalk_file = bids_path.meg_crosstalk_fpath
 
+    print(f"Starting signal space separation with motion correction "
+          f"for subject sub{subject}.")
 
     raw_sss = maxwellfilter(raw=raw,
                             crosstalk_file=crosstalk_file,
