@@ -195,7 +195,7 @@ def maxwellfilter(
 
     if filtering:
         print(
-            f"Filtering raw SSS data for subject {subject}. The following"
+            f"Filtering raw SSS data for subject {subject}. The following "
             f"additional parameters were passed: {filter_args}"
         )
         raw_sss_filtered = raw_sss.copy()
