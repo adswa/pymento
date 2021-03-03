@@ -315,6 +315,7 @@ event_dict = {
     "pauseStart": 25,
     "feedback": 27,
     "feedback-fast": 28,
+    "whoknows?": 32771,
     "weirdone": 32790,
     "weirdtwo": 32792,
 }
