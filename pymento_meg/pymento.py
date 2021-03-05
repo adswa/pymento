@@ -34,7 +34,7 @@ def restructure_to_bids(rawdir,
     :return:
     """
 
-    print(f"Starting to restructure original memento data into BIDS for"
+    print(f"Starting to restructure original memento data into BIDS for "
           f"subject sub-{subject}.")
 
     raw = read_data_original(directory=rawdir,

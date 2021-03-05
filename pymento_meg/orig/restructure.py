@@ -66,6 +66,7 @@ def read_data_original(
         # subjects one and five don't have consistent subject identifiers or
         # file names.
         # automatic reading in would only load the first.
+        print(f'reading in subject {subject}')
         try:
             raw = mne.io.read_raw_fif(first)
         except ValueError:
