@@ -130,6 +130,19 @@ def save_bids_data(raw,
         f"Saving BIDS-compliant raw data from subject "
         f"{subject} into " f"{bids_path}"
     )
+    # a workaround of https://github.com/mne-tools/mne-bids/issues/718
+    if subject in ['001', '005']:
+        # these subjects can't be written directly - mne-bids would perform an
+        # internal check that fails on the basis that the hand-concatenated
+        # files are longer than the single split file that would be read-in
+        # automatically.
+        from tempfile import NamedTemporaryFile
+
+        with NamedTemporaryFile(suffix='_raw.fif') as f:
+            fname = f.name
+            raw.save(fname, overwrite=True)
+            raw = mne.io.read_raw_fif(fname, preload=False)
+
     # save raw fif data and events
     events_data, event_dict = _events(raw, subject, figdir)
     write_raw_bids(raw, bids_path, events_data=events_data,
