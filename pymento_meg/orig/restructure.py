@@ -139,7 +139,7 @@ def save_bids_data(raw,
         # automatically.
         from tempfile import NamedTemporaryFile
 
-        with NamedTemporaryFile(suffix='_raw.fif') as f:
+        with NamedTemporaryFile(suffix='_raw.fif', delete=False) as f:
             fname = f.name
             raw.save(fname, overwrite=True)
             raw = mne.io.read_raw_fif(fname, preload=False)
