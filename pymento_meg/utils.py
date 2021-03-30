@@ -88,6 +88,47 @@ def _construct_path(components):
     return fpath
 
 
+def repair_triggers(events):
+    """
+    The experiment had a mix of writing triggers in integers, and photodiode
+    signals that partially overlaid these integer triggers, resulting in
+    obscure trigger values such as 32780. Which trigger values were overlaid
+    changed over the course of the experiment. For all subjects, trigger event
+    22 (delay) and 24 (right option) were obfuscated to 32790 and 32792.
+    For subjects 1 and 2, this was true also for all other Stimulus events.
+
+    Overall, the experiment is quite messy. We should read in the experiment
+    logs to make sure that MEG triggers and logs are consistent
+    """
+
+    # subtract the photodiode value (seems to be 0b1000000000000000, i.e.,
+    # 32768 as an integer) from all obscurely large values
+    renamed_triggers = [i if i < 30000 else i - 32768 for i in events[:, 2]]
+    # replace the existing trigger names
+    events[:, 2] = renamed_triggers
+
+    # remove event duplications if there are two consecutive identical events
+    # those occur if the photodiode duplicated a trigger signal
+    # I am keeping the first occurrence of them and disregard the later
+    cropped_events = []
+    for idx, sample in enumerate(events):
+        # append the first sample in any case
+        if idx == 0:
+            cropped_events.append(list(sample))
+            continue
+        # when the trigger name of the previous sample is identical to the
+        # current sample's trigger name, don't append this sample
+        if sample[2] == events[idx - 1, 2]:
+            continue
+        # if two consecutive samples have different triggers, append the sample
+        elif sample[2] != events[idx - 1, 2]:
+            cropped_events.append(list(sample))
+    # now we should have the same format as events were
+    cropped_events = np.asarray(cropped_events)
+
+    return cropped_events
+
+
 def eventreader(raw, subject, event_dict, outputdir="/tmp/"):
     """
     the Triggers 32790 32792 seem spurious. TODO.
