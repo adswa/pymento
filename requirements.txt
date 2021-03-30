@@ -6,5 +6,5 @@ matplotlib
 seaborn
 PyQt5
 pyvista
--e git+git@github.com:mne-tools/mne-bids.git@a45695ed43394f067a776f0f51441723915bcbf5#egg=mne_bids
+mne-bids
 autoreject
