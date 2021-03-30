@@ -11,10 +11,10 @@ import seaborn as sns
 from glob import glob
 from matplotlib import interactive
 from pathlib import Path
-from pymento_meg.orig.restructure import (
+from .orig.restructure import (
     read_data_original,
     )
-from pymento_meg.proc.preprocess import (
+from .proc.preprocess import (
     maxwellfilter
     )
 from mne_bids import (

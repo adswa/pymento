@@ -6,7 +6,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from pymento_meg.utils import _construct_path
+from ..utils import _construct_path
 from pathlib import Path
 from matplotlib import interactive
 
