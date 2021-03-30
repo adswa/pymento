@@ -141,8 +141,9 @@ def eventreader(raw, subject, event_dict, outputdir="/tmp/"):
     events = mne.find_events(
         raw,
         min_duration=0.002,  # ignores spurious events
-        uint_cast=True,  # workaround an Elekta acquisition bug that causes negative values
-        # initial_event=True # unsure - the first on is 32772
+        uint_cast=True,  # workaround Elekta acquisition bug, causes neg. values
+        stim_channel=['STI101', 'STI102', 'STI016'],  # get all triggers
+        consecutive=True  # Trigger are overlayed by photodiode signals, sadly
     )
 
     # plot events. This works without raw data
