@@ -145,6 +145,13 @@ def eventreader(raw, subject, event_dict, outputdir="/tmp/"):
         stim_channel=['STI101', 'STI102', 'STI016'],  # get all triggers
         consecutive=True  # Trigger are overlayed by photodiode signals, sadly
     )
+    # remove events that are known to be spurious. It is not a problem if they
+    # are only present in some subjects, we can specify a group-level list here
+    # 5 was photodiode onset, but it is not relevant for us
+    exclusion_list = [254, 32768, 5]
+    events = mne.pick_events(events, exclude=exclusion_list)
+    # remove any signals obfuscated by a photodiode
+    events = repair_triggers(events)
 
     # plot events. This works without raw data
     fig = mne.viz.plot_events(
