@@ -224,46 +224,7 @@ def main():
     """
     pymento is a library of Python functions to analyze memento project data
     """
-    from pymento_meg import utils as ut
-    args = parse_args()
-
-
-    assert op.exists(crosstalk_file)
-    assert op.exists(fine_cal_file)
-
-    print(
-        f"I received the following command line arguments: \n"
-        f"Subject: {args.subject}\n"
-        f"Raw data directory: {args.raw_data_dir}\n"
-        f"Behavioral data directory: {args.behav_data_dir}\n"
-    )
-
-    # read in raw data
-    raw = ut.read_data_original(directory=args.raw_data_dir, subject=args.subject)
-
-    if args.crop:
-        raw = raw.crop(tmax=100)
-
-    raw_sss = ut.maxwellfilter(
-        raw=raw,
-        subject=args.subject,
-        crosstalk_file=crosstalk_file,
-        fine_cal_file=fine_cal_file,
-        headpos_file=None,
-        compute_motion_params=True,
-        head_pos_outdir=args.bids_dir,
-        figdir=args.diagnostics_dir,
-        outdir=args.bids_dir,
-        filtering=True,
-        filter_args={"h_freq": 45},
-    )
-
-    from .config import event_dict
-    ut.evoked_visual_potentials(raw=raw_sss,
-                                subject=args.subject,
-                                event_dict=event_dict,
-                                figdir=args.diagnostics_dir)
-
+    print("no main method yet, use command line subfunctionality.")
 
 if __name__ == "__main__":
     main()
