@@ -137,7 +137,14 @@ def repair_triggers(events, log_df):
     events_in_data = dict(zip(ev, event_counts))
     keys_in_log = log_df.keys()
     # as many fixation crosses and feedbacks (start and end) as trials
-    assert log_df['trial_no'].shape[0] == events_in_data[10] == events_in_data[27]
+    # subject 005 only has 509 fixation crosses!
+    try:
+        assert log_df['trial_no'].shape[0] == events_in_data[10] == events_in_data[27]
+    except AssertionError:
+        print(f"The number of trials, fixations, and feedbacks does not match: "
+              f"{log_df['trial_no'].shape[0]} vs. {events_in_data[10]} "
+              f"vs {events_in_data[27]}. Subject 005 is known to have such an "
+              f"issue - is it subject 005?")
     # the is a variable number of "empty_screen" events in the data
     if 'Empty_screen' in keys_in_log:
         # this subject has "empty screen" onsets
