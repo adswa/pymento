@@ -28,7 +28,8 @@ def restructure_to_bids(rawdir,
                         bidsdir,
                         figdir,
                         crosstalk_file,
-                        fine_cal_file):
+                        fine_cal_file,
+                        behav_dir):
     """
     Transform the original memento MEG data into something structured.
     :return:
@@ -44,7 +45,8 @@ def restructure_to_bids(rawdir,
                              figdir=figdir,
                              crosstalk_file=crosstalk_file,
                              fine_cal_file=fine_cal_file,
-                             preprocessing="Raw")
+                             preprocessing="Raw",
+                             behav_dir=behav_dir)
 
 
 def signal_space_separation(bidspath,

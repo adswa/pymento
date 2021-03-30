@@ -10,6 +10,8 @@ from mne_bids import (
 from pathlib import Path
 from glob import glob
 from pymento_meg.config import channel_types
+from pymento_meg.orig.behavior import write_to_df
+
 
 def read_data_original(
         directory,
@@ -20,6 +22,7 @@ def read_data_original(
         figdir='/tmp',
         crosstalk_file=None,
         fine_cal_file=None,
+        behav_dir=None,
 ):
     """
     The preprocessed MEG data is split into three files that are quite
@@ -105,6 +108,7 @@ def read_data_original(
                        figdir=figdir,
                        ctfile=crosstalk_file if crosstalk_file else None,
                        fcfile=fine_cal_file if fine_cal_file else None,
+                       behav_dir=behav_dir
                        )
     return raw
 
@@ -114,7 +118,8 @@ def save_bids_data(raw,
                    bidsdir,
                    figdir,
                    ctfile,
-                   fcfile):
+                   fcfile,
+                   behav_dir):
     """
     Saves BIDS-structured data subject-wise
     :param raw: raw fif data
@@ -153,6 +158,10 @@ def save_bids_data(raw,
     _elektas_extras(crosstalk_file=ctfile,
                     fine_cal_file=fcfile,
                     bids_path=bids_path)
+    # write out log files
+    write_to_df(participant=subject,
+                behav_dir=behav_dir,
+                bids_dir=bids_path.directory)
 
 
 def _get_BIDSPath(subject, bidsdir):

@@ -126,6 +126,12 @@ def parse_args_restructure():
                         will be saved under""",
         required=True
     )
+    parser.add_argument(
+        "--log-file-dir",
+        "-l",
+        help="""A path to a directory where the matlab log files are stored.""",
+        required=True
+    )
     args = parser.parse_args()
     if args.version:
         print(version)
@@ -196,7 +202,8 @@ def restructure():
                         bidsdir=args.bids_dir,
                         figdir=args.diagnostics_dir,
                         crosstalk_file=crosstalk_file,
-                        fine_cal_file=fine_cal_file)
+                        fine_cal_file=fine_cal_file,
+                        behav_dir=args.log_file_dir)
 
 
 def sss():
