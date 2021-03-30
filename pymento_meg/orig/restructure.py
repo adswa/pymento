@@ -10,7 +10,7 @@ from mne_bids import (
 from pathlib import Path
 from glob import glob
 from pymento_meg.config import channel_types
-from .behavior import write_to_df
+from pymento_meg.orig.behavior import write_to_df
 
 
 def read_data_original(
