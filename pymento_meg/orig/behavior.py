@@ -206,6 +206,7 @@ def get_behavioral_data(subject,
     """
 
     key = f'memento_{subject}'
+    print(f"Reading in experiment log files of {key} for {fieldname}...")
     # get the information about the subject's behavioral data out of the subject
     # mapping, but make sure it is actually there first
     assert key in subjectmapping.keys()
