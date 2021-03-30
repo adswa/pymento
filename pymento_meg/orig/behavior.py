@@ -236,35 +236,6 @@ def get_behavioral_data(subject,
         return res['mementores'][fieldname][0][0]
 
 
-def get_response_onsets(subject,
-                        subjectmapping,
-                        behav_dir,
-                        ):
-    """
-    Get a subjects response onset times
-    :param subject:
-    :param subject_mapping:
-    :param behav_dir:
-    :return:
-    """
-    response_onsets = get_behavioral_data(subject, subjectmapping, behav_dir,
-                                          fieldname='onsets',
-                                          variable='response_onset')
-    assert response_onsets.shape == (510,)
-
-    # TODO: response_onsets are gigantic numbers starting at
-    # about 1504765967.285588. We need to subtract ... something...
-    # the first fixation onset?
-    first_fixation = get_behavioral_data(subject, subjectmapping, behav_dir,
-                                         fieldname='onsets',
-                                         variable='fix_onset')[0]
-    # subtract the starting point of the first fixation cross from all onsets
-    # TODO: this doesn't level the event sample location in the MEG data and
-    # the behavioral data!
-    response_onsets_rebased = response_onsets - first_fixation
-    return response_onsets
-
-
 def write_to_df(participant,
                 behav_dir,
                 bids_dir
