@@ -62,7 +62,8 @@ def get_behavioral_data(subject,
 
 def write_to_df(participant,
                 behav_dir,
-                bids_dir
+                bids_dir,
+                write_out=False
                 ):
     """
     Write logfile data to a dataframe to get rid of the convoluted matlab
@@ -101,7 +102,8 @@ def write_to_df(participant,
     # concatenate the dataframes to one
     df = pd.concat([df_disps, df_onsets, df_probs], axis=1)
 
-    # write dataframe to file. bids_dir should be a Path object
-    fname = bids_dir / f'sub-{participant}_task-memento_events-log.tsv'
-    df.to_csv(fname, sep='\t', index=False)
+    if write_out:
+        # write dataframe to file. bids_dir should be a Path object
+        fname = bids_dir / f'sub-{participant}_task-memento_events-log.tsv'
+        df.to_csv(fname, sep='\t', index=False)
     return df

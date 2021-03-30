@@ -88,7 +88,7 @@ def _construct_path(components):
     return fpath
 
 
-def repair_triggers(events):
+def repair_triggers(events, log_df):
     """
     The experiment had a mix of writing triggers in integers, and photodiode
     signals that partially overlaid these integer triggers, resulting in
@@ -99,6 +99,8 @@ def repair_triggers(events):
 
     Overall, the experiment is quite messy. We should read in the experiment
     logs to make sure that MEG triggers and logs are consistent
+    :param events: mne events representation
+    :param log_df: pandas dataframe with log information about the experiment
     """
 
     # subtract the photodiode value (seems to be 0b1000000000000000, i.e.,
@@ -125,17 +127,33 @@ def repair_triggers(events):
             cropped_events.append(list(sample))
     # now we should have the same format as events were
     cropped_events = np.asarray(cropped_events)
+    if log_df is None:
+        # we didn't get log files
+        print("Did not receive dataframe with experiment log. No sanity checks.")
+        return cropped_events
+    print("Performing basic sanity checks based on the log files of "
+          "the experiment")
+    ev, event_counts = np.unique(cropped_events[:,2], return_counts=True)
+    events_in_data = dict(zip(ev, event_counts))
+    keys_in_log = log_df.keys()
+    # as many fixation crosses and feedbacks (start and end) as trials
+    assert log_df['trial_no'].shape[0] == events_in_data[10] == events_in_data[27]
+    # the is a variable number of "empty_screen" events in the data
+    if 'Empty_screen' in keys_in_log:
+        # this subject has "empty screen" onsets
+        assert log_df['Empty_screen'].count() == events_in_data[26]
 
     return cropped_events
 
 
-def eventreader(raw, subject, event_dict, outputdir="/tmp/"):
+def eventreader(raw, subject, event_dict, df, outputdir="/tmp/"):
     """
     Find all events and repair them, if necessary.
     :param raw:
     :param subject: str, subject identifier in the form of '001'
     :param event_dict: dict, trigger name associations
     :param outputdir: str, path to where diagnostic figures are saved
+    :param df: dataframe, contains logging information about the experiment
     :return:
     """
     events = mne.find_events(
@@ -151,7 +169,7 @@ def eventreader(raw, subject, event_dict, outputdir="/tmp/"):
     exclusion_list = [254, 32768, 5]
     events = mne.pick_events(events, exclude=exclusion_list)
     # remove any signals obfuscated by a photodiode
-    events = repair_triggers(events)
+    events = repair_triggers(events=events, log_df=df)
 
     # plot events. This works without raw data
     fig = mne.viz.plot_events(

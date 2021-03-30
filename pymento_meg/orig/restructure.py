@@ -150,7 +150,12 @@ def save_bids_data(raw,
             raw = mne.io.read_raw_fif(fname, preload=False)
 
     # save raw fif data and events
-    events_data, event_dict = _events(raw, subject, figdir)
+    # get log files, but don't yet write them out as the path doesn't exist yet
+    df = write_to_df(participant=subject,
+                     behav_dir=behav_dir,
+                     bids_dir=bids_path.directory,
+                     write_out=False)
+    events_data, event_dict = _events(raw, subject, figdir, df)
     write_raw_bids(raw, bids_path, events_data=events_data,
                    event_id=event_dict, overwrite=True)
 
@@ -159,9 +164,11 @@ def save_bids_data(raw,
                     fine_cal_file=fcfile,
                     bids_path=bids_path)
     # write out log files
-    write_to_df(participant=subject,
-                behav_dir=behav_dir,
-                bids_dir=bids_path.directory)
+    df = write_to_df(participant=subject,
+                     behav_dir=behav_dir,
+                     bids_dir=bids_path.directory,
+                     write_out=True)
+
 
 
 def _get_BIDSPath(subject, bidsdir):
@@ -175,7 +182,7 @@ def _get_BIDSPath(subject, bidsdir):
     return bids_path
 
 
-def _events(raw, subject, figdir):
+def _events(raw, subject, figdir, df=None):
     from pymento_meg.utils import (
         eventreader,
         event_dict
@@ -184,7 +191,8 @@ def _events(raw, subject, figdir):
     events = eventreader(raw=raw,
                          subject=subject,
                          event_dict=event_dict,
-                         outputdir=figdir)
+                         outputdir=figdir,
+                         df=df)
     return events, event_dict
 
 
