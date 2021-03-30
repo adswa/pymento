@@ -105,8 +105,8 @@ subjectmapping = {
         "logfilename": "memento_002/mementoLOG_2.mat",
     },
     "memento_003": {
-        "probmagrew": larger_probmagrew,
-        "onsets": smaller_onsets,
+        "probmagrew": smaller_probmagrew,
+        "onsets": larger_onsets,
         "single_onsets": True,
         "disptimes": disptimes,
         "logfilename": "memento_003/mementoLOG_3.mat",
