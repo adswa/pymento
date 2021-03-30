@@ -131,12 +131,13 @@ def repair_triggers(events):
 
 def eventreader(raw, subject, event_dict, outputdir="/tmp/"):
     """
-    the Triggers 32790 32792 seem spurious. TODO.
+    Find all events and repair them, if necessary.
     :param raw:
+    :param subject: str, subject identifier in the form of '001'
+    :param event_dict: dict, trigger name associations
+    :param outputdir: str, path to where diagnostic figures are saved
     :return:
     """
-    # for some reason, events only start at sample 628416 (sub 4)
-    # TODO: repsonses may be in STI102, denoted as 1 and 4
     events = mne.find_events(
         raw,
         min_duration=0.002,  # ignores spurious events
