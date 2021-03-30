@@ -302,9 +302,10 @@ fine_cal_file = "sss_cal.data"
 # lOpt10 and rOpt1 don't seem to exist (for sub 4 at least?)
 event_dict = {
     'press/left': 1,
+    "end": 2,
+    "start": 3,
     'press/right': 4,
     'photodiode/onset': 5,
-    "end": 2,
     "visualfix/fixCross": 10,
     "visualfirst/lOpt1": 12,
     "visualfirst/lOpt2": 13,
@@ -322,7 +323,4 @@ event_dict = {
     "pauseStart": 25,
     "feedback": 27,
     "feedback-fast": 28,
-    "whoknows?": 32771,
-    "weirdone": 32790,
-    "weirdtwo": 32792,
 }
