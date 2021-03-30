@@ -192,7 +192,7 @@ def restructure():
     Restructure raw, original memento data into a raw BIDS directory.
 
     """
-    from .pymento import restructure_to_bids
+    from pymento_meg.pymento import restructure_to_bids
     args = parse_args_restructure()
     crosstalk_file = Path(args.calfiles_dir) / "ct_sparse.fif"
     fine_cal_file = Path(args.calfiles_dir) / "sss_cal.dat"
@@ -211,7 +211,7 @@ def sss():
     Based on a raw BIDS directory, create and save SSS processed data BIDS-like
 
     """
-    from .pymento import signal_space_separation
+    from pymento_meg.pymento import signal_space_separation
     args = parse_args_sss()
     signal_space_separation(bidspath=args.bids_data_dir,
                             subject=args.subject,

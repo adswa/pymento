@@ -7,7 +7,7 @@ Matlab struct into the log file.
 This file contains information on the variables and their indexes per subject.
 Indexing is done according to Python, i.e., zero-based.
 """
-from ..config import subjectmapping
+from pymento_meg.config import subjectmapping
 from scipy.io import loadmat
 from pathlib import Path
 

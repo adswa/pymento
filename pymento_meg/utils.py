@@ -4,6 +4,9 @@ import mne
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
+from glob import glob
 from matplotlib import interactive
 from pathlib import Path
 
@@ -11,14 +14,20 @@ from pathlib import Path
 import matplotlib
 interactive(True)
 mne.set_log_level("info")
-matplotlib.use('QT5Agg')
+#matplotlib.use('QT5Agg')
 
 # Set a few global variables
 # The data is not preconditioned unless this variable is reset
 preconditioned = False
 
 from .config import (
+    channel_types,
     reject_criteria,
+    flat_criteria,
+    crosstalk_file,
+    fine_cal_file,
+    subject_list,
+    event_dict,
 )
 
 # Define data processing functions and helper functions

@@ -3,18 +3,20 @@ import mne
 import pandas as pd
 
 from pathlib import Path
-from ..utils import (
+from pymento_meg.utils import (
     _construct_path,
 )
-from ..viz.plots import (
+from pymento_meg.viz.plots import (
     plot_psd,
     plot_noisy_channel_detection,
 )
-from ..orig.restructure import (
+from pymento_meg.orig.restructure import (
     _events
 )
 from mne_bids import (
     write_raw_bids,
+    write_meg_calibration,
+    write_meg_crosstalk,
     BIDSPath
 )
 
@@ -224,7 +226,7 @@ def save_to_bids_dir(raw_sss,
 
 
 def _get_BIDSPath_processed(subject, bidsdir):
-    from ..utils import _construct_path
+    from pymento_meg.utils import _construct_path
     _construct_path([bidsdir, f'sub-{subject}/'])
     bids_path = BIDSPath(subject=subject,
                          task='memento',

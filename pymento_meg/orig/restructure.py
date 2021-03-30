@@ -9,7 +9,7 @@ from mne_bids import (
     BIDSPath)
 from pathlib import Path
 from glob import glob
-from ..config import channel_types
+from pymento_meg.config import channel_types
 from .behavior import write_to_df
 
 
@@ -172,7 +172,7 @@ def save_bids_data(raw,
 
 
 def _get_BIDSPath(subject, bidsdir):
-    from ..utils import _construct_path
+    from pymento_meg.utils import _construct_path
     _construct_path([bidsdir, f'sub-{subject}/'])
     bids_path = BIDSPath(subject=subject,
                          task='memento',
@@ -183,9 +183,10 @@ def _get_BIDSPath(subject, bidsdir):
 
 
 def _events(raw, subject, figdir, df=None):
-    from ..utils import eventreader
-    from ..config import event_dict
-
+    from pymento_meg.utils import (
+        eventreader,
+        event_dict
+    )
 
     events = eventreader(raw=raw,
                          subject=subject,
