@@ -189,7 +189,6 @@ subjectmapping = {
 
 
 def get_behavioral_data(subject,
-                        subjectmapping,
                         behav_dir,
                         fieldname,
                         variable=None):
@@ -251,15 +250,12 @@ def write_to_df(participant,
     # Onset times are timestamps! View with datetime
     # first, get matlab data
     onsets = get_behavioral_data(subject=participant,
-                                 subjectmapping=subjectmapping,
                                  behav_dir=behav_dir,
                                  fieldname='onsets')
     disps = get_behavioral_data(subject=participant,
-                                subjectmapping=subjectmapping,
                                 behav_dir=behav_dir,
                                 fieldname='disptimes')
     probs = get_behavioral_data(subject=participant,
-                                subjectmapping=subjectmapping,
                                 behav_dir=behav_dir,
                                 fieldname='probmagrew')
     # we need to transpose the dataframe to get variables as columns and
