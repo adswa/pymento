@@ -267,8 +267,10 @@ def write_to_df(participant,
     df_onsets.columns = subjectmapping[f'memento_{participant}']['onsets']
     df_disps.columns = subjectmapping[f'memento_{participant}']['disptimes']
     df_probs.columns = subjectmapping[f'memento_{participant}']['probmagrew']
-    # assert that all series are monotonically increasing in onsets:
-    assert all([df_onsets[i].is_monotonic for i in df_onsets.columns])
+    # assert that all series are monotonically increasing in onsets, but skip
+    # Series with NaNs:
+    assert all([df_onsets[i].is_monotonic for i in df_onsets.columns if not
+                df_onsets[i].isna().values.any()])
     assert all([d.shape[0] == 510 for d in [df_disps, df_onsets, df_probs]])
 
     # concatenate the dataframes to one
