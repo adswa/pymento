@@ -81,6 +81,13 @@ disptimes = [
     "RoptT",
     "FeedbackT",
 ]
+single_onsets = [
+    'empty_start_screen',
+    'start',
+    'instruction_onset',
+    'end_onset'
+]
+
 
 subjectmapping = {
     "memento_001": {
