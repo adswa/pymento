@@ -294,9 +294,9 @@ fine_cal_file = "sss_cal.data"
 # all left options (shown first in each trial) are summarized as "visualfirst".
 # lOpt10 and rOpt1 don't seem to exist (for sub 4 at least?)
 event_dict = {
-    'maybeleft': 1,
-    'mayberight': 4,
-    'maybetooslow': 5,
+    'press/left': 1,
+    'press/right': 4,
+    'photodiode/onset': 5,
     "end": 2,
     "visualfix/fixCross": 10,
     "visualfirst/lOpt1": 12,
@@ -308,7 +308,7 @@ event_dict = {
     "visualfirst/lOpt7": 18,
     "visualfirst/lOpt8": 19,
     "visualfirst/lOpt9": 20,
-    "visualfirst/lOpt10": 21,
+    #"visualfirst/lOpt10": 21, # does not exist according to Luca!
     "visualsecond/rOpt": 24,
     "delay": 22,
     "empty_screen": 26,
