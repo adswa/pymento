@@ -104,6 +104,6 @@ def write_to_df(participant,
 
     if write_out:
         # write dataframe to file. bids_dir should be a Path object
-        fname = bids_dir / f'sub-{participant}_task-memento_events-log.tsv'
+        fname = bids_dir / f'sub-{participant}_task-memento_log.tsv'
         df.to_csv(fname, sep='\t', index=False)
     return df
