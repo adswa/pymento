@@ -1,10 +1,14 @@
 import mne
+import os
 
 import pandas as pd
 
 from pathlib import Path
 from pymento_meg.utils import (
     _construct_path,
+)
+from pymento_meg.proc.bids import (
+    save_to_bids_dir,
 )
 from pymento_meg.viz.plots import (
     plot_psd,
@@ -13,12 +17,7 @@ from pymento_meg.viz.plots import (
 from pymento_meg.orig.restructure import (
     _events
 )
-from mne_bids import (
-    write_raw_bids,
-    write_meg_calibration,
-    write_meg_crosstalk,
-    BIDSPath
-)
+
 
 
 def motion_estimation(subject,
@@ -209,32 +208,6 @@ def maxwellfilter(
     return raw_sss
 
 
-def save_to_bids_dir(raw_sss,
-                     subject,
-                     bidsdir,
-                     figdir):
-
-    bids_path = _get_BIDSPath_processed(subject, bidsdir)
-    print(
-        f"Saving BIDS-compliant signal-space-separated data from subject "
-        f"{subject} into " f"{bids_path}"
-    )
-    # save raw fif data and events
-    events_data, event_dict = _events(raw_sss, subject, figdir)
-    write_raw_bids(raw, bids_path, events_data=events_data,
-                   event_id=event_dict, overwrite=True)
-
-
-def _get_BIDSPath_processed(subject, bidsdir):
-    from pymento_meg.utils import _construct_path
-    _construct_path([bidsdir, f'sub-{subject}/'])
-    bids_path = BIDSPath(subject=subject,
-                         task='memento',
-                         root=bidsdir,
-                         suffix='meg',
-                         extension='.fif',
-                         processing='sss')
-    return bids_path
 
 
 # TODO: We could do maxwell filtering without applying a filter when we remove

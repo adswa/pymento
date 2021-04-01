@@ -1,26 +1,14 @@
-"""Main module."""
 
-import mne
-import os
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-
-from glob import glob
-from matplotlib import interactive
-from pathlib import Path
 from pymento_meg.orig.restructure import (
     read_data_original,
     )
 from pymento_meg.proc.preprocess import (
     maxwellfilter
     )
-from mne_bids import (
-    read_raw_bids,
-    BIDSPath
-    )
+from pymento_meg.proc.bids import (
+    read_bids_data,
+    get_events,
+)
 
 
 def restructure_to_bids(rawdir,
@@ -67,11 +55,13 @@ def signal_space_separation(bidspath,
     print(f"Starting to read in raw memento data from BIDS directory for"
           f"subject sub-{subject}.")
 
-    bids_path = BIDSPath(subject=subject, task='memento', suffix='meg',
-                         datatype='meg', root=bidspath)
-
-    raw = read_raw_bids(bids_path)
-    # Events are now Annotations!
+    raw, bids_path = read_bids_data(bids_root=bidspath,
+                                    subject=subject,
+                                    datatype='meg',
+                                    task='memento',
+                                    suffix='meg')
+    # Events are now Annotations, also get them as events
+    events = get_events(raw)
 
     fine_cal_file = bids_path.meg_calibration_fpath
     crosstalk_file = bids_path.meg_crosstalk_fpath
