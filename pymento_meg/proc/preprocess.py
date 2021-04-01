@@ -22,7 +22,6 @@ from pymento_meg.orig.restructure import (
 
 def motion_estimation(subject,
                       raw,
-                      head_pos_outdir="/tmp/",
                       figdir="/tmp/"):
     """
     Calculate head positions from HPI coils as a prerequisite for movement
@@ -30,10 +29,7 @@ def motion_estimation(subject,
     :param subject: str, subject identifier; used for writing file names &
     logging
     :param raw: Raw data object
-    :param head_pos_outdir: directory to save the head position file to. Should
-    be the root of a bids directory
     :param figdir: str, path to directory for diagnostic plots
-    :return: head_pos: head positions estimates from HPI coils
     """
     # Calculate head motion parameters to remove them during maxwell filtering
     # First, extract HPI coil amplitudes to
@@ -92,7 +88,6 @@ def maxwellfilter(
     subject,
     headpos_file=None,
     compute_motion_params=True,
-    head_pos_outdir="/tmp/",
     figdir="/tmp/",
     outdir="/tmp/",
     filtering=False,
@@ -100,17 +95,21 @@ def maxwellfilter(
 ):
     """
 
-    :param raw:
+    :param raw: Raw data to apply SSS on
     :param crosstalk_file: crosstalk compensation file from the Elekta system to
      reduce interference between gradiometers and magnetometers
     :param fine_cal_file: site-specific sensor orientation and calibration
+    :param subject: str, subject identifier, takes the form '001'
+    :param headpos_file: str, path; If existing, read in head positions from a file
+    :param compute_motion_params: Boolean, whether to perform motion correction
     :param figdir: str, path to directory to save figures in
+    :param outdir: str, path to save bids compliant sss-corrected data in
+    (derivatives directory)
     :param filtering: if True, a filter function is ran on the data after SSS.
     By default, it is a 40Hz low-pass filter.
     :param filter_args: dict; if filtering is True, initializes a filter with the
     arguments provided
-    :param subject
-    :param
+
     :return:
     """
     from mne.preprocessing import find_bad_channels_maxwell
@@ -121,7 +120,7 @@ def maxwellfilter(
                 f"Could not find or read head position files under the supplied"
                 f"path: {headpos_file}. Recalculating from scratch."
             )
-            head_pos = motion_estimation(subject, raw, head_pos_outdir, figdir)
+            head_pos = motion_estimation(subject, raw, figdir)
         else:
             print(
                 f"Reading in head positions for subject sub-{subject} "
@@ -131,7 +130,7 @@ def maxwellfilter(
 
     else:
         print(f"Starting motion estimation for subject sub-{subject}.")
-        head_pos = motion_estimation(subject, raw, head_pos_outdir, figdir)
+        head_pos = motion_estimation(subject, raw, figdir)
 
     raw.info["bads"] = []
     raw_check = raw.copy()
