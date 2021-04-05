@@ -203,7 +203,7 @@ def maxwellfilter(
         # TODO: save file
         return raw_sss_filtered
 
-    plot_psd(raw_sss, subject, figdir, filtering)
+    fig = plot_psd(raw_sss, subject, figdir, filtering)
     return raw_sss
 
 
