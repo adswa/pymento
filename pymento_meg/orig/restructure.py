@@ -6,7 +6,8 @@ from mne_bids import (
     write_raw_bids,
     write_meg_calibration,
     write_meg_crosstalk,
-    BIDSPath)
+    BIDSPath,
+)
 from pathlib import Path
 from glob import glob
 from pymento_meg.config import channel_types
@@ -14,15 +15,15 @@ from pymento_meg.orig.behavior import write_to_df
 
 
 def read_data_original(
-        directory,
-        subject,
-        savetonewdir=False,
-        bidsdir=None,
-        preprocessing="Raw",
-        figdir='/tmp',
-        crosstalk_file=None,
-        fine_cal_file=None,
-        behav_dir=None,
+    directory,
+    subject,
+    savetonewdir=False,
+    bidsdir=None,
+    preprocessing="Raw",
+    figdir="/tmp",
+    crosstalk_file=None,
+    fine_cal_file=None,
+    behav_dir=None,
 ):
     """
     The preprocessed MEG data is split into three files that are quite
@@ -65,11 +66,11 @@ def read_data_original(
     # correctly
     unsorted_files = glob(str(path))
     first, second, third = _get_first_file(unsorted_files)
-    if subject not in ['001', '005']:
+    if subject not in ["001", "005"]:
         # subjects one and five don't have consistent subject identifiers or
         # file names.
         # automatic reading in would only load the first.
-        print(f'reading in subject {subject}')
+        print(f"reading in subject {subject}")
         try:
             raw = mne.io.read_raw_fif(first)
         except ValueError:
@@ -102,24 +103,19 @@ def read_data_original(
             )
             return raw
 
-        save_bids_data(raw=raw,
-                       subject=subject,
-                       bidsdir=bidsdir,
-                       figdir=figdir,
-                       ctfile=crosstalk_file if crosstalk_file else None,
-                       fcfile=fine_cal_file if fine_cal_file else None,
-                       behav_dir=behav_dir
-                       )
+        save_bids_data(
+            raw=raw,
+            subject=subject,
+            bidsdir=bidsdir,
+            figdir=figdir,
+            ctfile=crosstalk_file if crosstalk_file else None,
+            fcfile=fine_cal_file if fine_cal_file else None,
+            behav_dir=behav_dir,
+        )
     return raw
 
 
-def save_bids_data(raw,
-                   subject,
-                   bidsdir,
-                   figdir,
-                   ctfile,
-                   fcfile,
-                   behav_dir):
+def save_bids_data(raw, subject, bidsdir, figdir, ctfile, fcfile, behav_dir):
     """
     Saves BIDS-structured data subject-wise
     :param raw: raw fif data
@@ -134,65 +130,62 @@ def save_bids_data(raw,
     bids_path = _get_BIDSPath(subject, bidsdir)
     print(
         f"Saving BIDS-compliant raw data from subject "
-        f"{subject} into " f"{bids_path}"
+        f"{subject} into "
+        f"{bids_path}"
     )
     # a workaround of https://github.com/mne-tools/mne-bids/issues/718
-    if subject in ['001', '005']:
+    if subject in ["001", "005"]:
         # these subjects can't be written directly - mne-bids would perform an
         # internal check that fails on the basis that the hand-concatenated
         # files are longer than the single split file that would be read-in
         # automatically.
         from tempfile import NamedTemporaryFile
 
-        with NamedTemporaryFile(suffix='_raw.fif', delete=False) as f:
+        with NamedTemporaryFile(suffix="_raw.fif", delete=False) as f:
             fname = f.name
             raw.save(fname, overwrite=True)
             raw = mne.io.read_raw_fif(fname, preload=False)
 
     # save raw fif data and events
     # get log files, but don't yet write them out as the path doesn't exist yet
-    df = write_to_df(participant=subject,
-                     behav_dir=behav_dir,
-                     bids_dir=bids_path.directory,
-                     write_out=False)
+    df = write_to_df(
+        participant=subject,
+        behav_dir=behav_dir,
+        bids_dir=bids_path.directory,
+        write_out=False,
+    )
     events_data, event_dict = _events(raw, subject, figdir, df)
-    write_raw_bids(raw, bids_path, events_data=events_data,
-                   event_id=event_dict, overwrite=True)
+    write_raw_bids(
+        raw, bids_path, events_data=events_data, event_id=event_dict, overwrite=True
+    )
 
     # save crosstalk and calibration file
-    _elektas_extras(crosstalk_file=ctfile,
-                    fine_cal_file=fcfile,
-                    bids_path=bids_path)
+    _elektas_extras(crosstalk_file=ctfile, fine_cal_file=fcfile, bids_path=bids_path)
     # write out log files
-    df = write_to_df(participant=subject,
-                     behav_dir=behav_dir,
-                     bids_dir=bids_path.directory,
-                     write_out=True)
-
+    df = write_to_df(
+        participant=subject,
+        behav_dir=behav_dir,
+        bids_dir=bids_path.directory,
+        write_out=True,
+    )
 
 
 def _get_BIDSPath(subject, bidsdir):
     from pymento_meg.utils import _construct_path
-    _construct_path([bidsdir, f'sub-{subject}/'])
-    bids_path = BIDSPath(subject=subject,
-                         task='memento',
-                         root=bidsdir,
-                         suffix='meg',
-                         extension='.fif')
+
+    _construct_path([bidsdir, f"sub-{subject}/"])
+    bids_path = BIDSPath(
+        subject=subject, task="memento", root=bidsdir, suffix="meg", extension=".fif"
+    )
     return bids_path
 
 
 def _events(raw, subject, figdir, df=None):
-    from pymento_meg.utils import (
-        eventreader,
-        event_dict
-    )
+    from pymento_meg.utils import eventreader, event_dict
 
-    events = eventreader(raw=raw,
-                         subject=subject,
-                         event_dict=event_dict,
-                         outputdir=figdir,
-                         df=df)
+    events = eventreader(
+        raw=raw, subject=subject, event_dict=event_dict, outputdir=figdir, df=df
+    )
     return events, event_dict
 
 
@@ -232,11 +225,9 @@ def _get_first_file(files):
         for f in files:
             # only check the filenames
             base = op.basename(f)
-            if len(base.split("-")) == 2 and \
-                    base.split("-")[-1].startswith("1"):
+            if len(base.split("-")) == 2 and base.split("-")[-1].startswith("1"):
                 second = f
-            elif len(base.split("-")) == 2 and \
-                    base.split("-")[-1].startswith("2"):
+            elif len(base.split("-")) == 2 and base.split("-")[-1].startswith("2"):
                 third = f
             elif len(base.split("-")) == 1:
                 first = f
@@ -252,14 +243,11 @@ def _get_first_file(files):
             # only some file names start with a digit. This is really funky.
             for f in files:
                 base = op.basename(f)
-                if base[0].isdigit() and base[0] == "1" and \
-                        len(base.split("-")) == 1:
+                if base[0].isdigit() and base[0] == "1" and len(base.split("-")) == 1:
                     first = f
-                elif base[0].isdigit() and base[0] == "2" and \
-                        len(base.split("-")) == 1:
+                elif base[0].isdigit() and base[0] == "2" and len(base.split("-")) == 1:
                     second = f
-                elif base[0].isdigit() and base[0] == "2" and \
-                        len(base.split("-")) == 2:
+                elif base[0].isdigit() and base[0] == "2" and len(base.split("-")) == 2:
                     if base.split("-")[-1].startswith("1"):
                         second = f
                     elif base.split("-")[-1].startswith("2"):

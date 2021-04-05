@@ -81,12 +81,7 @@ disptimes = [
     "RoptT",
     "FeedbackT",
 ]
-single_onsets = [
-    'empty_start_screen',
-    'start',
-    'instruction_onset',
-    'end_onset'
-]
+single_onsets = ["empty_start_screen", "start", "instruction_onset", "end_onset"]
 
 
 subjectmapping = {
@@ -301,11 +296,11 @@ fine_cal_file = "sss_cal.data"
 # all left options (shown first in each trial) are summarized as "visualfirst".
 # lOpt10 and rOpt1 don't seem to exist (for sub 4 at least?)
 event_dict = {
-    'press/left': 1,
+    "press/left": 1,
     "end": 2,
     "start": 3,
-    'press/right': 4,
-    'photodiode/onset': 5,
+    "press/right": 4,
+    "photodiode/onset": 5,
     "visualfix/fixCross": 10,
     "visualfirst/lOpt1": 12,
     "visualfirst/lOpt2": 13,
@@ -316,7 +311,7 @@ event_dict = {
     "visualfirst/lOpt7": 18,
     "visualfirst/lOpt8": 19,
     "visualfirst/lOpt9": 20,
-    #"visualfirst/lOpt10": 21, # does not exist according to Luca!
+    # "visualfirst/lOpt10": 21, # does not exist according to Luca!
     "visualsecond/rOpt": 24,
     "delay": 22,
     "empty_screen": 26,

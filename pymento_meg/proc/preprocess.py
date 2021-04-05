@@ -1,8 +1,6 @@
 import mne
 import os
 
-import pandas as pd
-
 from pathlib import Path
 from pymento_meg.utils import (
     _construct_path,
@@ -14,15 +12,11 @@ from pymento_meg.viz.plots import (
     plot_psd,
     plot_noisy_channel_detection,
 )
-from pymento_meg.orig.restructure import (
-    _events
-)
+
+preconditioned = False
 
 
-
-def motion_estimation(subject,
-                      raw,
-                      figdir="/tmp/"):
+def motion_estimation(subject, raw, figdir="/tmp/"):
     """
     Calculate head positions from HPI coils as a prerequisite for movement
     correction.
@@ -72,10 +66,7 @@ def motion_estimation(subject,
         ]
     )
     fig = mne.viz.plot_head_positions(
-        head_pos,
-        mode="traces",
-        destination=raw.info["dev_head_t"],
-        info=raw.info
+        head_pos, mode="traces", destination=raw.info["dev_head_t"], info=raw.info
     )
     fig.savefig(figpath)
     return head_pos
@@ -135,7 +126,7 @@ def maxwellfilter(
     raw.info["bads"] = []
     raw_check = raw.copy()
 
-    preconditioned=False  # TODO handle this here atm. Needs to become global.
+    preconditioned = False  # TODO handle this here atm. Needs to become global.
     if preconditioned:
         # preconditioned is a global variable that is set to True if some form
         # of filtering (CHPI and line noise removal or general filtering) has
@@ -186,10 +177,7 @@ def maxwellfilter(
         verbose=True,
     )
     # save processed files into their own BIDS directory
-    save_to_bids_dir(raw_sss=raw_sss,
-                     subject=subject,
-                     bidsdir=outdir,
-                     figdir=figdir)
+    save_to_bids_dir(raw_sss=raw_sss, subject=subject, bidsdir=outdir, figdir=figdir)
 
     if filtering:
         print(
@@ -205,8 +193,6 @@ def maxwellfilter(
 
     fig = plot_psd(raw_sss, subject, figdir, filtering)
     return raw_sss
-
-
 
 
 # TODO: We could do maxwell filtering without applying a filter when we remove
@@ -299,6 +285,5 @@ def _downsample(raw, frequency):
     """
     Downsample data using MNE's built-in resample function
     """
-    raw_downsampled = raw.copy().resample(sfreq=frequency,
-                                          verbose=True)
+    raw_downsampled = raw.copy().resample(sfreq=frequency, verbose=True)
     return raw_downsampled

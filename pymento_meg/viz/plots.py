@@ -12,6 +12,7 @@ from matplotlib import interactive
 
 interactive(True)
 
+
 def plot_psd(raw, subject, figdir, filtering):
     """
     Helper to plot spectral densities

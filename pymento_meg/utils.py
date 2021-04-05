@@ -12,9 +12,10 @@ from pathlib import Path
 
 # plotting settings
 import matplotlib
+
 interactive(True)
 mne.set_log_level("info")
-#matplotlib.use('QT5Agg')
+# matplotlib.use('QT5Agg')
 
 # Set a few global variables
 # The data is not preconditioned unless this variable is reset
@@ -31,7 +32,6 @@ from .config import (
 )
 
 # Define data processing functions and helper functions
-
 
 
 def _get_channel_subsets(raw):
@@ -131,24 +131,25 @@ def repair_triggers(events, log_df):
         # we didn't get log files
         print("Did not receive dataframe with experiment log. No sanity checks.")
         return cropped_events
-    print("Performing basic sanity checks based on the log files of "
-          "the experiment")
-    ev, event_counts = np.unique(cropped_events[:,2], return_counts=True)
+    print("Performing basic sanity checks based on the log files of " "the experiment")
+    ev, event_counts = np.unique(cropped_events[:, 2], return_counts=True)
     events_in_data = dict(zip(ev, event_counts))
     keys_in_log = log_df.keys()
     # as many fixation crosses and feedbacks (start and end) as trials
     # subject 005 only has 509 fixation crosses!
     try:
-        assert log_df['trial_no'].shape[0] == events_in_data[10] == events_in_data[27]
+        assert log_df["trial_no"].shape[0] == events_in_data[10] == events_in_data[27]
     except AssertionError:
-        print(f"The number of trials, fixations, and feedbacks does not match: "
-              f"{log_df['trial_no'].shape[0]} vs. {events_in_data[10]} "
-              f"vs {events_in_data[27]}. Subject 005 is known to have such an "
-              f"issue - is it subject 005?")
+        print(
+            f"The number of trials, fixations, and feedbacks does not match: "
+            f"{log_df['trial_no'].shape[0]} vs. {events_in_data[10]} "
+            f"vs {events_in_data[27]}. Subject 005 is known to have such an "
+            f"issue - is it subject 005?"
+        )
     # the is a variable number of "empty_screen" events in the data
-    if 'Empty_screen' in keys_in_log:
+    if "Empty_screen" in keys_in_log:
         # this subject has "empty screen" onsets
-        assert log_df['Empty_screen'].count() == events_in_data[26]
+        assert log_df["Empty_screen"].count() == events_in_data[26]
 
     return cropped_events
 
@@ -167,8 +168,8 @@ def eventreader(raw, subject, event_dict, df, outputdir="/tmp/"):
         raw,
         min_duration=0.002,  # ignores spurious events
         uint_cast=True,  # workaround Elekta acquisition bug, causes neg. values
-        stim_channel=['STI101', 'STI102', 'STI016'],  # get all triggers
-        consecutive=True  # Trigger are overlayed by photodiode signals, sadly
+        stim_channel=["STI101", "STI102", "STI016"],  # get all triggers
+        consecutive=True,  # Trigger are overlayed by photodiode signals, sadly
     )
     # remove events that are known to be spurious. It is not a problem if they
     # are only present in some subjects, we can specify a group-level list here
@@ -213,7 +214,7 @@ def epoch_data(
     sensor_picks=None,
     picks=None,
     pick_description=None,
-    figdir='/tmp',
+    figdir="/tmp",
     reject_criteria=None,
     tmin=-0.2,
     tmax=0.7,
@@ -261,9 +262,7 @@ def epoch_data(
         # if we want to perform autorejection of epochs using the autoreject tool
         for condition in conditionname:
             # do this for all relevant conditions
-            epochs = autoreject_bad_epochs(
-                epochs=epochs, picks=picks, key=condition
-            )
+            epochs = autoreject_bad_epochs(epochs=epochs, picks=picks, key=condition)
 
     for condition in conditionname:
         _plot_epochs(
@@ -300,11 +299,9 @@ def _plot_epochs(
     wanted_epochs = epochs[key]
     average = wanted_epochs.average()
     # Some general plots over all channels
-    _plot_evoked_fields(data=average,
-                        subject=subject,
-                        figdir=figdir,
-                        key=key,
-                        location='avg-epoch-all')
+    _plot_evoked_fields(
+        data=average, subject=subject, figdir=figdir, key=key, location="avg-epoch-all"
+    )
     if picks:
         # If we want to plot a predefined sensor space, e.g., right parietal or left
         # temporal, load in those lists of sensors
@@ -320,18 +317,20 @@ def _plot_epochs(
                     mypicklist.extend(p)
             subset = epochs.pick_channels(mypicklist)
             subset_average = subset.average()
-            _plot_evoked_fields(data=subset_average,
-                                subject=subject,
-                                figdir=figdir,
-                                key=key,
-                                location=pick_description)
+            _plot_evoked_fields(
+                data=subset_average,
+                subject=subject,
+                figdir=figdir,
+                key=key,
+                location=pick_description,
+            )
 
-            #TODO plot with pick_description
+            # TODO plot with pick_description
 
     return
 
 
-def _plot_evoked_fields(data, subject, figdir, key='unnamed', location='avg-epoch-all'):
+def _plot_evoked_fields(data, subject, figdir, key="unnamed", location="avg-epoch-all"):
     """
     Helper to plot evoked field with all available plots
     :return:
@@ -382,32 +381,32 @@ def _plot_evoked_fields(data, subject, figdir, key='unnamed', location='avg-epoc
     fig.savefig(figpath)
 
 
-def evoked_visual_potentials(raw,
-                             subject,
-                             event_dict,
-                             figdir="/tmp/"):
+def evoked_visual_potentials(raw, subject, event_dict, figdir="/tmp/"):
     """
     Function to plot visual potentials from the first visual option (left) as a
     sanity check
     """
 
-    events = eventreader(raw=raw, subject=subject, outputdir=figdir,
-                         event_dict=event_dict)
+    events = eventreader(
+        raw=raw, subject=subject, outputdir=figdir, event_dict=event_dict
+    )
 
-    visual_epochs = epoch_data(raw=raw,
-                               events=events,
-                               event_dict=event_dict,
-                               subject=subject,
-                               conditionname=['visualfirst'],
-                               sensor_picks=['locc', 'rocc'],
-                               picks=None,
-                               pick_description='occipital',
-                               figdir=figdir,
-                               tmax=0.7,
-                               tmin=-0.2,
-                               reject_criteria=reject_criteria,
-                               reject_bad_epochs=True,
-                               autoreject=False)
+    visual_epochs = epoch_data(
+        raw=raw,
+        events=events,
+        event_dict=event_dict,
+        subject=subject,
+        conditionname=["visualfirst"],
+        sensor_picks=["locc", "rocc"],
+        picks=None,
+        pick_description="occipital",
+        figdir=figdir,
+        tmax=0.7,
+        tmin=-0.2,
+        reject_criteria=reject_criteria,
+        reject_bad_epochs=True,
+        autoreject=False,
+    )
 
 
 def autoreject_bad_epochs(epochs, key):
@@ -418,7 +417,7 @@ def autoreject_bad_epochs(epochs, key):
     # http://autoreject.github.io/auto_examples/plot_auto_repair.html
     n_interpolates = np.array([1, 4, 32])
     consensus_percs = np.linspace(0, 1.0, 11)
-    #important: Requires epochs with only MEG sensors, selected during epoching!
+    # important: Requires epochs with only MEG sensors, selected during epoching!
     ar = autoreject.AutoReject(
         n_interpolates,
         consensus_percs,
