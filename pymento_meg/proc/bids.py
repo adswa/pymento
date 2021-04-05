@@ -46,13 +46,15 @@ def read_bids_data(bids_root,
     return raw, bids_path
 
 
-def get_events(raw):
+def get_events(raw,
+               event_dict=event_dict):
     """
     Convert the annotations of the raw data into events
     """
-    events = events_from_annotations(raw, event_id=event_dict)
+    events, event_dict = events_from_annotations(raw,
+                                                 event_id=event_dict)
 
-    return events
+    return events, event_dict
 
 
 def add_dur_to_annot(raw):
