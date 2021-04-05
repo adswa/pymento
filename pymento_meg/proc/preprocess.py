@@ -197,7 +197,7 @@ def maxwellfilter(
             f"additional parameters were passed: {filter_args}"
         )
         raw_sss_filtered = raw_sss.copy()
-        raw_sss_filtered = _filter_data(raw_sss, **filter_args)
+        raw_sss_filtered = _filter_data(raw_sss_filtered, **filter_args)
         # TODO: Downsample
         plot_psd(raw_sss_filtered, subject, figdir, filtering)
         # TODO: save file
