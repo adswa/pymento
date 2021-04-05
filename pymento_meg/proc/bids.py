@@ -75,8 +75,8 @@ def save_to_bids_dir(raw_sss,
         f"{subject} into " f"{bids_path}"
     )
     # save raw fif data and events
-    events_data, event_dict = _events(raw_sss, subject, figdir)
-    write_raw_bids(raw, bids_path, events_data=events_data,
+    events_data, event_dict = get_events(raw_sss)
+    write_raw_bids(raw_sss, bids_path, events_data=events_data,
                    event_id=event_dict, overwrite=True)
 
 
