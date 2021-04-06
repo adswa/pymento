@@ -6,7 +6,7 @@ from pymento_meg.utils import (
     _construct_path,
 )
 from pymento_meg.proc.bids import (
-    save_to_bids_dir,
+    save_derivatives_to_bids_dir,
 )
 from pymento_meg.viz.plots import (
     plot_psd,
@@ -177,7 +177,7 @@ def maxwellfilter(
         verbose=True,
     )
     # save processed files into their own BIDS directory
-    save_to_bids_dir(raw_sss=raw_sss, subject=subject, bidsdir=outdir, figdir=figdir)
+    save_derivatives_to_bids_dir(raw_sss=raw_sss, subject=subject, bidsdir=outdir, figdir=figdir)
 
     if filtering:
         print(
