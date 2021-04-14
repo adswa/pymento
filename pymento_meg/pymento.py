@@ -107,12 +107,10 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
     """
     # construct name of the first split
     raw_fname = Path(datadir) / f'sub-{subject}/meg' / \
-                f'sub-{subject}_task-memento_proc-sss_meg.fif'
+                    f'sub-{subject}_task-memento_proc-sss_meg.fif'
     print(f"Reading in SSS-processed data from subject sub-{subject}. "
           f"Attempting the following path: {raw_fname}")
-
-    # ensure the data is loaded
-    raw.load_data()
+    raw = mne.io.read_raw_fif(raw_fname)
 
     # ICA to detect and repair artifacts
     remove_eyeblinks_and_heartbeat(raw=raw,
