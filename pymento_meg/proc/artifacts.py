@@ -5,7 +5,6 @@ from mne.preprocessing import (
     ICA,
 )
 from autoreject import (
-    AutoReject,
     get_rejection_threshold
 )
 
@@ -26,11 +25,6 @@ def remove_eyeblinks_and_heartbeat(raw,
     :param raw: Raw data
     :param subject: str, subject identifier, e.g., '001'
     :param figdir:
-    :param reject: list, reject criteria for high-amplitude artifacts from
-    autoreject
-    :param epochs: artificial epochs built from raw data,
-    used to determine rejection criteria
-    :param tstep:
     """
     # prior to an ICA, it is recommended to high-pass filter the data
     # as low frequency artifacts can alter the ICA solution. We fit the ICA

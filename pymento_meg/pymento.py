@@ -98,7 +98,7 @@ def signal_space_separation(bidspath, subject, figdir, derived_path):
     )
 
 
-def epoch_and_clean_trials(raw, subject, diagdir, bidsdir, datadir, derivdir):
+def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
     """
     Chunk the data into epochs starting at the fixation cross at the start of a
     trial, lasting 7 seconds (which should include all trial elements).
@@ -115,11 +115,12 @@ def epoch_and_clean_trials(raw, subject, diagdir, bidsdir, datadir, derivdir):
     raw.load_data()
 
     # ICA to detect and repair artifacts
-
     remove_eyeblinks_and_heartbeat(raw=raw,
                                    subject=subject,
                                    figdir=diagdir,
                                    )
+    # ensure the data is loaded prior to filtering
+    raw.load_data()
     # filter the data to remove high-frequency noise. Minimal high-pass filter
     # based on
     # https://www.sciencedirect.com/science/article/pii/S0165027021000157
@@ -153,8 +154,4 @@ def epoch_and_clean_trials(raw, subject, diagdir, bidsdir, datadir, derivdir):
         ]
     )
     epochs_clean.save(outpath)
-   # visuals = epochs_clean['visualfirst']
-   # avg = visuals.average()
 
-   # from pymento_meg.utils import _plot_evoked_fields
-   # _plot_evoked_fields(data=avg, subject=subject, figdir=diagdir)
