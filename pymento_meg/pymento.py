@@ -98,7 +98,7 @@ def signal_space_separation(bidspath, subject, figdir, derived_path):
     )
 
 
-def epoch_and_clean_trials(raw, subject, diagdir, datadir, derivdir):
+def epoch_and_clean_trials(raw, subject, diagdir, bidsdir, datadir, derivdir):
     """
     Chunk the data into epochs starting at the fixation cross at the start of a
     trial, lasting 7 seconds (which should include all trial elements).
@@ -131,7 +131,14 @@ def epoch_and_clean_trials(raw, subject, diagdir, datadir, derivdir):
     epochs = mne.Epochs(raw, events, event_id={'visualfix/fixCross': 10},
                         tmin=0, tmax=7,
                         picks='meg', baseline=(0, 0))
-
+    # TODO: ADD SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH! ONLY THIS WAY WE CAN
+    # LATER RECOVER WHICH TRIAL PARAMETERS WE'RE LOOKING AT BASED ON THE LOGS AS
+    # THE EPOCH REJECTION WILL REMOVE TRIALS
+    from pymento_meg.proc.epoch import get_trial_features
+    metadata = get_trial_features(bids_path=bidsdir,
+                                  subject=subject,
+                                  column='trial_no')
+    epochs.metadata = metadata
     # use autoreject to repair bad epochs
     epochs.load_data()
     ar = AutoReject()
