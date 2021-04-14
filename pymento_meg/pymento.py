@@ -1,11 +1,26 @@
+import mne
+from pathlib import Path
+from pymento_meg.utils import (
+    _construct_path,
+)
 from pymento_meg.orig.restructure import (
     read_data_original,
 )
-from pymento_meg.proc.preprocess import maxwellfilter
+from pymento_meg.proc.preprocess import (
+    maxwellfilter,
+    _filter_data,
+)
 from pymento_meg.proc.bids import (
     read_bids_data,
     get_events,
 )
+from pymento_meg.proc.artifacts import (
+    remove_eyeblinks_and_heartbeat,
+)
+from autoreject import (
+    AutoReject,
+)
+
 
 
 def restructure_to_bids(
@@ -83,7 +98,56 @@ def signal_space_separation(bidspath, subject, figdir, derived_path):
     )
 
 
-def artifacts():
+def epoch_and_clean_trials(raw, subject, diagdir, datadir, derivdir):
     """
-    Do some artifact detection and rejection and fixing
+    Chunk the data into epochs starting at the fixation cross at the start of a
+    trial, lasting 7 seconds (which should include all trial elements).
+    Do automatic artifact detection, rejection and fixing for eyeblinks,
+    heartbeat, and high- and low-amplitude artifacts.
     """
+    # construct name of the first split
+    raw_fname = Path(datadir) / f'sub-{subject}/meg' / \
+                f'sub-{subject}_task-memento_proc-sss_meg.fif'
+    print(f"Reading in SSS-processed data from subject sub-{subject}. "
+          f"Attempting the following path: {raw_fname}")
+
+    # ensure the data is loaded
+    raw.load_data()
+
+    # ICA to detect and repair artifacts
+
+    remove_eyeblinks_and_heartbeat(raw=raw,
+                                   subject=subject,
+                                   figdir=diagdir,
+                                   )
+    # filter the data to remove high-frequency noise. Minimal high-pass filter
+    # based on
+    # https://www.sciencedirect.com/science/article/pii/S0165027021000157
+    _filter_data(raw, l_freq=0.05, h_freq=40)
+    # now, get actual events and epochs
+    events, event_dict = get_events(raw)
+    # get the actual epochs: chunk the trial into epochs starting from the
+    # fixation cross. Do not baseline correct the data.
+    epochs = mne.Epochs(raw, events, event_id={'visualfix/fixCross': 10},
+                        tmin=0, tmax=7,
+                        picks='meg', baseline=(0, 0))
+
+    # use autoreject to repair bad epochs
+    epochs.load_data()
+    ar = AutoReject()
+    epochs_clean = ar.fit_transform(epochs)
+    # save the cleaned, epoched data to disk.
+    outpath = _construct_path(
+        [
+            Path(derivdir),
+            f"sub-{subject}",
+            "meg",
+            f"sub-{subject}_task-memento_cleaned_epo.fif",
+        ]
+    )
+    epochs_clean.save(outpath)
+   # visuals = epochs_clean['visualfirst']
+   # avg = visuals.average()
+
+   # from pymento_meg.utils import _plot_evoked_fields
+   # _plot_evoked_fields(data=avg, subject=subject, figdir=diagdir)
