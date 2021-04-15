@@ -5,11 +5,11 @@ mne-python.
 
 from mne_bids import (
     read_raw_bids,
+    write_raw_bids,
     BIDSPath,
 )
 from mne import events_from_annotations
 from pymento_meg.config import event_dict
-from pymento_meg.utils import _check_if_bids_directory_exists
 
 
 def read_bids_data(bids_root, subject, datatype="meg", task="memento", suffix="meg"):
@@ -61,10 +61,9 @@ def get_events(raw, event_dict=event_dict):
     return events, event_dict
 
 
-def save_derivatives_to_bids_dir(raw_sss, subject, bidsdir, figdir):
+def save_to_bids_dir(raw_sss, subject, bidsdir, figdir):
     """
-    Save data in BIDS format into a new directory.
-    This can't be done with mne-bids!
+    Save data in BIDS format into a new directory
     """
 
     bids_path = _get_BIDSPath_processed(subject, bidsdir)
@@ -75,8 +74,9 @@ def save_derivatives_to_bids_dir(raw_sss, subject, bidsdir, figdir):
     )
     # save raw fif data and events
     events_data, event_dict = get_events(raw_sss)
-    _check_if_bids_directory_exists(bids_path)
-    raw_sss.save(bids_path)
+    write_raw_bids(
+        raw_sss, bids_path, events_data=events_data, event_id=event_dict, overwrite=True
+    )
     # TODO: use figdir variable
 
 
