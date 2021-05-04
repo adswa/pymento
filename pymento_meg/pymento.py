@@ -152,4 +152,5 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
         ]
     )
     epochs_clean.save(outpath)
-
+    # visualize the bad sensors for each trial
+    fig = ar.get_reject_log(epochs).plot()

@@ -32,22 +32,34 @@ def remove_eyeblinks_and_heartbeat(raw,
     # data
     filt_raw = raw.copy()
     filt_raw.load_data().filter(l_freq=1., h_freq=None)
-    # evoked eyeblinks and heartbeats
+    # evoked eyeblinks and heartbeats for diagnostic plots
     eog_evoked = create_eog_epochs(filt_raw).average()
     eog_evoked.apply_baseline(baseline=(None, -0.2))
     ecg_evoked = create_ecg_epochs(filt_raw).average()
     ecg_evoked.apply_baseline(baseline=(None, -0.2))
-
-    # First, estimate rejection criteria for high-amplitude artifacts from
-    # artificial events
-    tstep = 1.0
-    tmpevents = mne.make_fixed_length_events(raw,
-                                             duration=tstep)
-    tmpepochs = mne.Epochs(raw,
-                           tmpevents,
-                           tmin=0.0,
-                           tmax=tstep,
-                           baseline=(0, 0))
+    # make sure that we actually found sensible artifacts here
+    eog_fig = eog_evoked.plot_joint()
+    for i, fig in enumerate(eog_fig):
+        fname = _construct_path(
+            [
+                Path(figdir),
+                f"sub-{subject}",
+                "meg",
+                f"evoked-artifact_eog_sub-{subject}_{i}.png",
+            ]
+        )
+        fig.savefig(fname)
+    ecg_fig = ecg_evoked.plot_joint()
+    for i, fig in enumerate(ecg_fig):
+        fname = _construct_path(
+            [
+                Path(figdir),
+                f"sub-{subject}",
+                "meg",
+                f"evoked-artifact_ecg_sub-{subject}_{i}.png",
+            ]
+        )
+        fig.savefig(fname)
     reject = get_rejection_threshold(tmpepochs)
     # run an ICA to capture heartbeat and eyeblink artifacts.
     # 15 components are hopefully enough to capture them.
