@@ -22,9 +22,9 @@ from autoreject import (
 )
 
 
-
 def restructure_to_bids(
-    rawdir, subject, bidsdir, figdir, crosstalk_file, fine_cal_file, behav_dir
+        rawdir, subject, bidsdir, figdir, crosstalk_file, fine_cal_file,
+        behav_dir
 ):
     """
     Transform the original memento MEG data into something structured.
@@ -113,7 +113,7 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
     """
     # construct name of the first split
     raw_fname = Path(datadir) / f'sub-{subject}/meg' / \
-                    f'sub-{subject}_task-memento_proc-sss_meg.fif'
+                f'sub-{subject}_task-memento_proc-sss_meg.fif'
     print(f"Reading in SSS-processed data from subject sub-{subject}. "
           f"Attempting the following path: {raw_fname}")
     raw = mne.io.read_raw_fif(raw_fname)
