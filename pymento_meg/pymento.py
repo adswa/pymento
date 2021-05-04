@@ -145,8 +145,8 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
     epochs.metadata = metadata
     # use autoreject to repair bad epochs
     epochs.load_data()
-    ar = AutoReject()
-    epochs_clean = ar.fit_transform(epochs)
+    ar = AutoReject(random_state=42)
+    epochs_clean, reject_log = ar.fit_transform(epochs, return_log=True)
     # save the cleaned, epoched data to disk.
     outpath = _construct_path(
         [
