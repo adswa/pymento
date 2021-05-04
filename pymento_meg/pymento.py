@@ -104,6 +104,12 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
     trial, lasting 7 seconds (which should include all trial elements).
     Do automatic artifact detection, rejection and fixing for eyeblinks,
     heartbeat, and high- and low-amplitude artifacts.
+    :param subject: str, subject identifier. takes the form '001'
+    :param diagdir: str, path to a directory where diagnostic plots can be saved
+    :param bidsdir: str, path to a directory with BIDS data. Needed to load
+    event logs from the experiment
+    :param datadir: str, path to a directory with SSS-processed data
+    :param derivdir: str, path to a directory where cleaned epochs can be saved
     """
     # construct name of the first split
     raw_fname = Path(datadir) / f'sub-{subject}/meg' / \
