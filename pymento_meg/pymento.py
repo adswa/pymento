@@ -128,13 +128,14 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
     remove_eyeblinks_and_heartbeat(raw=raw,
                                    subject=subject,
                                    figdir=diagdir,
+                                   events=events
                                    )
     # get the actual epochs: chunk the trial into epochs starting from the
     # fixation cross. Do not baseline correct the data.
     epochs = mne.Epochs(raw, events, event_id={'visualfix/fixCross': 10},
                         tmin=0, tmax=7,
-                        picks='meg', baseline=(0, 0))
-    # TODO: ADD SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH! ONLY THIS WAY WE CAN
+                        picks='meg', baseline=None)
+    # ADD SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH! ONLY THIS WAY WE CAN
     # LATER RECOVER WHICH TRIAL PARAMETERS WE'RE LOOKING AT BASED ON THE LOGS AS
     # THE EPOCH REJECTION WILL REMOVE TRIALS
     from pymento_meg.proc.epoch import get_trial_features
