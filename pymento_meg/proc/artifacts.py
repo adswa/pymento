@@ -114,7 +114,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     )
     sources.savefig(fname)
     # find ECG components
-    ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw, method='correlation',
+    ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw, method='ctps',
                                                 threshold='auto')
     ica.exclude.extend(ecg_indices)
 
