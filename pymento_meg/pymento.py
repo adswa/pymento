@@ -117,20 +117,18 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
     print(f"Reading in SSS-processed data from subject sub-{subject}. "
           f"Attempting the following path: {raw_fname}")
     raw = mne.io.read_raw_fif(raw_fname)
-
+    events, event_dict = get_events(raw)
+    # filter the data to remove high-frequency noise. Minimal high-pass filter
+    # based on
+    # https://www.sciencedirect.com/science/article/pii/S0165027021000157
+    # ensure the data is loaded prior to filtering
+    raw.load_data()
+    _filter_data(raw, l_freq=0.05, h_freq=40)
     # ICA to detect and repair artifacts
     remove_eyeblinks_and_heartbeat(raw=raw,
                                    subject=subject,
                                    figdir=diagdir,
                                    )
-    # ensure the data is loaded prior to filtering
-    raw.load_data()
-    # filter the data to remove high-frequency noise. Minimal high-pass filter
-    # based on
-    # https://www.sciencedirect.com/science/article/pii/S0165027021000157
-    _filter_data(raw, l_freq=0.05, h_freq=40)
-    # now, get actual events and epochs
-    events, event_dict = get_events(raw)
     # get the actual epochs: chunk the trial into epochs starting from the
     # fixation cross. Do not baseline correct the data.
     epochs = mne.Epochs(raw, events, event_id={'visualfix/fixCross': 10},
