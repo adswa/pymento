@@ -14,7 +14,8 @@ from pathlib import Path
 
 def remove_eyeblinks_and_heartbeat(raw,
                                    subject,
-                                   figdir):
+                                   figdir,
+                                   events):
     """
     Find and repair eyeblink and heartbeat artifacts in the data.
     Data should be filtered.
@@ -60,6 +61,11 @@ def remove_eyeblinks_and_heartbeat(raw,
             ]
         )
         fig.savefig(fname)
+    # define the actual events (7 seconds from fixation cross onset).
+    epochs = mne.Epochs(filt_raw, events, event_id={'visualfix/fixCross': 10},
+                        tmin=0, tmax=7,
+                        picks='meg', baseline=None)
+    # First, estimate rejection criteria for high-amplitude artifacts
     reject = get_rejection_threshold(tmpepochs)
     # run an ICA to capture heartbeat and eyeblink artifacts.
     # 15 components are hopefully enough to capture them.
