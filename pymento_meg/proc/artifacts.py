@@ -66,7 +66,7 @@ def remove_eyeblinks_and_heartbeat(raw,
                         tmin=0, tmax=7,
                         picks='meg', baseline=None)
     # First, estimate rejection criteria for high-amplitude artifacts
-    reject = get_rejection_threshold(tmpepochs)
+    reject = get_rejection_threshold(epochs)
     # run an ICA to capture heartbeat and eyeblink artifacts.
     # 15 components are hopefully enough to capture them.
     # set a seed for reproducibility
