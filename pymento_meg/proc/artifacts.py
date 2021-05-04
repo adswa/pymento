@@ -70,8 +70,8 @@ def remove_eyeblinks_and_heartbeat(raw,
     # run an ICA to capture heartbeat and eyeblink artifacts.
     # 15 components are hopefully enough to capture them.
     # set a seed for reproducibility
-    ica = ICA(n_components=30, max_iter='auto', random_state=13)
-    ica.fit(tmpepochs, reject=reject, tstep=tstep)
+    ica = ICA(n_components=30, max_iter='auto', random_state=42)
+    ica.fit(epochs, reject=reject)#, tstep=tstep)
 
     # use the EOG channel to select ICA components:
     ica.exclude = []
