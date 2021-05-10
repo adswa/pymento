@@ -164,7 +164,7 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
             Path(diagdir),
             f"sub-{subject}",
             "meg",
-            f"epoch-rejectlog_sub-{subject}_{i}.png",
+            f"epoch-rejectlog_sub-{subject}.png",
         ]
     )
     fig.savefig(fname)
