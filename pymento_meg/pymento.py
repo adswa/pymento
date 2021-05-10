@@ -161,7 +161,7 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
     fig = ar.get_reject_log(epochs).plot()
     fname = _construct_path(
         [
-            Path(figdir),
+            Path(diagdir),
             f"sub-{subject}",
             "meg",
             f"epoch-rejectlog_sub-{subject}_{i}.png",
