@@ -156,7 +156,7 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
             f"sub-{subject}_task-memento_cleaned_epo.fif",
         ]
     )
-    epochs_clean.save(outpath)
+    epochs_clean.save(outpath, overwrite=True)
     # visualize the bad sensors for each trial
     fig = ar.get_reject_log(epochs).plot()
     fname = _construct_path(
