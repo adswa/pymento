@@ -71,80 +71,6 @@ def get_trial_features(bids_path, subject, column):
     return metadata
 
 
-def epoch_data(
-    raw,
-    subject,
-    conditionname=None,
-    sensor_picks=None,
-    picks=None,
-    pick_description=None,
-    figdir="/tmp",
-    reject_criteria=reject_criteria,
-    tmin=-0.2,
-    tmax=0.7,
-    reject_bad_epochs=True,
-    autoreject=False,
-):
-    """
-    Create epochs from specified events.
-    :param tmin: int, start time before event. Defaults to -0.2 in MNE 0.23dev
-    :param tmax: int, end time after event. Defaults to 0.5 in MNE 0.23dev
-    :param sensor_picks: list, sensors that should be plotted separately
-    :param picks: list, sensors that epoching should be restricted to
-    :param pick_description: str, a short description (no spaces) of the picks,
-    e.g., 'occipital' or 'motor'.
-    :param figdir: str, Path to where diagnostic plots should be saved.
-
-    TODO: we could include a baseline correction
-    TODO: figure out projections -> don't use if you can use SSS
-    TODO: autoreject requires picking only MEG channels in epoching
-    """
-
-    events, event_dict = get_events(raw)
-
-    epoch_params = {
-        "raw": raw,
-        "events": events,
-        "event_id": event_dict,
-        "tmin": tmin,
-        "tmax": tmax,
-        "preload": True,
-        "on_missing": "warn",
-        "verbose": True,
-        "picks": 'meg',     # needed
-    }
-
-    if reject_bad_epochs and not autoreject:
-        # we can reject based on predefined criteria. Add it as an argument to
-        # the parameter list
-        epoch_params["reject"] = reject_criteria
-    else:
-        epoch_params["reject"] = None
-
-    epochs = mne.Epochs(**epoch_params)
-    if reject_bad_epochs and not autoreject:
-        epochs.plot_drop_log()
-    if autoreject:
-        # if we want to perform autorejection of epochs using the
-        # autoreject tool
-        for condition in conditionname:
-            # do this for all relevant conditions
-            epochs = autoreject_bad_epochs(epochs=epochs,
-                                           key=condition)
-
-    #for condition in conditionname:
-    #    _plot_epochs(
-    #        raw,
-    #        epochs=epochs,
-    #        subject=subject,
-    #        key=condition,
-    #        figdir=figdir,
-    #        picks=sensor_picks,
-    #        pick_description=pick_description,
-    #    )
-    return epochs
-
-
 def _plot_epochs(
     raw,
     epochs,
@@ -198,23 +124,3 @@ def _plot_epochs(
 
     return
 
-
-def autoreject_bad_epochs(epochs, key):
-    import autoreject
-    import numpy as np
-
-    # these values come straight from the tutorial:
-    # http://autoreject.github.io/auto_examples/plot_auto_repair.html
-    n_interpolates = np.array([1, 4, 32])
-    consensus_percs = np.linspace(0, 1.0, 11)
-    # important: Requires epochs with only MEG sensors, selected during epoching!
-    ar = autoreject.AutoReject(
-        n_interpolates,
-        consensus_percs,
-        thresh_method="random_search",
-        random_state=42,
-    )
-    subset = epochs[key]
-    ar.fit(subset)
-    epochs_clean = ar.transform(subset)
-    return epochs_clean
