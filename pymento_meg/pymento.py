@@ -131,13 +131,16 @@ def epoch_and_clean_trials(subject,
     raw.load_data()
     _filter_data(raw, l_freq=0.05, h_freq=40)
     # ICA to detect and repair artifacts
+    print('Removing eyeblink and hearbeat artifacts')
     remove_eyeblinks_and_heartbeat(raw=raw,
                                    subject=subject,
                                    figdir=diagdir,
-                                   events=events
+                                   events=events,
+                                   eventid=eventid
                                    )
     # get the actual epochs: chunk the trial into epochs starting from the
     # fixation cross. Do not baseline correct the data.
+    print('Creating epochs')
     epochs = mne.Epochs(raw, events, event_id=eventid,
                         tmin=0, tmax=7,
                         picks='meg', baseline=None)
