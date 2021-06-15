@@ -98,7 +98,12 @@ def signal_space_separation(bidspath, subject, figdir, derived_path):
     )
 
 
-def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
+def epoch_and_clean_trials(subject,
+                           diagdir,
+                           bidsdir,
+                           datadir,
+                           derivdir,
+                           eventid={'visualfix/fixCross': 10}):
     """
     Chunk the data into epochs starting at the fixation cross at the start of a
     trial, lasting 7 seconds (which should include all trial elements).
@@ -110,6 +115,7 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
     event logs from the experiment
     :param datadir: str, path to a directory with SSS-processed data
     :param derivdir: str, path to a directory where cleaned epochs can be saved
+    :param eventid: dict, the event to start an Epoch from
     """
     # construct name of the first split
     raw_fname = Path(datadir) / f'sub-{subject}/meg' / \
@@ -132,7 +138,7 @@ def epoch_and_clean_trials(subject, diagdir, bidsdir, datadir, derivdir):
                                    )
     # get the actual epochs: chunk the trial into epochs starting from the
     # fixation cross. Do not baseline correct the data.
-    epochs = mne.Epochs(raw, events, event_id={'visualfix/fixCross': 10},
+    epochs = mne.Epochs(raw, events, event_id=eventid,
                         tmin=0, tmax=7,
                         picks='meg', baseline=None)
     # ADD SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH! ONLY THIS WAY WE CAN
