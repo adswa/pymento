@@ -149,8 +149,11 @@ def epoch_and_clean_trials(subject,
                                   subject=subject,
                                   column='trial_no')
     epochs.metadata = metadata
-    # use autoreject to repair bad epochs
     epochs.load_data()
+    # downsample the data to 200Hz
+    print('Resampling epoched data down to 200 Hz')
+    epochs.resample(sfreq=200, verbose=True)
+    # use autoreject to repair bad epochs
     ar = AutoReject(random_state=42)
     epochs_clean = ar.fit_transform(epochs)
     # save the cleaned, epoched data to disk.
