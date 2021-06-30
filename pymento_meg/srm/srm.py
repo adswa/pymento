@@ -28,13 +28,25 @@ def plot_trial_components_from_detsrm(subject,
     print(f'Reading in cleaned epochs from subject {subject} '
           f'from path {fname}.')
     epochs = mne.read_epochs(fname)
+    print('Preparing data for fitting a shared response model')
+    if epochs.info['sfreq'] > 100:
+        # after initial preprocessing, they are downsampled to 200Hz.
+        # Downsample further to 100Hz
+        epochs.resample(sfreq=100, verbose=True)
+    # read the epoch data into a dataframe
+    df = epochs.to_data_frame()
+    # find out which arrays belong to a desired condition. The indices in assoc
+    # should correspond to indices of the data list.
+    assoc, mapping = _find_data_of_choice(epochs=epochs,
+                                          subject=subject,
+                                          bidsdir=bidsdir,
+                                          condition=condition,
+                                          df=df)
+    df, data = _prep_for_srm(df)
     features = [5, 7, 10, 15, 20]
     for f in features:
-        model, data, assoc = shared_response(epochs=epochs,
-                                             features=f,
-                                             subject=subject,
-                                             bidsdir=bidsdir,
-                                             condition=condition)
+        model, data = shared_response(data=data,
+                                      features=f)
         df = concatenate_transformations(model, data, assoc)
         # plot individual features
         plot_srm_model(df=df,
@@ -44,36 +56,22 @@ def plot_trial_components_from_detsrm(subject,
                        modelname='det-srm')
 
 
-def shared_response(epochs,
-                    features,
-                    subject,
-                    bidsdir,
-                    condition='left-right'):
+def shared_response(data,
+                    features):
     """
     Compute a shared response model from a list of trials
     :param epochs: Epoch object, cleaned epochs in FIF format
     :param features
-    :param subject
-    :param bidsdir
-    :param condition
     :return:
     """
-    df, data = _prep_for_srm(epochs)
-    # find out which arrays belong to a desired condition. The indices in assoc
-    # should correspond to indices of the data list.
-    assoc, mapping = _find_data_of_choice(epochs=epochs,
-                                          subject=subject,
-                                          bidsdir=bidsdir,
-                                          condition=condition,
-                                          df=df)
     print(f'Fitting a deterministic SRM with {features} features...')
     # fit a deterministic shared response model
     model = srm.DetSRM(features=features)
     model.fit(data)
-    return model, data, assoc
+    return model, data
 
 
-def _prep_for_srm(epochs):
+def _prep_for_srm(df):
     """
     Prepare the data for computing a shared response model.
     This function reads in epochs, downsamples them to 100Hz,
@@ -81,13 +79,6 @@ def _prep_for_srm(epochs):
     the data as a list of sensor x time points arrays.
     :return: data; list of arrays
     """
-    print('Preparing data for fitting a shared response model')
-    if epochs.info['sfreq'] > 100:
-        # after initial preprocessing, they are downsampled to 200Hz.
-        # Downsample further to 100Hz
-        epochs.resample(sfreq=100, verbose=True)
-    # read the epoch data into a dataframe
-    df = epochs.to_data_frame()
     # create a list of arrays from the dataframe: each array consists of the
     # data of one trial (a unique epoch in the sample), for each sensor.
     data = [df.loc[df['epoch'] == e, 'MEG0111':'MEG2643'].values.T
