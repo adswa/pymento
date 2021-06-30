@@ -27,10 +27,10 @@ def plot_trial_components_from_detsrm(subject,
              f'sub-{subject}_task-memento_cleaned_epo.fif'
     print(f'Reading in cleaned epochs from subject {subject} '
           f'from path {fname}.')
-
+    epochs = mne.read_epochs(fname)
     features = [5, 7, 10, 15, 20]
     for f in features:
-        model, data, assoc = shared_response(fname=fname,
+        model, data, assoc = shared_response(epochs=epochs,
                                              features=f,
                                              subject=subject,
                                              bidsdir=bidsdir,
@@ -44,7 +44,7 @@ def plot_trial_components_from_detsrm(subject,
                        modelname='det-srm')
 
 
-def shared_response(fname,
+def shared_response(epochs,
                     features,
                     subject,
                     bidsdir,
@@ -58,7 +58,6 @@ def shared_response(fname,
     :param condition
     :return:
     """
-    epochs = mne.read_epochs(fname)
     df, data = _prep_for_srm(epochs)
     # find out which arrays belong to a desired condition. The indices in assoc
     # should correspond to indices of the data list.
