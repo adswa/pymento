@@ -167,7 +167,12 @@ def concatenate_transformations(model, data, assoc):
     return df
 
 
-def plot_srm_model(df, nfeatures, figdir, subject, modelname='det-srm'):
+def plot_srm_model(df,
+                   nfeatures,
+                   figdir,
+                   subject,
+                   mdl='det-srm',
+                   cond='left-right'):
     """
     Plot the features of a shared response model
     :param df: concatenated dataframe of trial data, transformed with the
@@ -176,7 +181,8 @@ def plot_srm_model(df, nfeatures, figdir, subject, modelname='det-srm'):
     :param figdir: str, path to directory to save figures in
     :param nfeatures: int, number of features in the model
     :param subject: str, subject identifier such as '011'
-    :param modelname: Name of the SRM model to place in the figure name
+    :param mdl: Name of the SRM model to place in the figure name
+    :param cond: Name of the condition plotted
     :return:
     """
 
@@ -187,7 +193,7 @@ def plot_srm_model(df, nfeatures, figdir, subject, modelname='det-srm'):
     import seaborn as sns
     for i in range(nfeatures):
         fname = Path(figdir) / f'sub-{subject}/meg' /\
-                     f'sub-{subject}_{modelname}_{nfeatures}-feat_comp_{i}.png'
+                     f'sub-{subject}_{mdl}_{nfeatures}-feat_task-{cond}_comp_{i}.png'
         fig = sns.lineplot(data=df[df['trialtype'] == 'right'][i])
         sns.lineplot(data=df[df['trialtype'] == 'left'][i])
         # plot horizontal lines to mark the end of visual stimulation
