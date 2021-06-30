@@ -155,9 +155,11 @@ def concatenate_transformations(model, data, assoc):
 
     for idx, l in enumerate(transformed):
         df = pd.DataFrame.from_records(l).T
-        trial_type = 'left' if idx in left else 'right'
-        if trial_type == 'right':
-            assert idx in right
+        trial_type = 'left' if idx in left else 'right' if idx in right else None
+        # trial type can be None! I assume this happens in trials where no
+        # button press was made
+        if trial_type == None:
+            print(f'Could not find a matching condition for trial {idx}')
         df['trialtype'] = trial_type
         df['trial'] = idx
         dfs.append(df)
