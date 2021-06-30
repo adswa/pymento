@@ -105,3 +105,20 @@ def write_to_df(participant, behav_dir, bids_dir, write_out=False):
         fname = bids_dir / f"sub-{participant}_task-memento_log.tsv"
         df.to_csv(fname, sep="\t", index=False)
     return df
+
+
+def read_bids_logfile(subject, bidsdir):
+    """
+    Read the log file data from one subject from their BIDS directory
+    :param subject: str, a subject identifier such as '001'
+    :param bidsdir: str, a path to the root of the BIDS directory
+    :return: df, Pandas Dataframe, containing log file data
+    """
+    # construct name of the first split
+    fname = Path(bidsdir) / f'sub-{subject}/meg' / \
+            f'sub-{subject}_task-memento_log.tsv'
+    print(f'Reading in log file from subject sub-{subject} from the path'
+          f' {fname}...')
+    # read in as a dataframe and return
+    df = pd.read_csv(fname, sep='\t')
+    return df
