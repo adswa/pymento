@@ -180,3 +180,30 @@ def epoch_and_clean_trials(subject,
         ]
     )
     fig.savefig(fname)
+
+
+def SRM(subject,
+        datadir,
+        bidsdir,
+        figdir,
+        condition='left-right',
+        model='det-srm'):
+    """
+    Fit an SRM of a certain type with varying amount of features to a condition
+    of choice
+    :param subject:
+    :param datadir:
+    :param bidsdir:
+    :param figdir:
+    :param condition:
+    :param model:
+    :return:
+    """
+
+    if model == 'det-srm':
+        from pymento_meg.srm.srm import plot_trial_components_from_detsrm
+        plot_trial_components_from_detsrm(subject=subject,
+                                          datadir=datadir,
+                                          bidsdir=bidsdir,
+                                          figdir=figdir,
+                                          condition=condition)

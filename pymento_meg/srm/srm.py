@@ -53,7 +53,7 @@ def plot_trial_components_from_detsrm(subject,
                        nfeatures=f,
                        figdir=figdir,
                        subject=subject,
-                       modelname='det-srm')
+                       mdl='det-srm')
 
 
 def shared_response(data,

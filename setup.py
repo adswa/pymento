@@ -34,7 +34,8 @@ setup(
         'console_scripts': [
             'pymento=pymento_meg.cli:main',
             'pymento-restructure=pymento_meg.cli:restructure',
-            'pymento-sss=pymento_meg.cli:sss'
+            'pymento-sss=pymento_meg.cli:sss',
+            'pymento-srm=pymento_meg.cli:srm'
         ],
     },
     install_requires=requirements,

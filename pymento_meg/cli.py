@@ -216,6 +216,23 @@ def sss():
     )
 
 
+def srm():
+    """
+    Fit a shared response model
+    :return:
+    """
+    from pymento_meg.pymento import SRM
+    # for now, reuse the argparse arguments
+    args = parse_args_sss()
+    SRM(
+        subject=args.subject,
+        datadir=args.bids_deriv_dir,
+        bidsdir=args.bids_data_dir,
+        figdir=args.diagnostics_dir,
+        condition='left-right',
+        model='det-srm')
+
+
 def main():
     """
     pymento is a library of Python functions to analyze memento project data
