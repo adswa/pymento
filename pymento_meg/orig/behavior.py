@@ -10,6 +10,7 @@ Indexing is done according to Python, i.e., zero-based.
 from pymento_meg.config import subjectmapping
 from scipy.io import loadmat
 from pathlib import Path
+import pandas as pd
 
 
 def get_behavioral_data(subject, behav_dir, fieldname, variable=None):
@@ -63,7 +64,6 @@ def write_to_df(participant, behav_dir, bids_dir, write_out=False):
     All variables should exist 510 times.
     :param: str, subject identifier in the form of "001"
     """
-    import pandas as pd
 
     # read the data in as separate dataframes
     # Onset times are timestamps! View with datetime
