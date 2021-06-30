@@ -51,7 +51,7 @@ def shared_response(epochs,
                     condition='left-right'):
     """
     Compute a shared response model from a list of trials
-    :param fname: str, filename of cleaned epochs in FIF file
+    :param epochs: Epoch object, cleaned epochs in FIF format
     :param features
     :param subject
     :param bidsdir
@@ -128,7 +128,7 @@ def _find_data_of_choice(df, epochs, subject, bidsdir, condition):
     assert all([i in df['epoch'].unique() for i in mapping.keys()])
     assert len(df['epoch'].unique()) == len(mapping.keys())
 
-    # initialize a dictionary that holds the condition - epoch-index associations
+    # initialize a dictionary that holds the condition-epochindex associations
     assoc = {}
     total_trials = 0
     for cond, trials in choices.items():
@@ -141,7 +141,7 @@ def _find_data_of_choice(df, epochs, subject, bidsdir, condition):
         # ... and getting their index
         # CAVE: The input should be ordered (monotonically increasing) so that
         # returned indices match the order of the trials existent in epochs
-        assert all(x<y for x, y in zip(fit, fit[1:]))
+        assert all(x < y for x, y in zip(fit, fit[1:]))
         idx = np.where(np.in1d(list(mapping.values()), fit))[0]
         assert len(idx) == len(fit)
         assoc[cond] = idx
@@ -150,7 +150,7 @@ def _find_data_of_choice(df, epochs, subject, bidsdir, condition):
               f" condition {cond}: {len(idx)}")
     # does the number of conditions match the number of trials?
     # may not work all of the time
-    #assert total_trials == len(epochs)
+    # assert total_trials == len(epochs)
 
     return assoc, mapping
 
@@ -180,15 +180,16 @@ def plot_srm_model(df, nfeatures, figdir, subject, modelname='det-srm'):
     :param df: concatenated dataframe of trial data, transformed with the
     trial-specific mapping of the shared response model (returned by
     concatenate_transformations().
+    :param figdir: str, path to directory to save figures in
     :param nfeatures: int, number of features in the model
-    :param fname: path to save the figure to
+    :param subject: str, subject identifier such as '011'
+    :param modelname: Name of the SRM model to place in the figure name
     :return:
     """
 
-    # get the timing of significant events in the timecourse of a trial
+    # define the timing of significant events in the timecourse of a trial:
+    # onset and offset of visual stimuli
     events = [0, 70, 270, 340]
-
-    import matplotlib.pyplot as plt
     import pylab
     import seaborn as sns
     for i in range(nfeatures):
@@ -219,8 +220,8 @@ def get_leftright_trials(subject, bidsdir):
     df = read_bids_logfile(subject=subject,
                            bidsdir=bidsdir)
     # get a list of epochs in which the participants pressed left and right
-    left_choice = df['trial_no'][df['choice']==1].values
-    right_choice = df['trial_no'][df['choice']==2].values
+    left_choice = df['trial_no'][df['choice'] == 1].values
+    right_choice = df['trial_no'][df['choice'] == 2].values
     choices = {'left (1)': left_choice,
                'right (2)': right_choice}
 
