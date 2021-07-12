@@ -19,7 +19,9 @@ def plot_trial_components_from_detsrm(subject,
     :param datadir
     :param bidsdir
     :param figdir
-    :param condition
+    :param condition: str, an identifier based on which trials can be split.
+     Possible values: 'left-right' (left versus right option choice),
+     'nobrain-brain' (no-brainer versus brainer trials)
     :return:
     """
 
@@ -47,13 +49,17 @@ def plot_trial_components_from_detsrm(subject,
     for f in features:
         model, data = shared_response(data=data,
                                       features=f)
-        df = concatenate_transformations(model, data, assoc)
+        df = concatenate_transformations(model,
+                                         data,
+                                         assoc,
+                                         condition=condition)
         # plot individual features
         plot_srm_model(df=df,
                        nfeatures=f,
                        figdir=figdir,
                        subject=subject,
-                       mdl='det-srm')
+                       mdl='det-srm',
+                       cond=condition)
 
 
 def shared_response(data,
@@ -74,8 +80,7 @@ def shared_response(data,
 def _prep_for_srm(df):
     """
     Prepare the data for computing a shared response model.
-    This function reads in epochs, downsamples them to 100Hz,
-    transforms them into a dataframe, and returns
+    This function reads in epochs in a dataframe, and returns
     the data as a list of sensor x time points arrays.
     :return: data; list of arrays
     """
@@ -110,8 +115,10 @@ def _find_data_of_choice(df, epochs, subject, bidsdir, condition):
         choices = get_leftright_trials(subject=subject,
                                        bidsdir=bidsdir)
     elif condition == 'nobrain-brain':
-        raise NotImplementedError
-
+        print('Attempting to retrieve trial information for no-brainer and '
+              'brainer trials')
+        choices = get_nobrainer_trials(subject=subject,
+                                       bidsdir=bidsdir)
     # Create a map between epoch labels and trial numbers based on metadata.
     # Horray to dict comprehensions!
     mapping = {key: value for (key, value) in
@@ -146,23 +153,55 @@ def _find_data_of_choice(df, epochs, subject, bidsdir, condition):
     return assoc, mapping
 
 
-def concatenate_transformations(model, data, assoc):
-
+def concatenate_transformations(model,
+                                data,
+                                assoc,
+                                condition='left-right'):
+    """Make me helpful!
+    """
     transformed = model.transform(data)
     dfs = []
-    left = assoc['left (1)']
-    right = assoc['right (2)']
+    if condition == 'left-right':
+        left = assoc['left (1)']
+        right = assoc['right (2)']
 
-    for idx, l in enumerate(transformed):
-        df = pd.DataFrame.from_records(l).T
-        trial_type = 'left' if idx in left else 'right' if idx in right else None
-        # trial type can be None! I assume this happens in trials where no
-        # button press was made
-        if trial_type == None:
-            print(f'Could not find a matching condition for trial {idx}')
-        df['trialtype'] = trial_type
-        df['trial'] = idx
-        dfs.append(df)
+        for idx, l in enumerate(transformed):
+            df = pd.DataFrame.from_records(l).T
+            trial_type = 'left' if idx in left else 'right' if idx in right else None
+            # trial type can be None! I assume this happens in trials where no
+            # button press was made
+            if trial_type == None:
+                print(f'Could not find a matching condition for trial {idx}')
+            df['trialtype'] = trial_type
+            df['trial'] = idx
+            dfs.append(df)
+
+    elif condition == 'nobrain-brain':
+        brainer = assoc['brainer']
+        nobrainerleft = assoc['nobrainer_left']
+        nobrainerright = assoc['nobrainer_right']
+
+        for idx, l in enumerate(transformed):
+            df = pd.DataFrame.from_records(l).T
+            if idx in brainer:
+                trial_type = 'brainer'
+            elif idx in nobrainerleft:
+                trial_type = 'nobrainer_left'
+            elif idx in nobrainerright:
+                trial_type = 'nobrainer_right'
+            else:
+                trial_type = None
+
+            # trial type can be None! e.g., if the participant did not press the
+            # right button in nobrainer trials
+            if trial_type is None:
+                print(f'Could not find a matching condition for trial {idx}')
+            df['trialtype'] = trial_type
+            df['trial'] = idx
+            dfs.append(df)
+    else:
+        raise NotImplementedError(f'The condition {condition} is not '
+                                  f'implemented.')
     df = pd.concat(dfs)
     return df
 
@@ -182,7 +221,8 @@ def plot_srm_model(df,
     :param nfeatures: int, number of features in the model
     :param subject: str, subject identifier such as '011'
     :param mdl: Name of the SRM model to place in the figure name
-    :param cond: Name of the condition plotted
+    :param cond: Str, name of the condition plotted. Useful values are
+     'left-right', 'nobrain-brain'
     :return:
     """
 
@@ -194,14 +234,24 @@ def plot_srm_model(df,
     for i in range(nfeatures):
         fname = Path(figdir) / f'sub-{subject}/meg' /\
                      f'sub-{subject}_{mdl}_{nfeatures}-feat_task-{cond}_comp_{i}.png'
-        fig = sns.lineplot(data=df[df['trialtype'] == 'right'][i])
-        sns.lineplot(data=df[df['trialtype'] == 'left'][i])
+        if cond == 'left-right':
+            fig = sns.lineplot(data=df[df['trialtype'] == 'right'][i])
+            sns.lineplot(data=df[df['trialtype'] == 'left'][i])
+        elif cond == 'nobrain-brain':
+            print('git in!')
+            fig = sns.lineplot(data=df[df['trialtype'] == 'brainer'][i])
+            sns.lineplot(data=df[df['trialtype'] == 'nobrainer_left'][i])
+            sns.lineplot(data=df[df['trialtype'] == 'nobrainer_right'][i])
         # plot horizontal lines to mark the end of visual stimulation
         [pylab.axvline(ev, linewidth=1, color='grey', linestyle='dashed')
          for ev in events]
         # add a legend
-        fig.legend(title='Condition', loc='upper left',
-                   labels=['left choice', 'right choice'])
+        if cond == 'left-right':
+            fig.legend(title='Condition', loc='upper left',
+                       labels=['left choice', 'right choice'])
+        elif cond == 'nobrain-brain':
+            fig.legend(title='Condition', loc='upper left',
+                       labels=['brainer', 'nobrainer left', 'nobrainer_right'])
         plot = fig.get_figure()
         plot.savefig(fname)
         plot.clear()
@@ -223,6 +273,50 @@ def get_leftright_trials(subject, bidsdir):
     right_choice = df['trial_no'][df['choice'] == 2].values
     choices = {'left (1)': left_choice,
                'right (2)': right_choice}
+
+    return choices
+
+
+def get_nobrainer_trials(subject, bidsdir):
+    """
+    Return the trials where a decision is a "nobrainer", a trial where both the
+    reward probability and magnitude of one option is higher than that of the
+    other option.
+    :return:
+    """
+    df = read_bids_logfile(subject=subject,
+                           bidsdir=bidsdir)
+    # where is the both Magnitude and Probability of reward greater for one
+    # option over the other
+    right = df['trial_no'][(df.RoptMag > df.LoptMag) &
+                           (df.RoptProb > df.LoptProb)].values
+    left = df['trial_no'][(df.LoptMag > df.RoptMag) &
+                          (df.LoptProb > df.RoptProb)].values
+    brainer = [i for i in df['trial_no'].values if i not in right and i not in left]
+    # brainer and no-brainer trials should add up
+    assert len(brainer) + len(right) + len (left) == len(df['trial_no'].values)
+    # make sure that right and left no brainers do not intersect - if they have
+    # common values, something went wrong
+    assert not bool(set(right) & set(left))
+    # make sure to only take those no-brainer trials where participants actually
+    # behaved as expected
+    consistent_nobrainer_left = [trial for trial in left if
+                                 df['choice'][df['trial_no'] == trial].values == 1]
+    consistent_nobrainer_right = [trial for trial in right if
+                                  df['choice'][df['trial_no'] == trial].values == 2]
+    print(f"Subject {subject} underwent a total of {len(right)} no-brainer "
+          f"trials for right choices, and a total of {len(left)} no-brainer "
+          f"trials for left choices. The subject chose consistently according "
+          f"to the no-brainer nature of the trial in "
+          f"N={len(consistent_nobrainer_right)} cases for right no-brainers, "
+          f"and in N={len(consistent_nobrainer_left)} cases for left "
+          f"no-brainers.")
+    # create a dictionary with brainer and no-brainer trials. We leave out all
+    # no-brainer trials where the participant hasn't responded in accordance to
+    # the no-brain nature of the trial
+    choices = {'brainer': brainer,
+               'nobrainer_left': consistent_nobrainer_left,
+               'nobrainer_right': consistent_nobrainer_right}
 
     return choices
 
