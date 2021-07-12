@@ -178,6 +178,60 @@ def parse_args_sss():
     return args
 
 
+def parse_args_srm():
+
+    formatter_class = argparse.RawDescriptionHelpFormatter
+    parser = argparse.ArgumentParser(
+        formatter_class=formatter_class,
+        prog="pymento",
+        description="{}".format(srm.__doc__),
+    )
+    parser.add_argument("--version", action="store_true")
+    parser.add_argument(
+        "--subject",
+        "-s",
+        metavar="<subject identifier>",
+        help="""Subject identifier, e.g., '001'""",
+        required=True,
+    )
+    parser.add_argument(
+        "--bids_data_dir",
+        "-r",
+        metavar="<bids data directory>",
+        help="""Provide a path to the bids-structured directory for the
+                        memento sample.""",
+        default="/data/project/brainpeach/memento/memento-bids/",
+        required=True,
+    )
+    parser.add_argument(
+        "--bids_deriv_dir",
+        help="""A path to a directory where sss processed data will be saved in,
+                        complying to BIDS naming conventions""",
+        default=None,
+        required=True,
+    )
+    parser.add_argument(
+        "--diagnostics_dir",
+        "-d",
+        help="""A path to a directory where diagnostic figures
+                        will be saved under""",
+        required=True,
+    )
+    parser.add_argument(
+        "--condition",
+        "-c",
+        help="""The condition to split the trials over""",
+        choices=['left-right', 'nobrain-brain'],
+        default='left-right'
+    )
+
+
+    args = parser.parse_args()
+    if args.version:
+        print(version)
+    return args
+
+
 def restructure():
     """
     Restructure raw, original memento data into a raw BIDS directory.
@@ -223,13 +277,13 @@ def srm():
     """
     from pymento_meg.pymento import SRM
     # for now, reuse the argparse arguments
-    args = parse_args_sss()
+    args = parse_args_srm()
     SRM(
         subject=args.subject,
         datadir=args.bids_deriv_dir,
         bidsdir=args.bids_data_dir,
         figdir=args.diagnostics_dir,
-        condition='left-right',
+        condition=args.condition,
         model='det-srm')
 
 
