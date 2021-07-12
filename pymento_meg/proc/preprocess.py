@@ -1,5 +1,6 @@
 import mne
 import os
+import logging
 
 from pathlib import Path
 from pymento_meg.utils import (
@@ -14,6 +15,7 @@ from pymento_meg.viz.plots import (
 )
 
 preconditioned = False
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
 def motion_estimation(subject, raw, figdir="/tmp/"):
@@ -27,11 +29,11 @@ def motion_estimation(subject, raw, figdir="/tmp/"):
     """
     # Calculate head motion parameters to remove them during maxwell filtering
     # First, extract HPI coil amplitudes to
-    print(f"Extracting HPI coil amplitudes for subject sub-{subject}")
+    logging.info(f"Extracting HPI coil amplitudes for subject sub-{subject}")
     chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw)
     # compute time-varying HPI coil locations from amplitudes
     chpi_locs = mne.chpi.compute_chpi_locs(raw.info, chpi_amplitudes)
-    print(f"Computing head positions for subject sub-{subject}")
+    logging.info(f"Computing head positions for subject sub-{subject}")
     head_pos = mne.chpi.compute_head_pos(raw.info, chpi_locs, verbose=True)
     # For now, DON'T save headpositions. It is unclear in which BIDS directory.
     # TODO: Figure out whether we want to save them.
@@ -44,7 +46,7 @@ def motion_estimation(subject, raw, figdir="/tmp/"):
     #        f"sub-{subject}_task-memento_headshape.pos",
     #    ]
     # )
-    # print(f"Saving head positions as {outpath}")
+    # logging.info(f"Saving head positions as {outpath}")
     # mne.chpi.write_head_pos(outpath, head_pos)
 
     figpath = _construct_path(
@@ -107,20 +109,20 @@ def maxwellfilter(
 
     if not compute_motion_params:
         if not headpos_file or not os.path.exists(headpos_file):
-            print(
+            logging.info(
                 f"Could not find or read head position files under the supplied"
                 f"path: {headpos_file}. Recalculating from scratch."
             )
             head_pos = motion_estimation(subject, raw, figdir)
         else:
-            print(
+            logging.info(
                 f"Reading in head positions for subject sub-{subject} "
                 f"from {headpos_file}."
             )
             head_pos = mne.chpi.read_head_pos(headpos_file)
 
     else:
-        print(f"Starting motion estimation for subject sub-{subject}.")
+        logging.info(f"Starting motion estimation for subject sub-{subject}.")
         head_pos = motion_estimation(subject, raw, figdir)
 
     raw.info["bads"] = []
@@ -132,7 +134,7 @@ def maxwellfilter(
         # of filtering (CHPI and line noise removal or general filtering) has
         # been applied.
         # the data has been filtered, and we can pass h_freq=None
-        print("Performing bad channel detection without filtering")
+        logging.info("Performing bad channel detection without filtering")
         auto_noisy_chs, auto_flat_chs, auto_scores = find_bad_channels_maxwell(
             raw_check,
             cross_talk=crosstalk_file,
@@ -151,7 +153,7 @@ def maxwellfilter(
             return_scores=True,
             verbose=True,
         )
-    print(
+    logging.info(
         f"Found the following noisy channels: {auto_noisy_chs} \n "
         f"and the following flat channels: {auto_flat_chs} \n"
         f"for subject sub-{subject}"
@@ -165,7 +167,7 @@ def maxwellfilter(
         plot_noisy_channel_detection(
             auto_scores, ch_type=ch_type, subject=subject, outpath=figdir
         )
-    print(
+    logging.info(
         f"Signal Space Separation with movement compensation "
         f"starting for subject sub-{subject}"
     )
@@ -180,7 +182,7 @@ def maxwellfilter(
     save_derivatives_to_bids_dir(raw_sss=raw_sss, subject=subject, bidsdir=outdir, figdir=figdir)
 
     if filtering:
-        print(
+        logging.info(
             f"Filtering raw SSS data for subject {subject}. The following "
             f"additional parameters were passed: {filter_args}"
         )
@@ -208,9 +210,9 @@ def filter_chpi_and_line(raw):
     from mne.chpi import filter_chpi
 
     # make sure the data is loaded first
-    print("Loading data for CHPI and line noise filtering")
+    logging.info("Loading data for CHPI and line noise filtering")
     raw.load_data()
-    print("Applying CHPI and line noise filter")
+    logging.info("Applying CHPI and line noise filter")
     # all parameters are set to the defaults of 0.23dev
     filter_chpi(
         raw,

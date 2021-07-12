@@ -1,10 +1,14 @@
 import mne
+import logging
 import numpy as np
 import pandas as pd
 
 from brainiak.funcalign import srm
 from pathlib import Path
 from pymento_meg.orig.behavior import read_bids_logfile
+
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
 def plot_trial_components_from_detsrm(subject,
@@ -27,10 +31,10 @@ def plot_trial_components_from_detsrm(subject,
 
     fname = Path(datadir) / f'sub-{subject}/meg' / \
              f'sub-{subject}_task-memento_cleaned_epo.fif'
-    print(f'Reading in cleaned epochs from subject {subject} '
+    logging.info(f'Reading in cleaned epochs from subject {subject} '
           f'from path {fname}.')
     epochs = mne.read_epochs(fname)
-    print('Preparing data for fitting a shared response model')
+    logging.info('Preparing data for fitting a shared response model')
     if epochs.info['sfreq'] > 100:
         # after initial preprocessing, they are downsampled to 200Hz.
         # Downsample further to 100Hz
@@ -70,7 +74,7 @@ def shared_response(data,
     :param features
     :return:
     """
-    print(f'Fitting a deterministic SRM with {features} features...')
+    logging.info(f'Fitting a deterministic SRM with {features} features...')
     # fit a deterministic shared response model
     model = srm.DetSRM(features=features)
     model.fit(data)
@@ -110,12 +114,12 @@ def _find_data_of_choice(df, epochs, subject, bidsdir, condition):
     :return: assoc; dictionary with condition - index associations
     """
     if condition == 'left-right':
-        print('Attempting to retrieve trial information for left and right '
+        logging.info('Attempting to retrieve trial information for left and right '
               'stimulus choices')
         choices = get_leftright_trials(subject=subject,
                                        bidsdir=bidsdir)
     elif condition == 'nobrain-brain':
-        print('Attempting to retrieve trial information for no-brainer and '
+        logging.info('Attempting to retrieve trial information for no-brainer and '
               'brainer trials')
         choices = get_nobrainer_trials(subject=subject,
                                        bidsdir=bidsdir)
@@ -144,7 +148,7 @@ def _find_data_of_choice(df, epochs, subject, bidsdir, condition):
         assert len(idx) == len(fit)
         assoc[cond] = idx
         total_trials += len(idx)
-        print(f"Here's my count of matching events in the SRM data for"
+        logging.info(f"Here's my count of matching events in the SRM data for"
               f" condition {cond}: {len(idx)}")
     # does the number of conditions match the number of trials?
     # may not work all of the time
@@ -171,7 +175,7 @@ def concatenate_transformations(model,
             # trial type can be None! I assume this happens in trials where no
             # button press was made
             if trial_type == None:
-                print(f'Could not find a matching condition for trial {idx}')
+                logging.info(f'Could not find a matching condition for trial {idx}')
             df['trialtype'] = trial_type
             df['trial'] = idx
             dfs.append(df)
@@ -195,7 +199,7 @@ def concatenate_transformations(model,
             # trial type can be None! e.g., if the participant did not press the
             # right button in nobrainer trials
             if trial_type is None:
-                print(f'Could not find a matching condition for trial {idx}')
+                logging.info(f'Could not find a matching condition for trial {idx}')
             df['trialtype'] = trial_type
             df['trial'] = idx
             dfs.append(df)
@@ -238,7 +242,6 @@ def plot_srm_model(df,
             fig = sns.lineplot(data=df[df['trialtype'] == 'right'][i])
             sns.lineplot(data=df[df['trialtype'] == 'left'][i])
         elif cond == 'nobrain-brain':
-            print('git in!')
             fig = sns.lineplot(data=df[df['trialtype'] == 'brainer'][i])
             sns.lineplot(data=df[df['trialtype'] == 'nobrainer_left'][i])
             sns.lineplot(data=df[df['trialtype'] == 'nobrainer_right'][i])
@@ -304,7 +307,7 @@ def get_nobrainer_trials(subject, bidsdir):
                                  df['choice'][df['trial_no'] == trial].values == 1]
     consistent_nobrainer_right = [trial for trial in right if
                                   df['choice'][df['trial_no'] == trial].values == 2]
-    print(f"Subject {subject} underwent a total of {len(right)} no-brainer "
+    logging.info(f"Subject {subject} underwent a total of {len(right)} no-brainer "
           f"trials for right choices, and a total of {len(left)} no-brainer "
           f"trials for left choices. The subject chose consistently according "
           f"to the no-brainer nature of the trial in "

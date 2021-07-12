@@ -2,7 +2,7 @@
 This is a collection of functions for working with BIDS data read in with
 mne-python.
 """
-
+import logging
 from mne_bids import (
     read_raw_bids,
     BIDSPath,
@@ -10,6 +10,9 @@ from mne_bids import (
 from mne import events_from_annotations
 from pymento_meg.config import event_dict
 from pymento_meg.utils import _check_if_bids_directory_exists
+
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
 def read_bids_data(bids_root, subject, datatype="meg", task="memento", suffix="meg"):
@@ -33,7 +36,7 @@ def read_bids_data(bids_root, subject, datatype="meg", task="memento", suffix="m
             extra_params=dict(on_split_missing="raise"),
         )
     except ValueError:
-        print(
+        logging.warn(
             "Ooops! I can't load all splits of the data. This may be because "
             "you run a version of MNE-python that does not read in annexed "
             "data automatically. I will try to datalad-unlock them for you."
@@ -68,7 +71,7 @@ def save_derivatives_to_bids_dir(raw_sss, subject, bidsdir, figdir):
     """
 
     bids_path = _get_BIDSPath_processed(subject, bidsdir)
-    print(
+    logging.info(
         f"Saving BIDS-compliant signal-space-separated data from subject "
         f"{subject} into "
         f"{bids_path}"

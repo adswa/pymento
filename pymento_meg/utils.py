@@ -2,6 +2,7 @@
 
 import mne
 import os
+import logging
 import numpy as np
 from pathlib import Path
 
@@ -50,9 +51,9 @@ def _check_if_bids_directory_exists(outpath):
     Helper function that checks if a directory exists, and if not, creates it.
     """
     check_dir = os.path.dirname(outpath)
-    print(check_dir)
+    logging.info(check_dir)
     if not os.path.isdir(Path(check_dir)):
-        print(
+        logging.info(
             f"The BIDS directory {check_dir} does not seem to exist. "
             f"Attempting creation..."
         )
@@ -112,9 +113,9 @@ def repair_triggers(events, log_df):
     cropped_events = np.asarray(cropped_events)
     if log_df is None:
         # we didn't get log files
-        print("Did not receive dataframe with experiment log. No sanity checks.")
+        logging.info("Did not receive dataframe with experiment log. No sanity checks.")
         return cropped_events
-    print("Performing basic sanity checks based on the log files of " "the experiment")
+    logging.info("Performing basic sanity checks based on the log files of " "the experiment")
     ev, event_counts = np.unique(cropped_events[:, 2], return_counts=True)
     events_in_data = dict(zip(ev, event_counts))
     keys_in_log = log_df.keys()
@@ -123,7 +124,7 @@ def repair_triggers(events, log_df):
     try:
         assert log_df["trial_no"].shape[0] == events_in_data[10] == events_in_data[27]
     except AssertionError:
-        print(
+        logging.info(
             f"The number of trials, fixations, and feedbacks does not match: "
             f"{log_df['trial_no'].shape[0]} vs. {events_in_data[10]} "
             f"vs {events_in_data[27]}. Subject 005 is known to have such an "

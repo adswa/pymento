@@ -1,4 +1,5 @@
 import mne
+import logging
 
 import os.path as op
 
@@ -12,6 +13,9 @@ from pathlib import Path
 from glob import glob
 from pymento_meg.config import channel_types
 from pymento_meg.orig.behavior import write_to_df
+
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
 def read_data_original(
@@ -61,7 +65,7 @@ def read_data_original(
             if preprocessing
             else Path(directory) / "*" / "*.fif"
         )
-    print(f"Reading files for subject sub-{subject} from {path}.")
+    logging.info(f"Reading files for subject sub-{subject} from {path}.")
     # file naming is a mess. We need to make sure to sort the three files
     # correctly
     unsorted_files = glob(str(path))
@@ -70,11 +74,11 @@ def read_data_original(
         # subjects one and five don't have consistent subject identifiers or
         # file names.
         # automatic reading in would only load the first.
-        print(f"reading in subject {subject}")
+        logging.info(f"reading in subject {subject}")
         try:
             raw = mne.io.read_raw_fif(first)
         except ValueError:
-            print(
+            logging.warning(
                 f"WARNING Irregular file naming. "
                 f"Will read files in sequentially "
                 f"in the following order: {first}{second}{third}"
@@ -97,7 +101,7 @@ def read_data_original(
 
     if savetonewdir:
         if not bidsdir:
-            print(
+            logging.info(
                 "I was instructed to save BIDS conform raw data into a"
                 "different directory, but did not get a path."
             )
@@ -128,7 +132,7 @@ def save_bids_data(raw, subject, bidsdir, figdir, ctfile, fcfile, behav_dir):
     """
 
     bids_path = _get_BIDSPath(subject, bidsdir)
-    print(
+    logging.info(
         f"Saving BIDS-compliant raw data from subject "
         f"{subject} into "
         f"{bids_path}"
@@ -262,5 +266,5 @@ def _get_first_file(files):
                     raise ValueError(f"Cannot handle file list {files}")
     # check that all files are defined
     assert all([v is not None for v in [first, second, third]])
-    print(f"Order the files as follows: {first}, {second}, {third}")
+    logging.info(f"Order the files as follows: {first}, {second}, {third}")
     return first, second, third

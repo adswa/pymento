@@ -1,8 +1,9 @@
 import argparse
+import logging
 from pathlib import Path
-import os.path as op
 import pymento_meg
 
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 version = pymento_meg.__version__
 # TODO: redo this with less duplication in argparsing
 

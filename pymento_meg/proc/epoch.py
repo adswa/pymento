@@ -1,12 +1,13 @@
-import mne
+import logging
 import pandas as pd
 from pathlib import Path
-from pymento_meg.config import reject_criteria
-from pymento_meg.proc.bids import get_events
 from pymento_meg.utils import (
     _plot_evoked_fields,
     _get_channel_subsets,
 )
+
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
 def add_metadata_to_visuals(visuals, subject, bids_path, **kwargs):
@@ -56,7 +57,7 @@ def get_trial_features(bids_path, subject, column):
     fname = Path(bids_path) / f'sub-{subject}' / 'meg' /\
             f'sub-{subject}_task-memento_log.tsv'
     df = pd.read_csv(fname, sep='\t')
-    print(f'Retrieving Trial metadata for subject sub-{subject}, from the '
+    logging.info(f'Retrieving Trial metadata for subject sub-{subject}, from the '
           f'column(s) {column} in the file {fname}.')
     if type(column) == list:
         for c in column:

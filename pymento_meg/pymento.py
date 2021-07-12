@@ -1,4 +1,5 @@
 import mne
+import logging
 from pathlib import Path
 from pymento_meg.utils import (
     _construct_path,
@@ -31,7 +32,7 @@ def restructure_to_bids(
     :return:
     """
 
-    print(
+    logging.info(
         f"Starting to restructure original memento data into BIDS for "
         f"subject sub-{subject}."
     )
@@ -61,7 +62,7 @@ def signal_space_separation(bidspath, subject, figdir, derived_path):
     shall be saved
     :return:
     """
-    print(
+    logging.info(
         f"Starting to read in raw memento data from BIDS directory for"
         f"subject sub-{subject}."
     )
@@ -79,7 +80,7 @@ def signal_space_separation(bidspath, subject, figdir, derived_path):
     fine_cal_file = bids_path.meg_calibration_fpath
     crosstalk_file = bids_path.meg_crosstalk_fpath
 
-    print(
+    logging.info(
         f"Starting signal space separation with motion correction "
         f"for subject sub{subject}."
     )
@@ -120,7 +121,7 @@ def epoch_and_clean_trials(subject,
     # construct name of the first split
     raw_fname = Path(datadir) / f'sub-{subject}/meg' / \
                 f'sub-{subject}_task-memento_proc-sss_meg.fif'
-    print(f"Reading in SSS-processed data from subject sub-{subject}. "
+    logging.info(f"Reading in SSS-processed data from subject sub-{subject}. "
           f"Attempting the following path: {raw_fname}")
     raw = mne.io.read_raw_fif(raw_fname)
     events, event_dict = get_events(raw)
@@ -131,7 +132,7 @@ def epoch_and_clean_trials(subject,
     raw.load_data()
     _filter_data(raw, l_freq=0.05, h_freq=40)
     # ICA to detect and repair artifacts
-    print('Removing eyeblink and hearbeat artifacts')
+    logging.info('Removing eyeblink and hearbeat artifacts')
     remove_eyeblinks_and_heartbeat(raw=raw,
                                    subject=subject,
                                    figdir=diagdir,
@@ -140,7 +141,7 @@ def epoch_and_clean_trials(subject,
                                    )
     # get the actual epochs: chunk the trial into epochs starting from the
     # fixation cross. Do not baseline correct the data.
-    print('Creating epochs')
+    logging.info('Creating epochs')
     epochs = mne.Epochs(raw, events, event_id=eventid,
                         tmin=0, tmax=7,
                         picks='meg', baseline=None)
@@ -154,7 +155,7 @@ def epoch_and_clean_trials(subject,
     epochs.metadata = metadata
     epochs.load_data()
     # downsample the data to 200Hz
-    print('Resampling epoched data down to 200 Hz')
+    logging.info('Resampling epoched data down to 200 Hz')
     epochs.resample(sfreq=200, verbose=True)
     # use autoreject to repair bad epochs
     ar = AutoReject(random_state=42)

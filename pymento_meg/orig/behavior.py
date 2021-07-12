@@ -7,10 +7,14 @@ Matlab struct into the log file.
 This file contains information on the variables and their indexes per subject.
 Indexing is done according to Python, i.e., zero-based.
 """
+import logging
 from pymento_meg.config import subjectmapping
 from scipy.io import loadmat
 from pathlib import Path
 import pandas as pd
+
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
 def get_behavioral_data(subject, behav_dir, fieldname, variable=None):
@@ -27,7 +31,7 @@ def get_behavioral_data(subject, behav_dir, fieldname, variable=None):
     """
 
     key = f"memento_{subject}"
-    print(f"Reading in experiment log files of {key} for {fieldname}...")
+    logging.info(f"Reading in experiment log files of {key} for {fieldname}...")
     # get the information about the subject's behavioral data out of the subject
     # mapping, but make sure it is actually there first
     assert key in subjectmapping.keys()
@@ -117,7 +121,7 @@ def read_bids_logfile(subject, bidsdir):
     # construct name of the first split
     fname = Path(bidsdir) / f'sub-{subject}/meg' / \
             f'sub-{subject}_task-memento_log.tsv'
-    print(f'Reading in log file from subject sub-{subject} from the path'
+    logging.info(f'Reading in log file from subject sub-{subject} from the path'
           f' {fname}...')
     # read in as a dataframe and return
     df = pd.read_csv(fname, sep='\t')
