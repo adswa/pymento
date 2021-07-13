@@ -190,9 +190,9 @@ def concatenate_transformations(model,
             if idx in brainer:
                 trial_type = 'brainer'
             elif idx in nobrainerleft:
-                trial_type = 'nobrainer_left'
+                trial_type = 'nobrainer'
             elif idx in nobrainerright:
-                trial_type = 'nobrainer_right'
+                trial_type = 'nobrainer'
             else:
                 trial_type = None
 
@@ -243,8 +243,7 @@ def plot_srm_model(df,
             sns.lineplot(data=df[df['trialtype'] == 'left'][i])
         elif cond == 'nobrain-brain':
             fig = sns.lineplot(data=df[df['trialtype'] == 'brainer'][i])
-            sns.lineplot(data=df[df['trialtype'] == 'nobrainer_left'][i])
-            sns.lineplot(data=df[df['trialtype'] == 'nobrainer_right'][i])
+            sns.lineplot(data=df[df['trialtype'] == 'nobrainer'][i])
         # plot horizontal lines to mark the end of visual stimulation
         [pylab.axvline(ev, linewidth=1, color='grey', linestyle='dashed')
          for ev in events]
@@ -254,7 +253,7 @@ def plot_srm_model(df,
                        labels=['left choice', 'right choice'])
         elif cond == 'nobrain-brain':
             fig.legend(title='Condition', loc='upper left',
-                       labels=['brainer', 'nobrainer left', 'nobrainer_right'])
+                       labels=['brainer', 'nobrainer'])
         plot = fig.get_figure()
         plot.savefig(fname)
         plot.clear()
