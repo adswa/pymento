@@ -29,9 +29,8 @@ def plot_trial_components_from_detsrm(subject,
      'nobrain-brain' (no-brainer versus brainer trials)
     :return:
     """
-    # initialize a list to hold data over all subjects in the model
-    alldata = []
-    allassoc = {}
+    # initialize a dict to hold data over all subjects in the model
+    fullsample = {}
     if not isinstance(subject, list):
         # we may want to combine multiple subject's data.
         subject = [subject]
@@ -52,36 +51,37 @@ def plot_trial_components_from_detsrm(subject,
         df = epochs.to_data_frame()
         # find out which arrays belong to a desired condition. The indices in assoc
         # should correspond to indices of the data list.
-        assoc, mapping = _find_data_of_choice(epochs=epochs,
-                                              subject=sub,
-                                              bidsdir=bidsdir,
-                                              condition=condition,
-                                              df=df)
-        if timespan == 'decision':
-            # we need to get behavioral data
-            behav = read_bids_logfile(subject=sub,
-                                      bidsdir=bidsdir)
-            df, data, assoc = _prep_for_srm_decision(df=df,
-                                                     behav=behav,
-                                                     epochs=epochs,
-                                                     mapping=mapping,
-                                                     assoc=assoc)
+        trials_to_trialtypes, epochs_to_trials = _find_data_of_choice(epochs=epochs,
+                                                                       subject=sub,
+                                                                       bidsdir=bidsdir,
+                                                                       condition=condition,
+                                                                       df=df)
 
-        else:
-            df, data = _prep_for_srm(df,
-                                     timespan=timespan)
-        alldata.extend(data)
-        allassoc[sub] = assoc
+        all_trial_info = combine_data(df=df,
+                                      sub=sub,
+                                      trials_to_trialtypes=trials_to_trialtypes,
+                                      epochs_to_trials=epochs_to_trials,
+                                      bidsdir=bidsdir,
+                                      timespan=timespan)
+        fullsample[sub] = all_trial_info
 
-
+    logging.info(f'Fitting a shared response model based on data from subjects '
+                 f'{subject}')
     features = [5, 7, 10, 15, 20]
+    # aggregate the data from the dictionary into a list of lists, as required
+    # by brainiak
+    data = []
+    for subject, trialinfo in fullsample.items():
+        for trial_no, info in trialinfo.items():
+            data.append(info['data'])
+
     for f in features:
-        model, data = shared_response(data=data,
-                                      features=f)
-        final_df = concatenate_transformations(model,
-                                               data,
-                                               assoc,
-                                               condition=condition)
+        # fit the model
+        model = shared_response(data=data,
+                                features=f)
+        final_df = create_full_dataframe(fullsample, model, data)
+
+        # TODO: continue here
         # plot individual features
         plot_srm_model(df=final_df,
                        nfeatures=f,
@@ -90,6 +90,141 @@ def plot_trial_components_from_detsrm(subject,
                        mdl='det-srm',
                        cond=condition,
                        timespan=timespan)
+
+
+
+def create_full_dataframe(fullsample, model, data):
+    """
+    Create a monstrous pandas dataframe.
+
+    :param fullsample: dict, holds all experiment information
+    :return:
+    """
+    # there must be a way to transform the nested dictionary into a data frame,
+    # but I have failed so far
+    transformed = model.transform(data)
+    # add the transformed data into the dict
+    for subject, infodict in fullsample.items():
+        for trial in infodict.keys():
+            infodict[trial]['transformed'] = transformed.pop(0)
+    assert transformed == []
+    dfs = []
+    for subject, infodict in fullsample.items():
+        for trial, info in infodict.items():
+            df = pd.DataFrame.from_records(info['transformed']).T
+            trial_type = info['trial_type']
+            trial = trial
+            df['trial_type'] = trial_type
+            df['trial_no'] = trial
+            dfs.append(df)
+
+    finaldf = pd.concat(dfs)
+    return finaldf
+
+
+def combine_data(df,
+                 sub,
+                 trials_to_trialtypes,
+                 epochs_to_trials,
+                 bidsdir,
+                 timespan):
+    """
+    Generate a dictionary that contains all relevant information of a given
+    trial, including the data, correctly slices, to train the model on.
+    :param df:
+    :param sub:
+    :param assoc:
+    :param mapping:
+    :return:
+    """
+    all_trial_infos = {}
+    unique_epochs = df['epoch'].unique()
+
+    if timespan == 'decision':
+        # extract the information on decision time for all trials at once.
+        trials_to_rts = get_decision_timespan_on_and_offsets(subject=sub,
+                                                             bidsdir=bidsdir)
+
+    for epoch in unique_epochs:
+        # get the trial number as a key
+        trial_no = epochs_to_trials[epoch]
+        # get the trial type, if it hasn't been excluded already
+        trial_type = trials_to_trialtypes.get(trial_no, None)
+        if trial_type is None:
+            continue
+        # get the data of the epoch. Transpose it, to get a sensors X time array
+        data = df.loc[df['epoch'] == epoch, 'MEG0111':'MEG2643'].values.T
+        if timespan == 'fulltrial':
+            # the data does not need to be shortened. just make sure it has the
+            # expected dimensions
+            assert data.shape == (306, 700)
+        elif timespan == 'firststim':
+            # we only need the first 700 milliseconds from the trial,
+            # corresponding to the first 70 entries since we timelocked to the
+            # onset of the first stimulation
+            data = data[:, :70]
+            assert data.shape == (306, 70)
+        elif timespan == 'decision':
+            # we need an adaptive slice of data (centered around the exact time
+            # point at which a decision was made in a given trial.
+            if trial_no not in trials_to_rts.keys():
+                # if the trial number has been sorted out before, don't append
+                # the data
+                continue
+            onset, offset = trials_to_rts[trial_no]
+            data = data[:, onset:offset]
+            assert data.shape == (306, 80)
+        else:
+            raise NotImplementedError(f"The timespan {timespan} is not "
+                                      f"implemented.")
+        all_trial_infos[trial_no] = {'epoch': epoch,
+                                     'trial_type': trial_type,
+                                     'data': data}
+    return all_trial_infos
+
+
+def get_decision_timespan_on_and_offsets(subject,
+                                         bidsdir,
+                                         onset_dur=40,
+                                         offset_dur=40):
+    """
+    For each trial, get a time frame around the point in time that a decision
+    was made.
+    :return:
+    """
+    logs = read_bids_logfile(subject=subject,
+                             bidsdir=bidsdir)
+    trials_and_rts = logs[['trial_no', 'RT']].values
+    logging.info(f'The average reaction time was '
+                 f'{np.nanmean(trials_and_rts[:,1])}')
+    # mark nans with larger RTs
+    logging.info('Setting nan reaction times to implausibly large values.')
+    np.nan_to_num(trials_and_rts, nan=100, copy=False)
+    # collect the trial numbers where reaction times are too large to fit into
+    # the trial. For now, this is at 3 seconds.
+    trials_to_remove = trials_and_rts[np.where(
+        trials_and_rts[:, 1] > 3)][:, 0]
+    # initialize a dict to hold all information
+    trials_to_rts = {}
+    for trial, rt in trials_and_rts:
+        # get the right time frame. First, transform decision time into the
+        # timing within the trial. this REQUIRES a sampling rate of 100Hz!
+        rt = rt * 100
+        # Now, add RT to the end of the second visual stimulus to get the
+        # decision time from trial onset
+        # (70 + 200 + 70 = 340)
+        decision_time = rt + 340
+        assert decision_time > 340
+        # calculate the slice needed for indexing the data for the specific
+        # trial. We round down so that the specific upper or lower time point
+        # can be used as an index to subset the data frame
+        slices = [int(np.floor(decision_time - 40)),
+                  int(np.floor(decision_time + 40))]
+        assert slices[1] - slices[0] == 80
+        if trial not in trials_to_remove:
+            trials_to_rts[trial] = slices
+
+    return trials_to_rts
 
 
 def shared_response(data,
@@ -104,151 +239,28 @@ def shared_response(data,
     # fit a deterministic shared response model
     model = srm.DetSRM(features=features)
     model.fit(data)
-    return model, data
+    return model
 
 
-def _prep_for_srm_decision(df, behav, epochs, mapping, assoc):
-    """
-    This function does the same as _prep_for_srm for time spans that should be
-    centered at the time of decision making.
-    Its an extra function because it does the heavy lifting of extracting
-    decision times and slicing the data based on the decision times dynamically.
-    It then also strips any removed data from the trial-condition assocaciations.
-    This function is not elegant, it needs a good chunk of testing and future
-    refactoring to ensure it does not return gibberish that looks sane
-    :param df:
-    :param timespan:
-    :param behav:
-    :param epochs:
-    :param mapping:
-    :param assoc
-    :return:
-    """
-
-    # get all the reaction times for the trial numbers we have data for
-    assert behav is not None
-    trials_and_rts = [behav[behav['trial_no'] == e][['trial_no', 'RT']].values
-                      for e in epochs.metadata.trial_no.values]
-    trials_and_rts = np.concatenate(trials_and_rts)
-    logging.info(f'The average reaction time was '
-                 f'{np.nanmean(trials_and_rts[:,1])}')
-    # mark nans with larger RTs
-    logging.info('Setting nan reaction times to implausibly large values.')
-    np.nan_to_num(trials_and_rts, nan=100, copy=False)
-    # kick out trial numbers where reaction times are too large to fit into
-    # the trial. For now, this is at 3 seconds.
-    # collect the trial numbers
-    trials_to_remove = trials_and_rts[np.where(
-        trials_and_rts[:, 1] > 3)][:, 0]
-    # and also their indices in the data
-    idx = np.where(np.in1d(list(epochs.metadata.trial_no), trials_to_remove))[0]
-    assert len(trials_to_remove) == len(idx)
-    removal = {'trial_no': list(trials_to_remove),
-               'idx': list(idx)}
-    remaining_epochs = [e for e in epochs.metadata.trial_no.values
-                        if e not in trials_to_remove]
-    RTs = [behav.RT[behav.trial_no == e].values
-           for e in remaining_epochs]
-    # unravel
-    RTs = np.concatenate(RTs).ravel()
-    assert len(RTs) == len(df['epoch'].unique()) - len(trials_to_remove)
-    # the reaction times are in seconds, we can convert them into
-    # milliseconds to fit the sampling rate of the data. We should
-    # make sure that we're really at 100Hz
-    assert epochs.info['sfreq'] == 100
-    RTs = RTs * 100
-    # Now, add RT to the end of the second visual stimulus to get the
-    # decision time from trial onset
-    # (70 + 200 + 70 = 340)
-    decision_time = RTs + 340
-    if trials_to_remove is not None:
-        logging.info(f"The following trials showed decision times that "
-                     f"were later than 7 seconds after trial start, or no "
-                     f"decision at all: "
-                     f"{trials_to_remove}")
-    # readiness potential is reported to start 400 to 500ms before movement
-    # in motor areas, let's select 400ms before and after decision
-    # this means we need a slice for each trial. To ensure consistent length
-    # we round down
-    slices = [[int(np.floor(t - 40)), int(np.floor(t + 40))]
-              for t in decision_time]
-    assert all([s[1] - s[0] == 80 for s in slices])
-    # now we can slice the data
-    # use the association of epochs to trial numbers
-    existing_epochs = [k for k in mapping.keys()
-                       if mapping[k] not in trials_to_remove]
-    # associate epochs with slices:
-    assert len(existing_epochs) == len(slices)
-    epochs_to_slices = list(zip(existing_epochs, slices))
-    data = [df.loc[df['epoch'] == e, 'MEG0111':'MEG2643'][s[0]:s[1]].values.T
-            for e, s in epochs_to_slices]
-    assert len(data) == len(trials_and_rts) - len(trials_to_remove)
-    assert all([d.shape[1] == 80 for d in data])
-    # remove all removed trials from assoc
-    for k, v in assoc.items():
-        logging.info("Removing trial data for invalid trials from sample.")
-        matches = set(np.intersect1d(list(v['trial_no']), trials_to_remove))
-        if len(matches) != 0:
-            # we have found trials in that have gotten removed. Get their index
-            # to remove them from the trial_no and idx list
-            remove_idx = np.where(np.in1d(v['trial_no'], list(matches)))[0]
-            new_trial_no = [t for idx, t in enumerate(v['trial_no'])
-                            if idx not in remove_idx]
-            assert len(new_trial_no) == len(v['trial_no']) - len(remove_idx)
-            new_idx = [i for idx, i in enumerate(v['idx'])
-                       if idx not in remove_idx]
-            assert len(new_idx) == len(new_trial_no)
-            # overwrite the previous lists
-            assoc[k]['trial_no'] = new_trial_no
-            assoc[k]['idx'] = new_idx
-
-    return df, data, assoc
-
-
-def _prep_for_srm(df, timespan):
-    """
-    Prepare the data for computing a shared response model.
-    This function reads in epochs in a dataframe, and returns
-    the data as a list of sensor x time points arrays.
-    :param timespan: Str, an indication of the time span that should become a
-    part of the data. Possible choices: 'fulltrial' (all data), 'firststim'
-    (the duration of the first stimulus), 'decision' (time around the motor
-    response)
-    :return: data; list of arrays
-    """
-    # create a list of arrays from the dataframe: each array consists of the
-    # data of one trial (a unique epoch in the sample), for each sensor.
-    if timespan == 'firststim':
-        # let's cut the data to the required time span
-        # first 70 milliseconds
-        data = [df.loc[df['epoch'] == e, 'MEG0111':'MEG2643'][:70].values.T
-                for e in df['epoch'].unique()]
-        assert all([d.shape[1] == 70 for d in data])
-    elif timespan == 'fulltrial':
-        # get all data
-        data = [df.loc[df['epoch'] == e, 'MEG0111':'MEG2643'].values.T
-                for e in df['epoch'].unique()]
-    assert len(data) > 0
-    # make sure that the first dimension is the number of sensors
-    assert all([d.shape[0] == 306 for d in data])
-    # return the dataframe, and the data representation as a list
-    return df, data
-
-
-def _find_data_of_choice(df, epochs, subject, bidsdir, condition):
+def _find_data_of_choice(df,
+                         epochs,
+                         subject,
+                         bidsdir,
+                         condition):
     """
     Based on a condition that can be queried from the log files (e.g., right or
-    left choice of stimulus), return the indices that the respective epochs have
-    in the list of sensor x time points arrays.
+    left choice of stimulus), return the trial names, trial types, and epoch IDs.
     :param epochs: epochs object
     :param df: pandas dataframe of epochs
-    :param subject:
-    :param bidsdir:
+    :param subject: str, subject identifier '011'
+    :param bidsdir: str, path to bids data with logfiles
     :param condition: str, a condition description. Must be one of 'left-right'
     (for trials with right or left choice), 'nobrain-brain' (for trials with
     no-brainer decisions versus actual decisions)
-    :return: assoc; dictionary with condition - index associations
+    :return: trials_to_trialtypes; dictionary with trial - condition
+    :return: epochs_to_trials; dict; epoch ID to trial number associations
     """
+    # get an association of trial types with trial numbers
     if condition == 'left-right':
         logging.info('Attempting to retrieve trial information for left and right '
               'stimulus choices')
@@ -259,105 +271,110 @@ def _find_data_of_choice(df, epochs, subject, bidsdir, condition):
               'brainer trials')
         choices = get_nobrainer_trials(subject=subject,
                                        bidsdir=bidsdir)
-    # Create a map between epoch labels and trial numbers based on metadata.
-    # Horray to dict comprehensions!
-    mapping = {key: value for (key, value) in
-               zip(df['epoch'].unique(), epochs.metadata.trial_no.values)}
-    assert all([i in df['epoch'].unique() for i in mapping.keys()])
-    assert len(df['epoch'].unique()) == len(mapping.keys())
 
-    # initialize a dictionary that holds the condition-epochindex associations
-    assoc = {}
-    total_trials = 0
+    # Create a mapping between epoch labels and trial numbers based on metadata.
+    assert len(df['epoch'].unique()) == len(epochs.metadata.trial_no.values)
+    # generate a mapping between trial numbers and epoch names in the dataframe
+    epochs_to_trials = {key: value for (key, value) in
+                        zip(df['epoch'].unique(),
+                            epochs.metadata.trial_no.values)}
+    # make sure we caught all epochs
+    assert all([i in df['epoch'].unique() for i in epochs_to_trials.keys()])
+    assert len(df['epoch'].unique()) == len(epochs_to_trials.keys())
+
+    # transform the "trial_no"-"trial_type" association in choices into an
+    # association of "trial_no that exist in the data" (e.g., survived
+    # cleaning) - "trial_types". The epochs_to_trials mapping is used as an
+    # indication with trial numbers are actually still existing in the epochs
+    trials_to_trialtypes = {}
     for cond, trials in choices.items():
-        # find the association of trial numbers to epochs that have been kept
-        # by generating the intersection of trials that match the condition and
-        # trials in the epoch data frame.
-        # CAVE: The trials are not the epoch numbers - we first need to map the
-        # trial info from the metadata to the epoch names!
-        fit = np.intersect1d(list(mapping.values()), trials)
-        # ... and getting their index
-        # CAVE: The input should be ordered (monotonically increasing) so that
-        # returned indices match the order of the trials existent in epochs
-        assert all(x < y for x, y in zip(fit, fit[1:]))
-        idx = np.where(np.in1d(list(mapping.values()), fit))[0]
-        assert len(idx) == len(fit)
-        assoc[cond] = {'idx': idx,
-                       'trial_no': fit}
-        # the trial number can't be larger than the index
-        assert all(x <= y for x, y in zip(
-             assoc[cond]['idx'],
-             assoc[cond]['trial_no']))
-        total_trials += len(idx)
-        logging.info(f"Here's my count of matching events in the SRM data for"
-              f" condition {cond}: {len(idx)}")
-    # does the number of conditions match the number of trials?
-    # may not work all of the time
-    # assert total_trials == len(epochs)
-
-    return assoc, mapping
-
-
-def concatenate_transformations(model,
-                                data,
-                                assoc,
-                                condition='left-right'):
-    """Transform the trial data with the SRM model transformation matrix.
-    Attach trial labels to each trial data
-    :returns df: pandas dataframe, a DataFrame with all transformed trial data
-    and a trial association
-    """
-    transformed = model.transform(data)
-    dfs = []
-
-    ### TODO:
-    # This function is wrong if trials have been removed. It relies on the index
-    # of a list or trial, and this is 100%error prone. The whole thing has to be
-    # refactored.
-    if condition == 'left-right':
-        left = assoc['left (1)']['idx']
-        right = assoc['right (2)']['idx']
-
-        for idx, l in enumerate(transformed):
-            df = pd.DataFrame.from_records(l).T
-            trial_type = 'left' if idx in left else 'right' if idx in right else None
-            # trial type can be None! I assume this happens in trials where no
-            # button press was made
-            if trial_type == None:
-                logging.info(f'Could not find a matching condition for trial '
-                             f'ID {idx}')
-            df['trialtype'] = trial_type
-            df['trial'] = idx
-            dfs.append(df)
-
-    elif condition == 'nobrain-brain':
-        brainer = assoc['brainer']['idx']
-        nobrainerleft = assoc['nobrainer_left']['idx']
-        nobrainerright = assoc['nobrainer_right']['idx']
-
-        for idx, l in enumerate(transformed):
-            df = pd.DataFrame.from_records(l).T
-            if idx in brainer:
-                trial_type = 'brainer'
-            elif idx in nobrainerleft:
-                trial_type = 'nobrainer'
-            elif idx in nobrainerright:
-                trial_type = 'nobrainer'
+        # trials is a list of all trial numbers in a given condition
+        counter = 0
+        for trial in trials:
+            # we need extra conditions because during the generation of each of
+            # the dicts below, some trials may have been excluded
+            if trial in epochs_to_trials.values():
+                trials_to_trialtypes[trial] = cond
+                counter += 1
             else:
-                trial_type = None
+                logging.info(f'Trial number {trial} is not '
+                             f'included in the data.')
+        # ensure that everything has made it into the dictionary
+        #fit = np.intersect1d(list(epochs_to_trials.values()), trials)
+        #assert set(fit).issubset(list(trials_to_trialtypes.keys()))
 
-            # trial type can be None! e.g., if the participant did not press the
-            # right button in nobrainer trials
-            if trial_type is None:
-                logging.info(f'Could not find a matching condition for trial {idx}')
-            df['trialtype'] = trial_type
-            df['trial'] = idx
-            dfs.append(df)
-    else:
-        raise NotImplementedError(f'The condition {condition} is not '
-                                  f'implemented.')
-    df = pd.concat(dfs)
-    return df
+        logging.info(f"Here's my count of matching events in the SRM data for"
+              f" condition {cond}: {counter}")
+
+    return trials_to_trialtypes, epochs_to_trials
+
+
+def get_nobrainer_trials(subject, bidsdir):
+    """
+    Return the trials where a decision is a "nobrainer", a trial where both the
+    reward probability and magnitude of one option is higher than that of the
+    other option.
+    :return:
+    """
+    df = read_bids_logfile(subject=subject,
+                           bidsdir=bidsdir)
+    # where is the both Magnitude and Probability of reward greater for one
+    # option over the other? -> nobrainer trials
+    right = df['trial_no'][(df.RoptMag > df.LoptMag) &
+                           (df.RoptProb > df.LoptProb)].values
+    left = df['trial_no'][(df.LoptMag > df.RoptMag) &
+                          (df.LoptProb > df.RoptProb)].values
+    # the remaining trials require information integration ('brainer' trials)
+    brainer = [i for i in df['trial_no'].values
+               if i not in right and i not in left]
+
+    # brainer and no-brainer trials should add up
+    assert len(brainer) + len(right) + len (left) == len(df['trial_no'].values)
+    # make sure that right and left no brainers do not intersect - if they have
+    # common values, something went wrong
+    assert not bool(set(right) & set(left))
+    # make sure to only take those no-brainer trials where participants actually
+    # behaved as expected. Those trials where it would be a nobrainer to pick X,
+    # but the subject chose Y, are excluded with this.
+    consistent_nobrainer_left = [trial for trial in left if
+                                 df['choice'][df['trial_no'] == trial].values == 1]
+    consistent_nobrainer_right = [trial for trial in right if
+                                  df['choice'][df['trial_no'] == trial].values == 2]
+    logging.info(f"Subject {subject} underwent a total of {len(right)} no-brainer "
+          f"trials for right choices, and a total of {len(left)} no-brainer "
+          f"trials for left choices. The subject chose consistently according "
+          f"to the no-brainer nature of the trial in "
+          f"N={len(consistent_nobrainer_right)} cases for right no-brainers, "
+          f"and in N={len(consistent_nobrainer_left)} cases for left "
+          f"no-brainers.")
+    # create a dictionary with brainer and no-brainer trials. We leave out all
+    # no-brainer trials where the participant hasn't responded in accordance to
+    # the no-brain nature of the trial
+    choices = {'brainer': brainer,
+               'nobrainer_left': consistent_nobrainer_left,
+               'nobrainer_right': consistent_nobrainer_right}
+
+    return choices
+
+
+def get_leftright_trials(subject, bidsdir):
+    """
+    Return the trials where a left choice and where a right choice was made.
+    Logdata coding for left and right is probably 1 = left, 2 = right (based on
+    experiment file)
+    :param subject: str, subject identifier, e.g., '001'
+    :param bidsdir: str, Path to the root of a BIDS raw dataset
+    :return: choices; dict of trial numbers belonging to left or right choices
+    """
+    df = read_bids_logfile(subject=subject,
+                           bidsdir=bidsdir)
+    # get a list of epochs in which the participants pressed left and right
+    left_choice = df['trial_no'][df['choice'] == 1].values
+    right_choice = df['trial_no'][df['choice'] == 2].values
+    choices = {'left (1)': left_choice,
+               'right (2)': right_choice}
+
+    return choices
 
 
 def plot_srm_model(df,
@@ -381,18 +398,18 @@ def plot_srm_model(df,
     :param timespan: Str, name of the timeframe used to fit the model
     :return:
     """
-
+    # TODO: This needs adjustment for trial names!
     import pylab
     import seaborn as sns
     for i in range(nfeatures):
         fname = Path(figdir) / f'sub-{subject}/meg' /\
                      f'sub-{subject}_{mdl}_{nfeatures}-feat_task-{cond}_model-{timespan}_comp_{i}.png'
         if cond == 'left-right':
-            fig = sns.lineplot(data=df[df['trialtype'] == 'right'][i])
-            sns.lineplot(data=df[df['trialtype'] == 'left'][i])
+            fig = sns.lineplot(data=df[df['trial_type'] == 'right (2)'][i])
+            sns.lineplot(data=df[df['trial_type'] == 'left (1)'][i])
         elif cond == 'nobrain-brain':
-            fig = sns.lineplot(data=df[df['trialtype'] == 'brainer'][i])
-            sns.lineplot(data=df[df['trialtype'] == 'nobrainer'][i])
+            fig = sns.lineplot(data=df[df['trial_type'] == 'brainer'][i])
+            sns.lineplot(data=df[df['trial_type'] == 'nobrainer'][i])
         if timespan == 'fulltrial':
             # define the timing of significant events in the timecourse of a trial:
             # onset and offset of visual stimuli
@@ -401,6 +418,7 @@ def plot_srm_model(df,
             [pylab.axvline(ev, linewidth=1, color='grey', linestyle='dashed')
              for ev in events]
         if timespan == 'decision':
+            print('hi')
 
 
         # add a legend
@@ -415,68 +433,9 @@ def plot_srm_model(df,
         plot.clear()
 
 
-def get_leftright_trials(subject, bidsdir):
-    """
-    Return the trials where a left choice and where a right choice was made.
-    Logdata coding for left and right is probably 1 = left, 2 = right (based on
-    experiment file)
-    :param subject: str, subject identifier, e.g., '001'
-    :param bidsdir: str, Path to the root of a BIDS raw dataset
-    :return: choices; dict of trial numbers belonging to left or right choices
-    """
-    df = read_bids_logfile(subject=subject,
-                           bidsdir=bidsdir)
-    # get a list of epochs in which the participants pressed left and right
-    left_choice = df['trial_no'][df['choice'] == 1].values
-    right_choice = df['trial_no'][df['choice'] == 2].values
-    choices = {'left (1)': left_choice,
-               'right (2)': right_choice}
-
-    return choices
 
 
-def get_nobrainer_trials(subject, bidsdir):
-    """
-    Return the trials where a decision is a "nobrainer", a trial where both the
-    reward probability and magnitude of one option is higher than that of the
-    other option.
-    :return:
-    """
-    df = read_bids_logfile(subject=subject,
-                           bidsdir=bidsdir)
-    # where is the both Magnitude and Probability of reward greater for one
-    # option over the other
-    right = df['trial_no'][(df.RoptMag > df.LoptMag) &
-                           (df.RoptProb > df.LoptProb)].values
-    left = df['trial_no'][(df.LoptMag > df.RoptMag) &
-                          (df.LoptProb > df.RoptProb)].values
-    brainer = [i for i in df['trial_no'].values if i not in right and i not in left]
-    # brainer and no-brainer trials should add up
-    assert len(brainer) + len(right) + len (left) == len(df['trial_no'].values)
-    # make sure that right and left no brainers do not intersect - if they have
-    # common values, something went wrong
-    assert not bool(set(right) & set(left))
-    # make sure to only take those no-brainer trials where participants actually
-    # behaved as expected
-    consistent_nobrainer_left = [trial for trial in left if
-                                 df['choice'][df['trial_no'] == trial].values == 1]
-    consistent_nobrainer_right = [trial for trial in right if
-                                  df['choice'][df['trial_no'] == trial].values == 2]
-    logging.info(f"Subject {subject} underwent a total of {len(right)} no-brainer "
-          f"trials for right choices, and a total of {len(left)} no-brainer "
-          f"trials for left choices. The subject chose consistently according "
-          f"to the no-brainer nature of the trial in "
-          f"N={len(consistent_nobrainer_right)} cases for right no-brainers, "
-          f"and in N={len(consistent_nobrainer_left)} cases for left "
-          f"no-brainers.")
-    # create a dictionary with brainer and no-brainer trials. We leave out all
-    # no-brainer trials where the participant hasn't responded in accordance to
-    # the no-brain nature of the trial
-    choices = {'brainer': brainer,
-               'nobrainer_left': consistent_nobrainer_left,
-               'nobrainer_right': consistent_nobrainer_right}
 
-    return choices
 
 
 def _select_channels(epochs):
@@ -495,8 +454,6 @@ def _select_channels(epochs):
 
 
 
-def get_nobrain_brain_trials():
-    return
 
 
 # TODO: preprocess all files starting from first stimulus, with downsampling to 100Hz.
