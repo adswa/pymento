@@ -21,7 +21,6 @@ def parse_args_main():
         "--subject",
         "-s",
         metavar="<subject identifier>",
-        action='store_true',
         help="""
         Subject identifier, e.g., '001'. If several identifiers are given,
         an SRM is trained on data from all subjects""",
@@ -194,6 +193,7 @@ def parse_args_srm():
     parser.add_argument(
         "--subject",
         "-s",
+        nargs="+",
         metavar="<subject identifier>",
         help="""Subject identifier, e.g., '001'""",
         required=True,
