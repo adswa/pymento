@@ -450,7 +450,7 @@ def plot_srm_model(df,
         elif cond == 'nobrain-brain':
             fig = sns.lineplot(data=df[df['trial_type'] == 'brainer'][i])
             sns.lineplot(data=df[(df['trial_type'] == 'nobrainer_left') |
-                                 (df['trial_type'] == 'nobrainer_right')][i])
+                                 (df['trial_type'] == 'nobrainer_right')][i]).set_title(title)
             fig.legend(title='Condition', loc='upper left',
                        labels=['brainer', 'nobrainer'])
         if timespan == 'fulltrial':
