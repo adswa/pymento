@@ -225,6 +225,14 @@ def parse_args_srm():
         choices=['left-right', 'nobrain-brain'],
         default='left-right'
     )
+    parser.add_argument(
+        "--timespan",
+        "-t",
+        help="""The timespan to use""",
+        choices=['fulltrial', 'decision', 'firststim'],
+        default='fulltrial'
+    )
+
 
 
     args = parser.parse_args()

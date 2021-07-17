@@ -188,7 +188,8 @@ def SRM(subject,
         bidsdir,
         figdir,
         condition='left-right',
-        model='det-srm'):
+        model='det-srm',
+        timespan='fulltrial'):
     """
     Fit an SRM of a certain type with varying amount of features to a condition
     of choice
@@ -207,4 +208,5 @@ def SRM(subject,
                                           datadir=datadir,
                                           bidsdir=bidsdir,
                                           figdir=figdir,
-                                          condition=condition)
+                                          condition=condition,
+                                          timespan=timespan)
