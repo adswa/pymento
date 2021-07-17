@@ -296,7 +296,8 @@ def srm():
         bidsdir=args.bids_data_dir,
         figdir=args.diagnostics_dir,
         condition=args.condition,
-        model='det-srm')
+        model='det-srm',
+        timespan=args.timespan)
 
 
 def main():
