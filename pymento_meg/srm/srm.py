@@ -107,7 +107,7 @@ def plot_trial_components_from_detsrm(subject,
         plot_srm_model(df=final_df,
                        nfeatures=f,
                        figdir=figdir,
-                       subject=sub,
+                       subject='group',
                        mdl='det-srm',
                        cond=condition,
                        timespan=timespan)
@@ -439,9 +439,10 @@ def plot_srm_model(df,
             'Duration of the first stimulus' if timespan == 'firststim' else \
             '400ms +/- decision time' if timespan == 'decision' else \
             None
+    # TODO: this needs some indication of which subjects the plot is made from
     for i in range(nfeatures):
-        fname = Path(figdir) / f'sub-{subject}/meg' /\
-                     f'sub-{subject}_{mdl}_{nfeatures}-feat_task-{cond}_model-{timespan}_comp_{i}.png'
+        fname = Path(figdir) / f'{subject}/meg' /\
+                     f'{subject}_{mdl}_{nfeatures}-feat_task-{cond}_model-{timespan}_comp_{i}.png'
         if cond == 'left-right':
             fig = sns.lineplot(data=df[df['trial_type'] == 'right (2)'][i])
             sns.lineplot(data=df[df['trial_type'] == 'left (1)'][i]).set_title(title)

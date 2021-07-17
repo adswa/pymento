@@ -21,7 +21,10 @@ def parse_args_main():
         "--subject",
         "-s",
         metavar="<subject identifier>",
-        help="""Subject identifier, e.g., '001'""",
+        action='store_true',
+        help="""
+        Subject identifier, e.g., '001'. If several identifiers are given,
+        an SRM is trained on data from all subjects""",
     )
     parser.add_argument(
         "--raw_data_dir",
