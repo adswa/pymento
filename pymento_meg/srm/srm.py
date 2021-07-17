@@ -1,3 +1,18 @@
+"""
+Module for fitting shared response models.
+
+TODO: preprocess all files starting from first stimulus, with
+downsampling to 100Hz.
+Reduce epoch length to 6 seconds
+
+get data from the log files about button presses and sort the trials into
+left and right
+write all shared responses into a matrix, check for consistent correlation
+pattern across subjects
+
+"""
+
+
 import mne
 import logging
 import numpy as np
@@ -25,8 +40,12 @@ def plot_trial_components_from_detsrm(subject,
     :param bidsdir
     :param figdir
     :param condition: str, an identifier based on which trials can be split.
-     Possible values: 'left-right' (left versus right option choice),
-     'nobrain-brain' (no-brainer versus brainer trials)
+    Possible values: 'left-right' (left versus right option choice),
+    'nobrain-brain' (no-brainer versus brainer trials)
+    :param timespan: str, an identifier of the time span of data to be used for
+    model fitting. Must be one of 'decision' (time locked around the decision
+    in each trial), 'firststim' (time locked to the first stimulus, for the
+    stimulus duration), or 'fulltrial' (entire 7second epoch).
     :return:
     """
     # initialize a dict to hold data over all subjects in the model
@@ -39,7 +58,7 @@ def plot_trial_components_from_detsrm(subject,
         fname = Path(datadir) / f'sub-{sub}/meg' / \
                  f'sub-{sub}_task-memento_cleaned_epo.fif'
         logging.info(f'Reading in cleaned epochs from subject {sub} '
-              f'from path {fname}.')
+                     f'from path {fname}.')
 
         epochs = mne.read_epochs(fname)
         logging.info('Preparing data for fitting a shared response model')
@@ -49,13 +68,15 @@ def plot_trial_components_from_detsrm(subject,
             epochs.resample(sfreq=100, verbose=True)
         # read the epoch data into a dataframe
         df = epochs.to_data_frame()
-        # find out which arrays belong to a desired condition. The indices in assoc
-        # should correspond to indices of the data list.
-        trials_to_trialtypes, epochs_to_trials = _find_data_of_choice(epochs=epochs,
-                                                                       subject=sub,
-                                                                       bidsdir=bidsdir,
-                                                                       condition=condition,
-                                                                       df=df)
+
+        # use experiment logdata to build a data structure with experiment
+        # information on every trial
+        trials_to_trialtypes, epochs_to_trials = \
+            _find_data_of_choice(epochs=epochs,
+                                 subject=sub,
+                                 bidsdir=bidsdir,
+                                 condition=condition,
+                                 df=df)
 
         all_trial_info = combine_data(df=df,
                                       sub=sub,
@@ -63,9 +84,10 @@ def plot_trial_components_from_detsrm(subject,
                                       epochs_to_trials=epochs_to_trials,
                                       bidsdir=bidsdir,
                                       timespan=timespan)
+        # append single subject data to the data dict of the sample
         fullsample[sub] = all_trial_info
 
-    logging.info(f'Fitting a shared response model based on data from subjects '
+    logging.info(f'Fitting shared response models based on data from subjects '
                  f'{subject}')
     features = [5, 7, 10, 15, 20]
     # aggregate the data from the dictionary into a list of lists, as required
@@ -81,7 +103,6 @@ def plot_trial_components_from_detsrm(subject,
                                 features=f)
         final_df = create_full_dataframe(fullsample, model, data)
 
-        # TODO: continue here
         # plot individual features
         plot_srm_model(df=final_df,
                        nfeatures=f,
@@ -92,12 +113,15 @@ def plot_trial_components_from_detsrm(subject,
                        timespan=timespan)
 
 
-
-def create_full_dataframe(fullsample, model, data):
+def create_full_dataframe(fullsample,
+                          model,
+                          data):
     """
     Create a monstrous pandas dataframe.
 
     :param fullsample: dict, holds all experiment information
+    :param model: Brainiak SRM model, fitted
+    :param data: Pandas dataframe with MEG data
     :return:
     """
     # there must be a way to transform the nested dictionary into a data frame,
@@ -131,11 +155,16 @@ def combine_data(df,
     """
     Generate a dictionary that contains all relevant information of a given
     trial, including the data, correctly slices, to train the model on.
-    :param df:
-    :param sub:
-    :param assoc:
-    :param mapping:
-    :return:
+    :param df: pandas dataframe, contains the MEG data
+    :param sub: str; subject identifier
+    :param trials_to_trialtypes: Dict; a mapping of trial numbers to trial type
+    :param epochs_to_trials: Dict; a mapping of epochs to trial numbers
+    :param bidsdir; str, Path to BIDS dir with log files
+    :param timespan: str, an identifier of the time span of data to be used for
+    model fitting. Must be one of 'decision' (time locked around the decision
+    in each trial), 'firststim' (time locked to the first stimulus, for the
+    stimulus duration), or 'fulltrial' (entire 7second epoch).
+    :return: all_trial_infos; dict; with trial-wise information
     """
     all_trial_infos = {}
     unique_epochs = df['epoch'].unique()
@@ -184,13 +213,14 @@ def combine_data(df,
 
 
 def get_decision_timespan_on_and_offsets(subject,
-                                         bidsdir,
-                                         onset_dur=40,
-                                         offset_dur=40):
+                                         bidsdir):
     """
     For each trial, get a time frame around the point in time that a decision
     was made.
-    :return:
+    :param subject; str, subject identifier
+    :param bidsdir: str, path to BIDS dir with log files
+    :return: trials_to_rts: dict, and association of trial numbers to 800ms time
+    slices around the time of decision in the given trial
     """
     logs = read_bids_logfile(subject=subject,
                              bidsdir=bidsdir)
@@ -231,8 +261,8 @@ def shared_response(data,
                     features):
     """
     Compute a shared response model from a list of trials
-    :param epochs: Epoch object, cleaned epochs in FIF format
-    :param features
+    :param data: list of lists, with MEG data
+    :param features: int, specification of feature number for the model
     :return:
     """
     logging.info(f'Fitting a deterministic SRM with {features} features...')
@@ -249,7 +279,7 @@ def _find_data_of_choice(df,
                          condition):
     """
     Based on a condition that can be queried from the log files (e.g., right or
-    left choice of stimulus), return the trial names, trial types, and epoch IDs.
+    left choice of stimulus), return the trial names, trial types, and epoch IDs
     :param epochs: epochs object
     :param df: pandas dataframe of epochs
     :param subject: str, subject identifier '011'
@@ -262,13 +292,13 @@ def _find_data_of_choice(df,
     """
     # get an association of trial types with trial numbers
     if condition == 'left-right':
-        logging.info('Attempting to retrieve trial information for left and right '
-              'stimulus choices')
+        logging.info('Attempting to retrieve trial information for left and '
+                     'right stimulus choices')
         choices = get_leftright_trials(subject=subject,
                                        bidsdir=bidsdir)
     elif condition == 'nobrain-brain':
-        logging.info('Attempting to retrieve trial information for no-brainer and '
-              'brainer trials')
+        logging.info('Attempting to retrieve trial information for no-brainer '
+                     'and brainer trials')
         choices = get_nobrainer_trials(subject=subject,
                                        bidsdir=bidsdir)
 
@@ -299,12 +329,9 @@ def _find_data_of_choice(df,
             else:
                 logging.info(f'Trial number {trial} is not '
                              f'included in the data.')
-        # ensure that everything has made it into the dictionary
-        #fit = np.intersect1d(list(epochs_to_trials.values()), trials)
-        #assert set(fit).issubset(list(trials_to_trialtypes.keys()))
 
         logging.info(f"Here's my count of matching events in the SRM data for"
-              f" condition {cond}: {counter}")
+                     f" condition {cond}: {counter}")
 
     return trials_to_trialtypes, epochs_to_trials
 
@@ -314,6 +341,8 @@ def get_nobrainer_trials(subject, bidsdir):
     Return the trials where a decision is a "nobrainer", a trial where both the
     reward probability and magnitude of one option is higher than that of the
     other option.
+    :param subject: str, subject identifier
+    :param bidsdir: str, path to BIDS dir with logfiles
     :return:
     """
     df = read_bids_logfile(subject=subject,
@@ -336,17 +365,20 @@ def get_nobrainer_trials(subject, bidsdir):
     # make sure to only take those no-brainer trials where participants actually
     # behaved as expected. Those trials where it would be a nobrainer to pick X,
     # but the subject chose Y, are excluded with this.
-    consistent_nobrainer_left = [trial for trial in left if
-                                 df['choice'][df['trial_no'] == trial].values == 1]
-    consistent_nobrainer_right = [trial for trial in right if
-                                  df['choice'][df['trial_no'] == trial].values == 2]
-    logging.info(f"Subject {subject} underwent a total of {len(right)} no-brainer "
-          f"trials for right choices, and a total of {len(left)} no-brainer "
-          f"trials for left choices. The subject chose consistently according "
-          f"to the no-brainer nature of the trial in "
-          f"N={len(consistent_nobrainer_right)} cases for right no-brainers, "
-          f"and in N={len(consistent_nobrainer_left)} cases for left "
-          f"no-brainers.")
+    consistent_nobrainer_left = \
+        [trial for trial in left if
+         df['choice'][df['trial_no'] == trial].values == 1]
+    consistent_nobrainer_right = \
+        [trial for trial in right if
+         df['choice'][df['trial_no'] == trial].values == 2]
+    logging.info(f"Subject {subject} underwent a total of {len(right)} "
+                 f"no-brainer trials for right choices, and a total of "
+                 f"{len(left)} no-brainer trials for left choices. The subject "
+                 f"chose consistently according to the no-brainer nature of "
+                 f"the trial in N={len(consistent_nobrainer_right)} cases for "
+                 f"right no-brainers, and in "
+                 f"N={len(consistent_nobrainer_left)} cases for left "
+                 f"no-brainers.")
     # create a dictionary with brainer and no-brainer trials. We leave out all
     # no-brainer trials where the participant hasn't responded in accordance to
     # the no-brain nature of the trial
@@ -357,7 +389,8 @@ def get_nobrainer_trials(subject, bidsdir):
     return choices
 
 
-def get_leftright_trials(subject, bidsdir):
+def get_leftright_trials(subject,
+                         bidsdir):
     """
     Return the trials where a left choice and where a right choice was made.
     Logdata coding for left and right is probably 1 = left, 2 = right (based on
@@ -401,15 +434,25 @@ def plot_srm_model(df,
     # TODO: This needs adjustment for trial names!
     import pylab
     import seaborn as sns
+    logging.info('Plotting the data transformed with the SRM model.')
+    title = 'Full trial duration' if timespan == 'fulltrial' else \
+            'Duration of the first stimulus' if timespan == 'firststim' else \
+            '400ms +/- decision time' if timespan == 'decision' else \
+            None
     for i in range(nfeatures):
         fname = Path(figdir) / f'sub-{subject}/meg' /\
                      f'sub-{subject}_{mdl}_{nfeatures}-feat_task-{cond}_model-{timespan}_comp_{i}.png'
         if cond == 'left-right':
             fig = sns.lineplot(data=df[df['trial_type'] == 'right (2)'][i])
-            sns.lineplot(data=df[df['trial_type'] == 'left (1)'][i])
+            sns.lineplot(data=df[df['trial_type'] == 'left (1)'][i]).set_title(title)
+            fig.legend(title='Condition', loc='upper left',
+                       labels=['left choice', 'right choice'])
         elif cond == 'nobrain-brain':
             fig = sns.lineplot(data=df[df['trial_type'] == 'brainer'][i])
-            sns.lineplot(data=df[df['trial_type'] == 'nobrainer'][i])
+            sns.lineplot(data=df[(df['trial_type'] == 'nobrainer_left') |
+                                 (df['trial_type'] == 'nobrainer_right')][i])
+            fig.legend(title='Condition', loc='upper left',
+                       labels=['brainer', 'nobrainer'])
         if timespan == 'fulltrial':
             # define the timing of significant events in the timecourse of a trial:
             # onset and offset of visual stimuli
@@ -417,25 +460,10 @@ def plot_srm_model(df,
             # plot horizontal lines to mark the end of visual stimulation
             [pylab.axvline(ev, linewidth=1, color='grey', linestyle='dashed')
              for ev in events]
-        if timespan == 'decision':
-            print('hi')
 
-
-        # add a legend
-        if cond == 'left-right':
-            fig.legend(title='Condition', loc='upper left',
-                       labels=['left choice', 'right choice'])
-        elif cond == 'nobrain-brain':
-            fig.legend(title='Condition', loc='upper left',
-                       labels=['brainer', 'nobrainer'])
         plot = fig.get_figure()
         plot.savefig(fname)
         plot.clear()
-
-
-
-
-
 
 
 def _select_channels(epochs):
@@ -451,13 +479,3 @@ def _select_channels(epochs):
     idx_left = [epochs.columns.get_loc(s.replace(' ','')) for s in left_chs]
     idx_left = [186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 234, 235, 236, 237, 238, 239, 246, 247, 248]
     idx_right = [231, 232, 233, 240, 241, 242, 243, 244, 245, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 279, 280, 281, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296]
-
-
-
-
-
-# TODO: preprocess all files starting from first stimulus, with downsampling to 100Hz.
-# Reduce epoch length to 6 seconds
-
-# get data from the log files about button presses and sort the trials into left and right
-# write all shared responses into a matrix, check for consistent correlation pattern across subjects
