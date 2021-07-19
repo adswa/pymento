@@ -27,15 +27,16 @@ from pymento_meg.orig.behavior import read_bids_logfile
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
-def plot_trial_components_from_detsrm(subject,
-                                      datadir,
-                                      bidsdir,
-                                      figdir,
-                                      condition='left-right',
-                                      timespan='fulltrial'):
+def plot_trial_components_from_srm(subject,
+                                   datadir,
+                                   bidsdir,
+                                   figdir,
+                                   condition='left-right',
+                                   timespan='fulltrial'):
     """
-    Fit a deterministic SRM to one subjects data, transform the data with each
-    trial's  weights, and plot the data feature-wise for different conditions.
+    Previously, we fit a probabilistic SRM to data, transformed the data
+    with each trial's  weights. Now, we plot the data feature-wise for
+    different conditions.
     :param subject
     :param datadir
     :param bidsdir
@@ -109,7 +110,7 @@ def plot_trial_components_from_detsrm(subject,
                        nfeatures=f,
                        figdir=figdir,
                        subject='group',
-                       mdl='det-srm',
+                       mdl='srm',
                        cond=condition,
                        timespan=timespan)
 
@@ -125,8 +126,7 @@ def create_full_dataframe(fullsample,
     :param data: Pandas dataframe with MEG data
     :return:
     """
-    # there must be a way to transform the nested dictionary into a data frame,
-    # but I have failed so far
+    # transform the data with the fitted model
     transformed = model.transform(data)
     # add the transformed data into the dict
     for subject, infodict in fullsample.items():
@@ -269,9 +269,9 @@ def shared_response(data,
     :param features: int, specification of feature number for the model
     :return:
     """
-    logging.info(f'Fitting a deterministic SRM with {features} features...')
-    # fit a deterministic shared response model
-    model = srm.DetSRM(features=features)
+    logging.info(f'Fitting a probabilistic SRM with {features} features...')
+    # fit a probabilistic shared response model
+    model = srm.SRM(features=features)
     model.fit(data)
     return model
 
@@ -418,7 +418,7 @@ def plot_srm_model(df,
                    nfeatures,
                    figdir,
                    subject,
-                   mdl='det-srm',
+                   mdl='srm',
                    cond='left-right',
                    timespan='fulltrial'):
     """

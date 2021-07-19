@@ -188,7 +188,7 @@ def SRM(subject,
         bidsdir,
         figdir,
         condition='left-right',
-        model='det-srm',
+        model='srm',
         timespan='fulltrial'):
     """
     Fit an SRM of a certain type with varying amount of features to a condition
@@ -202,9 +202,9 @@ def SRM(subject,
     :return:
     """
 
-    if model == 'det-srm':
-        from pymento_meg.srm.srm import plot_trial_components_from_detsrm
-        plot_trial_components_from_detsrm(subject=subject,
+    if model == 'srm':
+        from pymento_meg.srm.srm import plot_trial_components_from_srm
+        plot_trial_components_from_srm(subject=subject,
                                           datadir=datadir,
                                           bidsdir=bidsdir,
                                           figdir=figdir,
