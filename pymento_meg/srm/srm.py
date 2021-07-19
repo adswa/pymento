@@ -20,6 +20,7 @@ import pandas as pd
 
 from brainiak.funcalign import srm
 from pathlib import Path
+from scipy import stats
 from pymento_meg.orig.behavior import read_bids_logfile
 
 
@@ -206,9 +207,12 @@ def combine_data(df,
         else:
             raise NotImplementedError(f"The timespan {timespan} is not "
                                       f"implemented.")
+        # normalize (z-score) the data within sensors
+        normalized_data = stats.zscore(data, axis=1, ddof=0)
         all_trial_infos[trial_no] = {'epoch': epoch,
                                      'trial_type': trial_type,
-                                     'data': data}
+                                     'data': data,
+                                     'normalized_data': normalized_data}
     return all_trial_infos
 
 
