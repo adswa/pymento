@@ -8,3 +8,4 @@ PyQt5
 pyvista
 mne-bids
 autoreject
+scipy
