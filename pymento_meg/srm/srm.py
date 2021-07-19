@@ -96,7 +96,7 @@ def plot_trial_components_from_detsrm(subject,
     data = []
     for subject, trialinfo in fullsample.items():
         for trial_no, info in trialinfo.items():
-            data.append(info['data'])
+            data.append(info['normalized_data'])
 
     for f in features:
         # fit the model
