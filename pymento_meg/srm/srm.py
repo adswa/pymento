@@ -91,7 +91,8 @@ def plot_trial_components_from_srm(subject,
 
     logging.info(f'Fitting shared response models based on data from subjects '
                  f'{subject}')
-    features = [5, 7, 10, 15, 20]
+    # use a wide range of features to see if anything makes a visible difference
+    features = [5, 10, 20, 100]
     # aggregate the data from the dictionary into a list of lists, as required
     # by brainiak
     data = []
