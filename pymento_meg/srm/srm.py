@@ -68,6 +68,7 @@ def plot_trial_components_from_srm(subject,
             # after initial preprocessing, they are downsampled to 200Hz.
             # Downsample further to 100Hz
             epochs.resample(sfreq=100, verbose=True)
+        assert epochs.info['sfreq'] == 100
         # read the epoch data into a dataframe
         df = epochs.to_data_frame()
 
