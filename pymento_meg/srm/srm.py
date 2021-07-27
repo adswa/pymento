@@ -339,6 +339,7 @@ def _find_data_of_choice(df,
     # Create a mapping between epoch labels and trial numbers based on metadata.
     assert len(df['epoch'].unique()) == len(epochs.metadata.trial_no.values)
     # generate a mapping between trial numbers and epoch names in the dataframe
+    # TODO: take this straight from metadata, epochs are indices
     epochs_to_trials = {key: value for (key, value) in
                         zip(df['epoch'].unique(),
                             epochs.metadata.trial_no.values)}
