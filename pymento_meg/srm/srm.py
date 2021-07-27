@@ -49,6 +49,8 @@ def plot_trial_components_from_srm(subject,
     in each trial), 'firststim' (time locked to the first stimulus, for the
     stimulus duration), or 'fulltrial' (entire 7second epoch).
     :return:
+    models, dict with feature number as keys and corresponding models as values
+    data: list of dicts, with all trial information
     """
     # initialize a dict to hold data over all subjects in the model
     fullsample = {}
@@ -94,18 +96,20 @@ def plot_trial_components_from_srm(subject,
                  f'{subject}')
     # use a wide range of features to see if anything makes a visible difference
     features = [5, 10, 20, 100]
-    # aggregate the data from the dictionary into a list of lists, as required
-    # by brainiak
+    # aggregate the data into a list of dictionaries
     data = []
     for subject, trialinfo in fullsample.items():
         for trial_no, info in trialinfo.items():
-            data.append(info['normalized_data'])
-
+            info['subject'] = subject
+            info['trial_no'] = trial_no
+            data.append(info)
+    models = {}
     for f in features:
-        # fit the model
-        model = shared_response(data=data,
+        # fit the model. List comprehension to retrieve the data as a list of
+        # lists, as required by brainiak
+        model = shared_response(data=[d['normalized_data'] for d in data],
                                 features=f)
-        final_df = create_full_dataframe(fullsample, model, data)
+        final_df, data = create_full_dataframe(model, data)
 
         # plot individual features
         plot_srm_model(df=final_df,
@@ -115,38 +119,62 @@ def plot_trial_components_from_srm(subject,
                        mdl='srm',
                        cond=condition,
                        timespan=timespan)
+        models[f] = model
+    for idx, model in models.items():
+        plot_distance_matrix(model, idx, figdir)
+    return models, data
 
 
-def create_full_dataframe(fullsample,
-                          model,
+def plot_distance_matrix(model, idx, figdir):
+    """
+    plot a distance matrix between time points from the shared response.
+    :param model:
+    :param figdir:
+    :return:
+    """
+    import scipy.spatial.distance as sp_distance
+    import matplotlib.pyplot as plt
+    dist_mat = sp_distance.squareform(sp_distance.pdist(model.s_.T))
+    plt.xlabel('t (100 = 1sec)')
+    plt.ylabel('t (100 = 1sec)')
+    plt.imshow(dist_mat, cmap='viridis')
+    # TODO: maybe add vertical lines in experiment landmarks
+    plt.colorbar()
+    fname = Path(figdir) / f'group/meg' / \
+                            f'group_task-memento_srm-{idx}_distances.png'
+    plt.savefig(fname)
+    plt.close()
+
+
+def create_full_dataframe(model,
                           data):
     """
     Create a monstrous pandas dataframe.
 
-    :param fullsample: dict, holds all experiment information
     :param model: Brainiak SRM model, fitted
-    :param data: Pandas dataframe with MEG data
-    :return:
+    :param data: List of Pandas dataframes with MEG data and trial info
+    :return: data: completed List of pd DataFrames with transformed data
+    :return: finaldf: Large pd Dataframe, used for plotting
     """
-    # transform the data with the fitted model
-    transformed = model.transform(data)
-    # add the transformed data into the dict
-    for subject, infodict in fullsample.items():
-        for trial in infodict.keys():
-            infodict[trial]['transformed'] = transformed.pop(0)
+    # transform the data with the fitted model. list comprehension as data is
+    # a list of dicts
+    transformed = model.transform([d['normalized_data'] for d in data])
+    # add the transformed data into the dicts. They hold all information
+    for d in data:
+        d['transformed'] = transformed.pop(0)
     assert transformed == []
+    # build a dataframe for plotting
     dfs = []
-    for subject, infodict in fullsample.items():
-        for trial, info in infodict.items():
-            df = pd.DataFrame.from_records(info['transformed']).T
-            trial_type = info['trial_type']
-            trial = trial
-            df['trial_type'] = trial_type
-            df['trial_no'] = trial
-            dfs.append(df)
+    for d in data:
+        df = pd.DataFrame.from_records(d['transformed']).T
+        trial_type = d['trial_type']
+        trial = d['trial_no']
+        df['trial_type'] = trial_type
+        df['trial_no'] = trial
+        dfs.append(df)
 
     finaldf = pd.concat(dfs)
-    return finaldf
+    return finaldf, data
 
 
 def combine_data(df,
