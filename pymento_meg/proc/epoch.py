@@ -10,16 +10,21 @@ from pymento_meg.utils import (
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
-def add_metadata_to_visuals(visuals, subject, bids_path, **kwargs):
+def get_stimulus_characteristics(subject,
+                                 bids_path,
+                                 columns=['trial_no', 'LoptMag', 'LoptProb'],
+                                 epochs=None,
+                                 **kwargs):
     """
+    Retrieve metadata about the stimulus/trial properties recorded in the
+    logdata.
     Add metadata on reward magnitude and probability to epochs of first visual
     events.
     Event name ->   description ->      count:
     lOpt1 -> LoptMag 0.5, LoptProb 0.4 -> 70
-    lOpt1 -> LoptMag 0.5, LoptProb 0.8 -> 65
+    lOpt2 -> LoptMag 0.5, LoptProb 0.8 -> 65
     lOpt3 -> LoptMag 1, LoptProb 0.2 -> 50
     lOpt4 -> LoptMag 1, LoptProb 0.8 -> 70
-    lOpt5 -> LoptMag 2, LoptProb 0.1 -> 50
     lOpt5 -> LoptMag 2, LoptProb 0.1 -> 50
     lOpt6 -> LoptMag 2, LoptProb 0.2 -> 35
     lOpt7 -> LoptMag 2, LoptProb 0.4 -> 50
@@ -35,15 +40,24 @@ def add_metadata_to_visuals(visuals, subject, bids_path, **kwargs):
     LoptMag 4, LoptProb 0.4
     LoptMag 4, LoptProb 0.8
 
-    :param visuals: epochs, visualevents of left stimulation
+    :param bids_path: str, path to the bids directory with logfiles
+    :param subject: str, subject identifier
+    :param epochs: epochs, optional; this is where trial information is added
+    to as metadata
+    :param columns: list of column names to index
     """
-
+    assert type(columns) == list
     # get a dataframe of the visual features
-    metadata = get_trial_features(bids_path, subject, ['LoptMag', 'LoptProb'])
-    visuals.metadata = metadata
-    # This can now be indexed/queried like this:
-    # visuals['LoptMag == 1.0'] or visuals['LoptMag == 4 and LoptProb == 0.8']
-    return
+    metadata = get_trial_features(bids_path, subject, columns)
+    if epochs:
+        # if we got an epochs object, add the trial properties as metadata
+        # TODO: this probably needs a length check...
+        # This can then be indexed/queried like this:
+        # visuals['LoptMag == 1.0'] or visuals['LoptMag == 4 and LoptProb == 0.8']
+        epochs.metadata = metadata
+        return epochs
+    # if we don't attach this information to epochs, return it as a dataframe.
+    return metadata
 
 
 def get_trial_features(bids_path, subject, column):
