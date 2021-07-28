@@ -22,6 +22,7 @@ from brainiak.funcalign import srm
 from pathlib import Path
 from scipy import stats
 from pymento_meg.orig.behavior import read_bids_logfile
+from pymento_meg.proc.epoch import get_stimulus_characteristics
 
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
@@ -123,6 +124,63 @@ def plot_trial_components_from_srm(subject,
     for idx, model in models.items():
         plot_distance_matrix(model, idx, figdir)
     return models, data
+
+
+# this maps a set of reward magnitude and probability (in the order) to trial
+# types
+trial_characteristics = {
+    (0.5, 0.4): 'A',
+    (0.5, 0.8): 'B',
+    (1, 0.2): 'C',
+    (1, 0.8): 'D',
+    (2, 0.1): 'E',
+    (2, 0.2): 'F',
+    (2, 0.4): 'G',
+    (4, 0.1): 'H',
+    (4, 0.2): 'I'
+}
+
+
+def order_trials(subject,
+                 bidsdir,
+                 epochs,
+                 all_trial_info):
+    """
+    Bring trials in a standardized sequence across participants according to
+    their characteristics
+
+    Event name ->   description ->      typename:   -> count
+    lOpt1 -> LoptMag 0.5, LoptProb 0.4 -> A ->  70
+    lOpt2 -> LoptMag 0.5, LoptProb 0.8 -> B ->  65
+    lOpt3 -> LoptMag 1, LoptProb 0.2 -> C ->    50
+    lOpt4 -> LoptMag 1, LoptProb 0.8 -> D ->    70
+    lOpt5 -> LoptMag 2, LoptProb 0.1 -> E ->    50
+    lOpt6 -> LoptMag 2, LoptProb 0.2 -> F ->    35
+    lOpt7 -> LoptMag 2, LoptProb 0.4 -> G ->    50
+    lOpt8 -> LoptMag 4, LoptProb 0.1 -> H   ->  70
+    lOpt9 -> LoptMag 4, LoptProb 0.2 -> I   ->  50
+
+    :return:
+    """
+    left_stim_char = get_stimulus_characteristics(subject, bidsdir)
+    # add the probability and magnitude information
+    for info in all_trial_info.keys():
+        Mag = left_stim_char[left_stim_char['trial_no'] == info]['LoptMag'].item()
+        Prb = left_stim_char[left_stim_char['trial_no'] == info]['LoptProb'].item()
+        all_trial_info[info]['LoptMag'] = Mag
+        all_trial_info[info]['LoptProb'] = Prb
+        all_trial_info[info]['char'] = trial_characteristics[(Mag, Prb)]
+
+    # get a count of trials per characteristic
+    chars = [info['char'] for info in all_trial_info.values()]
+    from collections import Counter
+    counts = Counter(chars)
+    # make sure we have a minimal amount of trials to fit the model
+    assert all([counts[i] > 5 for i in counts])
+
+
+
+
 
 
 def plot_distance_matrix(model, idx, figdir):
