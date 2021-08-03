@@ -118,6 +118,55 @@ def get_general_data_structure(subject,
     return fullsample, data
 
 
+def test_and_train_split(datadir, bidsdir, subject=None):
+    """
+    Separate data into a training and test set per participant
+    :return:
+    train, test: dict, with subject ids as keys, and a list of train/test data
+        dictionaries as the value
+    """
+    import random
+    random.seed(423)
+    fullsample, data = get_general_data_structure(subject=['011', '012', '014', '016', '017', '018', '019', '020', '022'],
+                                                  datadir=datadir,
+                                                  bidsdir=bidsdir,
+                                                  condition='left-right',
+                                                  timespan='fulltrial')
+    #subjects = fullsample.keys()
+    # lets start with participants with 30+ trials per condition: 11, 12, 14, 16, 17, 18, 19, 20, 22
+    subjects = ['011', '012', '014', '016', '017', '018', '019', '020', '022']
+
+    # get list of infos per trial characteristic
+    test_data = {}
+    train_data = {}
+    for sub in subjects:
+        A = [i for i in data if (i['subject'] == sub and i['char'] == 'A')]
+        B = [i for i in data if (i['subject'] == sub and i['char'] == 'B')]
+        C = [i for i in data if (i['subject'] == sub and i['char'] == 'C')]
+        D = [i for i in data if (i['subject'] == sub and i['char'] == 'D')]
+        E = [i for i in data if (i['subject'] == sub and i['char'] == 'E')]
+        F = [i for i in data if (i['subject'] == sub and i['char'] == 'F')]
+        G = [i for i in data if (i['subject'] == sub and i['char'] == 'G')]
+        H = [i for i in data if (i['subject'] == sub and i['char'] == 'H')]
+        I = [i for i in data if (i['subject'] == sub and i['char'] == 'I')]
+        assert all([len(l) >= 30 for l in [A, B, C, D, E, F, G, H, I]])
+        # for each trial characteristic, pick 15 random trials for training, and
+        # 15 other random trials for testing
+        test = []
+        train = []
+        for trials in [A, B, C, D, E, F, G, H, I]:
+            # shuffle the list with a random seed
+            shuffled = random.sample(trials, len(trials))
+            # pick the first random 15 for testing, the last 15 for training.
+            test.extend(shuffled[:15])
+            train.extend(shuffled[-15:])
+        assert len(test) == 135
+        assert len(train) == 135
+        test_data[sub] = test
+        train_data[sub] = train
+    return test_data, train_data
+
+
 def plot_trial_components_from_srm(subject,
                                    datadir,
                                    bidsdir,
@@ -173,8 +222,6 @@ def plot_trial_components_from_srm(subject,
     for idx, model in models.items():
         plot_distance_matrix(model, idx, figdir)
     return models, data
-
-
 
 
 def add_trial_types(subject,
