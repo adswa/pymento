@@ -28,6 +28,96 @@ from pymento_meg.proc.epoch import get_stimulus_characteristics
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
+# map a set of reward magnitude and probability (in the order) to trial types
+trial_characteristics = {
+    (0.5, 0.4): 'A',
+    (0.5, 0.8): 'B',
+    (1, 0.2): 'C',
+    (1, 0.8): 'D',
+    (2, 0.1): 'E',
+    (2, 0.2): 'F',
+    (2, 0.4): 'G',
+    (4, 0.1): 'H',
+    (4, 0.2): 'I'
+}
+
+
+def get_general_data_structure(subject,
+                               datadir,
+                               bidsdir,
+                               condition,
+                               timespan):
+    """
+    Retrieve trial-wise data and its characteristics into a nested dictionary
+    and the linearization of this structure, a list of dictionaries.
+
+    :param subject: str, subject identifier
+    :param datadir: str, path to data with epochs
+    :param bidsdir: str, path to bids directory
+    :param condition: str, an identifier based on which trials can be split.
+    Possible values: 'left-right' (left versus right option choice),
+    'nobrain-brain' (no-brainer versus brainer trials)
+    :param timespan: str, an identifier of the time span of data to be used for
+    model fitting. Must be one of 'decision' (time locked around the decision
+    in each trial), 'firststim' (time locked to the first stimulus, for the
+    stimulus duration), or 'fulltrial' (entire 7second epoch).
+    :return:
+    """
+    # initialize a dict to hold data over all subjects in the model
+    fullsample = {}
+    if not isinstance(subject, list):
+        # we may want to combine multiple subject's data.
+        subject = [subject]
+
+    for sub in subject:
+        fname = Path(datadir) / f'sub-{sub}/meg' / \
+                f'sub-{sub}_task-memento_cleaned_epo.fif'
+        logging.info(f'Reading in cleaned epochs from subject {sub} '
+                     f'from path {fname}.')
+
+        epochs = mne.read_epochs(fname)
+        logging.info('Ensuring data has a frequency of 100Hz')
+        if epochs.info['sfreq'] > 100:
+            # after initial preprocessing, they are downsampled to 200Hz.
+            # Downsample further to 100Hz
+            epochs.resample(sfreq=100, verbose=True)
+        assert epochs.info['sfreq'] == 100
+        # read the epoch data into a dataframe
+        df = epochs.to_data_frame()
+
+        # use experiment logdata to build a data structure with experiment
+        # information on every trial
+        trials_to_trialtypes, epochs_to_trials = \
+            _find_data_of_choice(epochs=epochs,
+                                 subject=sub,
+                                 bidsdir=bidsdir,
+                                 condition=condition,
+                                 df=df)
+
+        all_trial_info = combine_data(df=df,
+                                      sub=sub,
+                                      trials_to_trialtypes=trials_to_trialtypes,
+                                      epochs_to_trials=epochs_to_trials,
+                                      bidsdir=bidsdir,
+                                      timespan=timespan)
+        # add trial order information to the data structure
+        all_trial_info = add_trial_types(subject=sub,
+                                         bidsdir=bidsdir,
+                                         all_trial_info=all_trial_info)
+
+        # append single subject data to the data dict of the sample
+        fullsample[sub] = all_trial_info
+    # aggregate the data into a list of dictionaries
+    data = []
+    for subject, trialinfo in fullsample.items():
+        for trial_no, info in trialinfo.items():
+            info['subject'] = subject
+            info['trial_no'] = trial_no
+            data.append(info)
+
+    return fullsample, data
+
+
 def plot_trial_components_from_srm(subject,
                                    datadir,
                                    bidsdir,
@@ -53,57 +143,16 @@ def plot_trial_components_from_srm(subject,
     models, dict with feature number as keys and corresponding models as values
     data: list of dicts, with all trial information
     """
-    # initialize a dict to hold data over all subjects in the model
-    fullsample = {}
-    if not isinstance(subject, list):
-        # we may want to combine multiple subject's data.
-        subject = [subject]
-
-    for sub in subject:
-        fname = Path(datadir) / f'sub-{sub}/meg' / \
-                 f'sub-{sub}_task-memento_cleaned_epo.fif'
-        logging.info(f'Reading in cleaned epochs from subject {sub} '
-                     f'from path {fname}.')
-
-        epochs = mne.read_epochs(fname)
-        logging.info('Preparing data for fitting a shared response model')
-        if epochs.info['sfreq'] > 100:
-            # after initial preprocessing, they are downsampled to 200Hz.
-            # Downsample further to 100Hz
-            epochs.resample(sfreq=100, verbose=True)
-        assert epochs.info['sfreq'] == 100
-        # read the epoch data into a dataframe
-        df = epochs.to_data_frame()
-
-        # use experiment logdata to build a data structure with experiment
-        # information on every trial
-        trials_to_trialtypes, epochs_to_trials = \
-            _find_data_of_choice(epochs=epochs,
-                                 subject=sub,
-                                 bidsdir=bidsdir,
-                                 condition=condition,
-                                 df=df)
-
-        all_trial_info = combine_data(df=df,
-                                      sub=sub,
-                                      trials_to_trialtypes=trials_to_trialtypes,
-                                      epochs_to_trials=epochs_to_trials,
-                                      bidsdir=bidsdir,
-                                      timespan=timespan)
-        # append single subject data to the data dict of the sample
-        fullsample[sub] = all_trial_info
+    fullsample, data = get_general_data_structure(subject=subject,
+                                                  datadir=datadir,
+                                                  bidsdir=bidsdir,
+                                                  condition=condition,
+                                                  timespan=timespan)
 
     logging.info(f'Fitting shared response models based on data from subjects '
                  f'{subject}')
     # use a wide range of features to see if anything makes a visible difference
     features = [5, 10, 20, 100]
-    # aggregate the data into a list of dictionaries
-    data = []
-    for subject, trialinfo in fullsample.items():
-        for trial_no, info in trialinfo.items():
-            info['subject'] = subject
-            info['trial_no'] = trial_no
-            data.append(info)
     models = {}
     for f in features:
         # fit the model. List comprehension to retrieve the data as a list of
@@ -126,25 +175,11 @@ def plot_trial_components_from_srm(subject,
     return models, data
 
 
-# this maps a set of reward magnitude and probability (in the order) to trial
-# types
-trial_characteristics = {
-    (0.5, 0.4): 'A',
-    (0.5, 0.8): 'B',
-    (1, 0.2): 'C',
-    (1, 0.8): 'D',
-    (2, 0.1): 'E',
-    (2, 0.2): 'F',
-    (2, 0.4): 'G',
-    (4, 0.1): 'H',
-    (4, 0.2): 'I'
-}
 
 
-def order_trials(subject,
-                 bidsdir,
-                 epochs,
-                 all_trial_info):
+def add_trial_types(subject,
+                    bidsdir,
+                    all_trial_info):
     """
     Bring trials in a standardized sequence across participants according to
     their characteristics
@@ -175,9 +210,15 @@ def order_trials(subject,
     chars = [info['char'] for info in all_trial_info.values()]
     from collections import Counter
     counts = Counter(chars)
+    print(counts)
     # make sure we have a minimal amount of trials to fit the model
     assert all([counts[i] > 5 for i in counts])
+    # participants with <10 trials per condition: 7, 8 (not yet preprocessed)
+    # participants with 10+ trials per condition: 1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
+    # participants with 20+ trials per condition: 3, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
+    # participants with 30+ trials per condition: 11, 12, 14, 16, 17, 18, 19, 20, 22
 
+    return all_trial_info
 
 
 
