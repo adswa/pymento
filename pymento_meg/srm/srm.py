@@ -164,7 +164,31 @@ def test_and_train_split(datadir, bidsdir, subject=None):
         assert len(train) == 135
         test_data[sub] = test
         train_data[sub] = train
+    # at the moment, test and train data are still trial-wise for each subject
+    # transform the data into a list of lists, with each nested list being a
+    # concatenated timeseries for one subject
+    test_series = []
+    for k, v in test_data.items():
+        test_series.append(concatenate_data(v))
+    train_series = []
+    for k, v in train_data.items():
+        train_series.append(concatenate_data(v))
+    assert len(test_series) == len(train_series) == len(subjects)
+
     return test_data, train_data
+
+
+def concatenate_data(data, field='normalized_data'):
+    """
+    Concatenate trial data in a list of dictionaries
+    :param data:
+    :return:
+    """
+    time_series = np.concatenate([info[field] for info in data],
+                                 axis=1)
+    assert time_series.shape[0] == 306
+    return time_series
+
 
 
 def plot_trial_components_from_srm(subject,
@@ -266,9 +290,6 @@ def add_trial_types(subject,
     # participants with 30+ trials per condition: 11, 12, 14, 16, 17, 18, 19, 20, 22
 
     return all_trial_info
-
-
-
 
 
 def plot_distance_matrix(model, idx, figdir):
