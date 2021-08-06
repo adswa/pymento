@@ -181,6 +181,66 @@ def parse_args_sss():
     return args
 
 
+def parse_args_epochnclean():
+
+    formatter_class = argparse.RawDescriptionHelpFormatter
+    parser = argparse.ArgumentParser(
+        formatter_class=formatter_class,
+        prog="pymento",
+        description="{}".format(epoch_and_clean.__doc__),
+    )
+    parser.add_argument("--version", action="store_true")
+    parser.add_argument(
+        "--subject",
+        "-s",
+        metavar="<subject identifier>",
+        help="""Subject identifier, e.g., '001'""",
+        required=True,
+    )
+    parser.add_argument(
+        "--bidsdir",
+        "-b",
+        metavar="<bids data directory>",
+        help="""Provide a path to the bids-structured directory for the
+                memento sample.""",
+        default="/data/project/brainpeach/memento/memento-bids/",
+        required=True,
+    )
+    parser.add_argument(
+        "--derivdir",
+        help="""A path to a directory where cleaned epochs will be saved in""",
+        default="/data/project/brainpeach/memento/memento-bids-sss/",
+        required=True,
+    )
+    parser.add_argument(
+        "--datadir",
+        help="""A path to the directory with sss-processed memento data""",
+        default="/data/project/brainpeach/memento/memento-bids-sss/",
+        required=True,
+    )
+    parser.add_argument(
+        "--diagdir",
+        "-d",
+        help="""A path to a directory where diagnostic figures will be saved""",
+        required=True,
+    )
+    parser.add_argument(
+        "--event",
+        "-e",
+        help="An identifier for the timepoint at which an epoch will start. "
+             "Currently implemented: 'visualfix' (the start of the "
+             "fixation cross in each trial), 'visualfirst' (the start of the "
+             "left visual stimulus).",
+        default='visualfirst',
+        choices=['visualfirst', 'visualfix'],
+    )
+
+    args = parser.parse_args()
+    if args.version:
+        print(version)
+    return args
+
+
 def parse_args_srm():
 
     formatter_class = argparse.RawDescriptionHelpFormatter
@@ -280,6 +340,35 @@ def sss():
         figdir=args.diagnostics_dir,
         derived_path=args.bids_deriv_dir,
     )
+
+
+def epoch_and_clean():
+    """
+    Epoch the data and remove artifacts and bad trials
+    :return: Will save cleaned epochs into <DERIVDIR>
+    """
+    from pymento_meg.pymento import epoch_and_clean_trials
+    args = parse_args_epochnclean()
+    if args.event == 'visualfirst':
+        # set eventid to be all first stimulus types
+        eventid = {"visualfirst/lOpt1": 12,
+                   "visualfirst/lOpt2": 13,
+                   "visualfirst/lOpt3": 14,
+                   "visualfirst/lOpt4": 15,
+                   "visualfirst/lOpt5": 16,
+                   "visualfirst/lOpt6": 17,
+                   "visualfirst/lOpt7": 18,
+                   "visualfirst/lOpt8": 19,
+                   "visualfirst/lOpt9": 20}
+    elif args.event == 'visualfix':
+        eventid = {'visualfix/fixCross': 10}
+
+    epoch_and_clean_trials(subject=args.subject,
+                           diagdir=args.diagdir,
+                           bidsdir=args.bidsdir,
+                           datadir=args.datadir,
+                           derivdir=args.derivdir,
+                           evenid=eventid)
 
 
 def srm():
