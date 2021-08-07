@@ -362,13 +362,13 @@ def epoch_and_clean():
                    "visualfirst/lOpt9": 20}
     elif args.event == 'visualfix':
         eventid = {'visualfix/fixCross': 10}
-
+    logging.info(f"Using the following event ids for epoching: {eventid}")
     epoch_and_clean_trials(subject=args.subject,
                            diagdir=args.diagdir,
                            bidsdir=args.bidsdir,
                            datadir=args.datadir,
                            derivdir=args.derivdir,
-                           evenid=eventid)
+                           eventid=eventid)
 
 
 def srm():
