@@ -5,9 +5,9 @@ from mne.preprocessing import (
     ICA,
 )
 from autoreject import (
-    get_rejection_threshold
+    AutoReject
 )
-
+import logging
 from pymento_meg.utils import _construct_path
 from pathlib import Path
 
@@ -36,9 +36,14 @@ def remove_eyeblinks_and_heartbeat(raw,
     filt_raw.load_data().filter(l_freq=1., h_freq=None)
     # evoked eyeblinks and heartbeats for diagnostic plots
     eog_evoked = create_eog_epochs(filt_raw).average()
-    eog_evoked.apply_baseline(baseline=(None, -0.2))
+    eog_evoked.apply_baseline(baseline=(-0.5, -0.2))
+    if subject == '008':
+        # subject 008's ECG channel is flat. It will not find any heartbeats by
+        # default. We let it estimate heartbeat from magnetometers. For this,
+        # we'll drop the ECG channel
+        filt_raw.drop_channels('ECG003')
     ecg_evoked = create_ecg_epochs(filt_raw).average()
-    ecg_evoked.apply_baseline(baseline=(None, -0.2))
+    ecg_evoked.apply_baseline(baseline=(-0.5, -0.2))
     # make sure that we actually found sensible artifacts here
     eog_fig = eog_evoked.plot_joint()
     for i, fig in enumerate(eog_fig):
@@ -62,17 +67,29 @@ def remove_eyeblinks_and_heartbeat(raw,
             ]
         )
         fig.savefig(fname)
-    # define the actual events (7 seconds from fixation cross onset).
+    # define the actual events (7 seconds from onset of event_id)
+    # No baseline correction as it would interfere with ICA.
     epochs = mne.Epochs(filt_raw, events, event_id=eventid,
                         tmin=0, tmax=7,
                         picks='meg', baseline=None)
-    # First, estimate rejection criteria for high-amplitude artifacts
-    reject = get_rejection_threshold(epochs)
+    # First, estimate rejection criteria for high-amplitude artifacts. This is
+    # done via autoreject
+    logging.info('Estimating bad epochs quick-and-dirty, to improve ICA')
+    ar = AutoReject(random_state=11)
+    # fit on first 200 epochs to save (a bit of) time
+    epochs.load_data()
+    ar.fit(epochs[:200])
+    epochs_ar, reject_log = ar.transform(epochs, return_log=True)
+
     # run an ICA to capture heartbeat and eyeblink artifacts.
-    # 15 components are hopefully enough to capture them.
-    # set a seed for reproducibility
-    ica = ICA(n_components=30, max_iter='auto', random_state=42)
-    ica.fit(epochs, reject=reject)#, tstep=tstep)
+    # use picard algorithm because it promised
+    # set a seed for reproducibility.
+    # ICA should figure its component number out itself.
+    # We fit it on a set of epochs excluding the initial bad epochs following
+    # https://github.com/autoreject/autoreject/blob/dfbc64f49eddeda53c5868290a6792b5233843c6/examples/plot_autoreject_workflow.py
+    ica = ICA(method='picard',
+              max_iter='auto', random_state=42)
+    ica.fit(epochs[~reject_log.bad_epochs])
 
     # use the EOG channel to select ICA components:
     ica.exclude = []
@@ -117,6 +134,13 @@ def remove_eyeblinks_and_heartbeat(raw,
     # find ECG components
     ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw, method='ctps',
                                                 threshold='auto')
+    if subject == '008':
+        # because this subject misses the ECG channel, automatic detection of
+        # ECG components fails. However, visual inspection shows a clear heart
+        # beat in component 17. This should be stable across reruns as long as
+        # the seed isn't changed.
+        ecg_indices = [17]
+
     ica.exclude.extend(ecg_indices)
 
     scores = ica.plot_scores(ecg_scores)
