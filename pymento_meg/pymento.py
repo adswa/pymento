@@ -106,8 +106,8 @@ def epoch_and_clean_trials(subject,
                            derivdir,
                            eventid={'visualfix/fixCross': 10}):
     """
-    Chunk the data into epochs starting at the fixation cross at the start of a
-    trial, lasting 7 seconds (which should include all trial elements).
+    Chunk the data into epochs starting at the eventid specified per trial,
+    lasting 7 seconds (which should include all trial elements).
     Do automatic artifact detection, rejection and fixing for eyeblinks,
     heartbeat, and high- and low-amplitude artifacts.
     :param subject: str, subject identifier. takes the form '001'
@@ -133,7 +133,7 @@ def epoch_and_clean_trials(subject,
     # high-pass doesn't make sense, raw data has 0.1Hz high-pass filter already!
     _filter_data(raw, h_freq=40)
     # ICA to detect and repair artifacts
-    logging.info('Removing eyeblink and hearbeat artifacts')
+    logging.info('Removing eyeblink and heartbeat artifacts')
     remove_eyeblinks_and_heartbeat(raw=raw,
                                    subject=subject,
                                    figdir=diagdir,
