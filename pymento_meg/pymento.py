@@ -149,11 +149,15 @@ def epoch_and_clean_trials(subject,
     # ADD SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH! ONLY THIS WAY WE CAN
     # LATER RECOVER WHICH TRIAL PARAMETERS WE'RE LOOKING AT BASED ON THE LOGS AS
     # THE EPOCH REJECTION WILL REMOVE TRIALS
-    # TODO: make trial numbers integers
     from pymento_meg.proc.epoch import get_trial_features
     metadata = get_trial_features(bids_path=bidsdir,
                                   subject=subject,
                                   column='trial_no')
+    # transform to integers
+    metadata = metadata.astype(int)
+    # this does not work if we start at fixation cross for subject 5, because 1
+    # fixation cross trigger is missing from the data, and it becomes impossible
+    # to associate the trial metadata to the correct trials in the data
     epochs.metadata = metadata
     epochs.load_data()
     # downsample the data to 200Hz
