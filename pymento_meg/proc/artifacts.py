@@ -32,9 +32,11 @@ def remove_eyeblinks_and_heartbeat(raw,
     # as low frequency artifacts can alter the ICA solution. We fit the ICA
     # to high-pass filtered (1Hz) data, and apply it to non-highpass-filtered
     # data
+    logging.info("Applying a temporary high-pass filtering prior to ICA")
     filt_raw = raw.copy()
     filt_raw.load_data().filter(l_freq=1., h_freq=None)
     # evoked eyeblinks and heartbeats for diagnostic plots
+    logging.info("Searching for eyeblink and heartbeat artifacts in the data")
     eog_evoked = create_eog_epochs(filt_raw).average()
     eog_evoked.apply_baseline(baseline=(-0.5, -0.2))
     if subject == '008':
@@ -69,6 +71,7 @@ def remove_eyeblinks_and_heartbeat(raw,
         fig.savefig(fname)
     # define the actual events (7 seconds from onset of event_id)
     # No baseline correction as it would interfere with ICA.
+    logging.info("Epoching filtered data")
     epochs = mne.Epochs(filt_raw, events, event_id=eventid,
                         tmin=0, tmax=7,
                         picks='meg', baseline=None)
@@ -87,6 +90,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     # ICA should figure its component number out itself.
     # We fit it on a set of epochs excluding the initial bad epochs following
     # https://github.com/autoreject/autoreject/blob/dfbc64f49eddeda53c5868290a6792b5233843c6/examples/plot_autoreject_workflow.py
+    logging.info('Fitting the ICA')
     ica = ICA(method='picard',
               max_iter='auto', random_state=42)
     ica.fit(epochs[~reject_log.bad_epochs])
@@ -94,6 +98,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     # use the EOG channel to select ICA components:
     ica.exclude = []
     # find which ICs match the EOG pattern
+    logging.info("Search for ICA components that capture eye blink artifacts")
     eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
     ica.exclude = eog_indices
 
@@ -132,6 +137,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     )
     sources.savefig(fname)
     # find ECG components
+    logging.info("Search for ICA components that capture heartbeat artifacts")
     ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw, method='ctps',
                                                 threshold='auto')
     if subject == '008':
@@ -139,6 +145,7 @@ def remove_eyeblinks_and_heartbeat(raw,
         # ECG components fails. However, visual inspection shows a clear heart
         # beat in component 17. This should be stable across reruns as long as
         # the seed isn't changed.
+        logging.info("For subject 8, setting a predefined component.")
         ecg_indices = [17]
 
     ica.exclude.extend(ecg_indices)
@@ -178,6 +185,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     )
     sources.savefig(fname)
     # apply the ICA to the raw data
+    logging.info('Applying ICA to the raw data.')
     raw.load_data()
     ica.apply(raw)
     return raw
