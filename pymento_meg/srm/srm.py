@@ -131,7 +131,12 @@ def test_and_train_split(datadir, bidsdir, subject=None):
                                                   datadir=datadir,
                                                   bidsdir=bidsdir,
                                                   condition='left-right',
-                                                  timespan='fulltrial')
+                                                  timespan='firststim')
+    # TODO: Maybe use trainingsdata of shorter length (e.g., visual stim), and
+    # test data of longer length/different trial segments
+    # TODO: use the first 500 ms
+    # TODO: AVERAGE PER TRIAL TYPE FOR NOISE REDUCTION
+
     #subjects = fullsample.keys()
     # lets start with participants with 30+ trials per condition: 11, 12, 14, 16, 17, 18, 19, 20, 22
     subjects = ['011', '012', '014', '016', '017', '018', '019', '020', '022']
@@ -158,6 +163,8 @@ def test_and_train_split(datadir, bidsdir, subject=None):
             # shuffle the list with a random seed
             shuffled = random.sample(trials, len(trials))
             # pick the first random 15 for testing, the last 15 for training.
+            # TODO: return which trials were used in training in exclusion list
+            # artificial order does not make sense for testing data!
             test.extend(shuffled[:15])
             train.extend(shuffled[-15:])
         assert len(test) == 135
@@ -176,6 +183,21 @@ def test_and_train_split(datadir, bidsdir, subject=None):
     assert len(test_series) == len(train_series) == len(subjects)
 
     return test_data, train_data
+
+
+## Looping over distance matrices:
+#for n in [0,1,2,3,4]:
+#     #model = shared_response(train_series, features=n)
+#     trialmodels_=np.array([test_series[n][200:210,70*i:70*(i+1)].ravel() for i in range(135)])
+#     print(trialmodels_.shape)
+#     trialmodels_=np.array([trialmodels_[tt*15:(tt+1)*15].mean(axis=0) for tt in range(9)])
+#     print(trialmodels_.shape)
+#     dist_mat = sp_distance.squareform(sp_distance.pdist(trialmodels_, metric='euclidean'))
+#     plt.figure(figsize=[5, 5])
+#     plt.imshow(dist_mat, cmap='viridis')
+#     plt.colorbar()
+#     plt.savefig('/home/adina/scratch/trialdmat_sub%.3d.png' % n)
+#     plt.close()
 
 
 def concatenate_data(data, field='normalized_data'):
