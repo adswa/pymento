@@ -323,7 +323,7 @@ def plot_distance_matrix(model, idx, figdir):
     """
     import scipy.spatial.distance as sp_distance
     import matplotlib.pyplot as plt
-    dist_mat = sp_distance.squareform(sp_distance.pdist(model.s_.T))
+    dist_mat = sp_distance.squareform(sp_distance.pdist(model.s_.T, metric='correlation'))
     plt.xlabel('t (100 = 1sec)')
     plt.ylabel('t (100 = 1sec)')
     plt.imshow(dist_mat, cmap='viridis')
