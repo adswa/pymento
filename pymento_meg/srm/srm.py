@@ -183,6 +183,12 @@ def test_and_train_split(datadir,
                                                         bidsdir=bidsdir,
                                                         condition='left-right',
                                                         timespan='secondstim')
+    # define trialorder. according to reward magnitude below
+    trialorder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+    # order according to probability:
+    # trialorder = ['E', 'H', 'I', 'C', 'F', 'A', 'G', 'B', 'D']
+    # order according to expected value (prob*reward):
+    # trialorder = ['A', 'C', 'E', 'B', 'F', 'H', 'D', 'G', 'I']
 
     # keep the training data into a lot of dictionaries. It is not
     # yet clear what will be relevant in the long run.
@@ -207,11 +213,7 @@ def test_and_train_split(datadir,
         means_right = []
         training_set_left[sub] = {}
         training_set_right[sub] = {}
-        for trialtype in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
-        # order according to probability:
-        #for trialtype in ['E', 'H', 'I', 'C', 'F', 'A', 'G', 'B', 'D']:
-        # order according to expected value (prob*reward):
-        #for trialtype in ['A', 'C', 'E', 'B', 'F', 'H', 'D', 'G', 'I']:
+        for trialtype in trialorder:
             #     Left characteristics
             #     Event -> description               -> name-> count
             #     lOpt1 -> LoptMag 0.5, LoptProb 0.4 -> A ->  70
