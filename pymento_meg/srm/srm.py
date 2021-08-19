@@ -299,6 +299,13 @@ def concatenate_data(data, field='normalized_data'):
     """
     time_series = np.concatenate([info[field] for info in data],
                                  axis=1)
+
+    assert time_series.shape[0] == 306
+    return time_series
+
+
+def concatenate_means(data):
+    time_series = np.concatenate(data, axis=1)
     assert time_series.shape[0] == 306
     return time_series
 
