@@ -192,67 +192,103 @@ def test_and_train_split(datadir,
     training_set_left = {}
     training_set_right = {}
 
-    #subjects = fullsample.keys()
-    # lets start with participants with 30+ trials per condition: 11, 12, 14, 16, 17, 18, 19, 20, 22
-    subjects = ['011', '012', '014', '016', '017', '018', '019', '020', '022']
+    for sub in subjects:
+        # initialize lists to hold the training data of one subject, in trial-
+        # type order of the list we loop over below, and dictionaries that hold
+        # a list of those trials trial numbers.
+        train_left = []
+        means_left = []
+        train_right = []
+        means_right = []
+        training_set_left[sub] = {}
+        training_set_right[sub] = {}
+        for trialtype in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
+            #     Left characteristics
+            #     Event -> description               -> name-> count
+            #     lOpt1 -> LoptMag 0.5, LoptProb 0.4 -> A ->  70
+            #     lOpt2 -> LoptMag 0.5, LoptProb 0.8 -> B ->  65
+            #     lOpt3 -> LoptMag 1, LoptProb 0.2 -> C ->    50
+            #     lOpt4 -> LoptMag 1, LoptProb 0.8 -> D ->    70
+            #     lOpt5 -> LoptMag 2, LoptProb 0.1 -> E ->    50
+            #     lOpt6 -> LoptMag 2, LoptProb 0.2 -> F ->    35
+            #     lOpt7 -> LoptMag 2, LoptProb 0.4 -> G ->    50
+            #     lOpt8 -> LoptMag 4, LoptProb 0.1 -> H   ->  70
+            #     lOpt9 -> LoptMag 4, LoptProb 0.2 -> I   ->  50
 
-    # get list of infos per trial characteristic
-    test_data = {}
+            # get all trials that match the trialtype for the current subject
+            lefttrials = [i for i in leftdata if (i['subject'] == sub and
+                                                  i['Lchar'] == trialtype)]
+            righttrials = [i for i in rightdata if (i['subject'] == sub and
+                                                    i['Rchar'] == trialtype)]
+            # we need to have at least as many trials per condition as required
+            # by the number of training data and testing data
+            assert len(lefttrials) >= ntrain + ntest
+            assert len(righttrials) >= ntrain + ntest
+
+            # for each trial characteristic, pick n random trials for training,
+            # shuffle the list with a random seed to randomize trial order...
+            shuffled_left = random.sample(lefttrials, len(lefttrials))
+            shuffled_right = random.sample(righttrials, len(righttrials))
+            train_left.extend(shuffled_left[:ntrain])
+            train_right.extend(shuffled_right[:ntrain])
+
+            # ...and record which trials were used
+            training_set_left[sub][trialtype] = \
+                [info['trial_no'] for info in shuffled_left[:ntrain]]
+            training_set_right[sub][trialtype] = \
+                [info['trial_no'] for info in shuffled_right[:ntrain]]
+
+            # average the data across trials of one trialtype for noise reduction
+            mean_train_left = np.mean(
+                [t['normalized_data'] for t in shuffled_left[:ntrain]],
+                axis=0)
+            mean_train_right = np.mean(
+                [t['normalized_data'] for t in shuffled_right[:ntrain]],
+                axis=0)
+            # make sure we averaged across the correct axis
+            assert mean_train_left.shape[0] == 306
+            assert mean_train_right.shape[0] == 306
+            means_left.append(mean_train_left)
+            means_right.append(mean_train_right)
+
+        # after looping through 9 trial types, make sure we have the expected
+        # amount of data
+        assert len(train_left) == 9 * ntrain
+        assert len(train_right) == 9 * ntrain
+        assert len(means_left) == 9
+        assert len(means_right) == 9
+        train_data_left[sub] = train_left
+        train_data_right[sub] = train_right
+        mean_train_data_left[sub] = means_left
+        mean_train_data_right[sub] = means_right
+
+    # join left and right data under a subject-specific key
+    # data order per subject: Left ABCDEFGHI Right ABCDEFGHI
+    mean_train_data = {}
     train_data = {}
     for sub in subjects:
-        A = [i for i in data if (i['subject'] == sub and i['char'] == 'A')]
-        B = [i for i in data if (i['subject'] == sub and i['char'] == 'B')]
-        C = [i for i in data if (i['subject'] == sub and i['char'] == 'C')]
-        D = [i for i in data if (i['subject'] == sub and i['char'] == 'D')]
-        E = [i for i in data if (i['subject'] == sub and i['char'] == 'E')]
-        F = [i for i in data if (i['subject'] == sub and i['char'] == 'F')]
-        G = [i for i in data if (i['subject'] == sub and i['char'] == 'G')]
-        H = [i for i in data if (i['subject'] == sub and i['char'] == 'H')]
-        I = [i for i in data if (i['subject'] == sub and i['char'] == 'I')]
-        assert all([len(l) >= 30 for l in [A, B, C, D, E, F, G, H, I]])
-        # for each trial characteristic, pick 15 random trials for training, and
-        # 15 other random trials for testing
-        test = []
-        train = []
-        for trials in [A, B, C, D, E, F, G, H, I]:
-            # shuffle the list with a random seed
-            shuffled = random.sample(trials, len(trials))
-            # pick the first random 15 for testing, the last 15 for training.
-            # TODO: return which trials were used in training in exclusion list
-            # artificial order does not make sense for testing data!
-            test.extend(shuffled[:15])
-            train.extend(shuffled[-15:])
-        assert len(test) == 135
-        assert len(train) == 135
-        test_data[sub] = test
-        train_data[sub] = train
-    # at the moment, test and train data are still trial-wise for each subject
+        mean_train_data[sub] = mean_train_data_left[sub]
+        mean_train_data[sub].extend(mean_train_data_right[sub])
+        train_data[sub] = np.concatenate(
+            [concatenate_data(train_data_left['011']),
+             concatenate_data(train_data_right['011'])],
+            axis=1)
+        # train_data[sub] has dimensionality 306 by ntrain * t * 18
+        assert train_data[sub].shape[0] == 306
+
     # transform the data into a list of lists, with each nested list being a
     # concatenated timeseries for one subject
-    test_series = []
-    for k, v in test_data.items():
-        test_series.append(concatenate_data(v))
-    train_series = []
-    for k, v in train_data.items():
-        train_series.append(concatenate_data(v))
-    assert len(test_series) == len(train_series) == len(subjects)
+    # for train_series (a dict with subject keys and concatenated arrays)
+    # this is possible with a list comprehension
+    train_series = [subdata for key, subdata in train_data.items()]
+    mean_train_series = []
+    for sub in subjects:
+        mean_train_series.append(concatenate_means(mean_train_data[sub]))
+    assert len(mean_train_series) == len(subjects) & \
+                len(train_series) == len(subjects)
 
-    return test_data, train_data
-
-
-## Looping over distance matrices:
-#for n in [0,1,2,3,4]:
-#     #model = shared_response(train_series, features=n)
-#     trialmodels_=np.array([test_series[n][200:210,70*i:70*(i+1)].ravel() for i in range(135)])
-#     print(trialmodels_.shape)
-#     trialmodels_=np.array([trialmodels_[tt*15:(tt+1)*15].mean(axis=0) for tt in range(9)])
-#     print(trialmodels_.shape)
-#     dist_mat = sp_distance.squareform(sp_distance.pdist(trialmodels_, metric='euclidean'))
-#     plt.figure(figsize=[5, 5])
-#     plt.imshow(dist_mat, cmap='viridis')
-#     plt.colorbar()
-#     plt.savefig('/home/adina/scratch/trialdmat_sub%.3d.png' % n)
-#     plt.close()
+    return train_series, mean_train_series, training_set_left, \
+           training_set_right
 
 
 def concatenate_data(data, field='normalized_data'):
