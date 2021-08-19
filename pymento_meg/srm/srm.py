@@ -375,6 +375,7 @@ def add_trial_types(subject,
     Bring trials in a standardized sequence across participants according to
     their characteristics
 
+    Left characteristics
     Event name ->   description ->      typename:   -> count
     lOpt1 -> LoptMag 0.5, LoptProb 0.4 -> A ->  70
     lOpt2 -> LoptMag 0.5, LoptProb 0.8 -> B ->  65
@@ -386,24 +387,43 @@ def add_trial_types(subject,
     lOpt8 -> LoptMag 4, LoptProb 0.1 -> H   ->  70
     lOpt9 -> LoptMag 4, LoptProb 0.2 -> I   ->  50
 
+    Right_characteristics:
+
     :return:
     """
-    left_stim_char = get_stimulus_characteristics(subject, bidsdir)
+    stim_char = get_stimulus_characteristics(subject,
+                                             bidsdir,
+                                             columns=['trial_no',
+                                                      'LoptMag',
+                                                      'LoptProb',
+                                                      'RoptMag',
+                                                      'RoptProb']
+                                             )
+
     # add the probability and magnitude information
     for info in all_trial_info.keys():
-        Mag = left_stim_char[left_stim_char['trial_no'] == info]['LoptMag'].item()
-        Prb = left_stim_char[left_stim_char['trial_no'] == info]['LoptProb'].item()
-        all_trial_info[info]['LoptMag'] = Mag
-        all_trial_info[info]['LoptProb'] = Prb
-        all_trial_info[info]['char'] = trial_characteristics[(Mag, Prb)]
+        LMag = stim_char[stim_char['trial_no'] == info]['LoptMag'].item()
+        LPrb = stim_char[stim_char['trial_no'] == info]['LoptProb'].item()
+        RMag = stim_char[stim_char['trial_no'] == info]['RoptMag'].item()
+        RPrb = stim_char[stim_char['trial_no'] == info]['RoptProb'].item()
+        all_trial_info[info]['LoptMag'] = LMag
+        all_trial_info[info]['LoptProb'] = LPrb
+        all_trial_info[info]['RoptMag'] = RMag
+        all_trial_info[info]['RoptProb'] = RPrb
+        all_trial_info[info]['Lchar'] = trial_characteristics[(LMag, LPrb)]
+        all_trial_info[info]['Rchar'] = trial_characteristics[(RMag, RPrb)]
 
     # get a count of trials per characteristic
-    chars = [info['char'] for info in all_trial_info.values()]
+    Lchars = [info['Lchar'] for info in all_trial_info.values()]
+    Rchars = [info['Rchar'] for info in all_trial_info.values()]
     from collections import Counter
-    counts = Counter(chars)
-    print(counts)
+    Lcounts = Counter(Lchars)
+    Rcounts = Counter(Rchars)
+    print(Lcounts)
+    print(Rcounts)
     # make sure we have a minimal amount of trials to fit the model
-    assert all([counts[i] > 5 for i in counts])
+    assert all([Lcounts[i] > 5 for i in Lcounts])
+    #assert all([Rcounts[i] > 5 for i in Rcounts])
     # participants with <10 trials per condition: 7, 8 (not yet preprocessed)
     # participants with 10+ trials per condition: 1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
     # participants with 20+ trials per condition: 3, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
