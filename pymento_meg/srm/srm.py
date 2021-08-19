@@ -164,6 +164,33 @@ def test_and_train_split(datadir,
     training_set_right:  dict; overview of trials used as training and test data
      for each subject
     """
+    import random
+    random.seed(423)
+    # first stimulus data
+    leftsample, leftdata = get_general_data_structure(subject=subjects,
+                                                      datadir=datadir,
+                                                      bidsdir=bidsdir,
+                                                      condition='left-right',
+                                                      timespan='firststim')
+    # second stimulus data
+    rightsample, rightdata = get_general_data_structure(subject=subjects,
+                                                        datadir=datadir,
+                                                        bidsdir=bidsdir,
+                                                        condition='left-right',
+                                                        timespan='secondstim')
+
+    # keep the training data into a lot of dictionaries. It is not
+    # yet clear what will be relevant in the long run.
+    # dicts to contain artifical timeseries of ntrain trials, left & right
+    train_data_left = {}
+    train_data_right = {}
+    # dicts to container artificial timeseries, averaged within trial types
+    mean_train_data_left = {}
+    mean_train_data_right = {}
+    # a dict to record trial numbers used in training, so that the test set can
+    # be orthogonal
+    training_set_left = {}
+    training_set_right = {}
 
     #subjects = fullsample.keys()
     # lets start with participants with 30+ trials per condition: 11, 12, 14, 16, 17, 18, 19, 20, 22
