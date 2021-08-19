@@ -135,6 +135,7 @@ def get_general_data_structure(subject,
 
 def test_and_train_split(datadir,
                          bidsdir,
+                         figdir,
                          subjects=['011', '012', '014', '016', '017',
                                    '018', '019', '020', '022'],
                          ntrain=15,
@@ -265,6 +266,20 @@ def test_and_train_split(datadir,
         train_data_right[sub] = train_right
         mean_train_data_left[sub] = means_left
         mean_train_data_right[sub] = means_right
+
+    # create and plot a distance matrix of SRMs fit on the averaged artificial
+    # timeseries with only left stimuli. Adjust for high correlations with clim
+    # loop through different number of features
+    leftmeans = []
+    for k, v in mean_train_data_left.items():
+        leftmeans.append(concatenate_means(mean_train_data_left[k]))
+    assert leftmeans[0].shape[0] == 306
+    for n in [5, 10, 20, 40, 80, 160]:
+        plot_trialtype_distance_matrix(leftmeans,
+                                       n,
+                                       figdir=figdir,
+                                       trialtypes=9,
+                                       clim=[0, 0.5])
 
     # join left and right data under a subject-specific key
     # data order per subject: Left ABCDEFGHI Right ABCDEFGHI
