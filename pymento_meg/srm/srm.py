@@ -28,7 +28,11 @@ from pymento_meg.proc.epoch import get_stimulus_characteristics
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
-# map a set of reward magnitude and probability (in the order) to trial types
+# map a set of reward magnitude and probability (in the order) to trial types.
+# the characteristic combinations with letters are frequent (50-75 over the
+# course of the experiment) and occur in the left and right stimulus. The
+# non-letter combinations occur only on the right side, and some of them are
+# infrequent (between 1 and 5? occurrences over the course of the experiment)
 trial_characteristics = {
     (0.5, 0.4): 'A',
     (0.5, 0.8): 'B',
@@ -38,7 +42,14 @@ trial_characteristics = {
     (2, 0.2): 'F',
     (2, 0.4): 'G',
     (4, 0.1): 'H',
-    (4, 0.2): 'I'
+    (4, 0.2): 'I',
+    (0.5, 0.1): '0.5-0.1',
+    (0.5, 0.2): '0.5-0.2',
+    (1, 0.4): '1.0-0.4',
+    (1, 0.1): '1.0-0.1',
+    (2, 0.8): '2.0-0.8',
+    (4, 0.4): '4.0-0.4',
+    (4, 0.8): '4.0-0.8'
 }
 
 
