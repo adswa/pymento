@@ -208,6 +208,10 @@ def test_and_train_split(datadir,
         training_set_left[sub] = {}
         training_set_right[sub] = {}
         for trialtype in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
+        # order according to probability:
+        #for trialtype in ['E', 'H', 'I', 'C', 'F', 'A', 'G', 'B', 'D']:
+        # order according to expected value (prob*reward):
+        #for trialtype in ['A', 'C', 'E', 'B', 'F', 'H', 'D', 'G', 'I']:
             #     Left characteristics
             #     Event -> description               -> name-> count
             #     lOpt1 -> LoptMag 0.5, LoptProb 0.4 -> A ->  70
