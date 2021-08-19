@@ -24,6 +24,9 @@ from scipy import stats
 from pymento_meg.orig.behavior import read_bids_logfile
 from pymento_meg.proc.epoch import get_stimulus_characteristics
 
+import scipy.spatial.distance as sp_distance
+import matplotlib.pyplot as plt
+
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
@@ -439,8 +442,6 @@ def plot_distance_matrix(model, idx, figdir):
     :param figdir:
     :return:
     """
-    import scipy.spatial.distance as sp_distance
-    import matplotlib.pyplot as plt
     dist_mat = sp_distance.squareform(sp_distance.pdist(model.s_.T, metric='correlation'))
     plt.xlabel('t (100 = 1sec)')
     plt.ylabel('t (100 = 1sec)')
