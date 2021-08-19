@@ -129,24 +129,41 @@ def get_general_data_structure(subject,
     return fullsample, data
 
 
-def test_and_train_split(datadir, bidsdir, subject=None):
+def test_and_train_split(datadir,
+                         bidsdir,
+                         subjects=['011', '012', '014', '016', '017',
+                                   '018', '019', '020', '022'],
+                         ntrain=15,
+                         ntest=15):
     """
-    Separate data into a training and test set per participant
-    :return:
-    train, test: dict, with subject ids as keys, and a list of train/test data
-        dictionaries as the value
-    """
-    import random
-    random.seed(423)
-    fullsample, data = get_general_data_structure(subject=['011', '012', '014', '016', '017', '018', '019', '020', '022'],
-                                                  datadir=datadir,
-                                                  bidsdir=bidsdir,
-                                                  condition='left-right',
-                                                  timespan='firststim')
+    Create artificially synchronized time series data. In these artificially
+    synchronized timeseries, N=ntrain trials per trial type (unique probability-
+    magnitude combinations of the first stimulus) are first concatenated in
+    blocks. This is done for a train set and a test set.
+    Then, trials within each trial type block are averaged for noise reduction.
+
     # TODO: Maybe use trainingsdata of shorter length (e.g., visual stim), and
     # test data of longer length/different trial segments
     # TODO: use the first 500 ms
     # TODO: AVERAGE PER TRIAL TYPE FOR NOISE REDUCTION
+    # TODO: append the second trials!
+    # TODO: thresholding für die mean trial distanzmatrizen
+    # TODO: sanity check mit test daten
+    # TODO: Transformation von test daten mit srm vom training
+    :param subjects: set of str of subject identifiers. Default are subjects
+    with the largest number of suitable trial data (30+ per condition)
+    :param ntrain: int, number of trials to put in training set
+    :param ntest: int, number of trials to put in test set
+    :return:
+    train_series: list of N=subjects lists artificial time series data,
+    ready for SRM
+    mean_train_series: list of N=subjects lists averaged artificial time series
+     data, ready for SRM
+    training_set_left: dict; overview of trials used as training and test data
+     for each subject
+    training_set_right:  dict; overview of trials used as training and test data
+     for each subject
+    """
 
     #subjects = fullsample.keys()
     # lets start with participants with 30+ trials per condition: 11, 12, 14, 16, 17, 18, 19, 20, 22
