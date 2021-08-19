@@ -291,8 +291,50 @@ def test_and_train_split(datadir,
     assert len(mean_train_series) == len(subjects) & \
                 len(train_series) == len(subjects)
 
+    # create and plot a distance matrix of SRMs fit on the averaged artificial
+    # timeseries with both left and right stimuli
+    # loop through different number of features
+    for n in [5, 10, 20, 40, 80, 160]:
+        plot_trialtype_distance_matrix(mean_train_series,
+                                       n,
+                                       figdir=figdir)
+
     return train_series, mean_train_series, training_set_left, \
            training_set_right
+
+
+def plot_trialtype_distance_matrix(data, n, figdir, trialtypes=18, clim=[0,1]):
+    """
+    A generic function to fit SRMs and plot distance matrices on trial data
+    :param data: list of lists, needs to be one list per subject with time
+    series data. SRM is fit on this data
+    :param n: Number of features to use in SRM
+    :param figdir: Path to where figures and plots are saved
+    :param trialtypes: Number of trialtypes to plot. 9 if only left trials are
+    used, 18 when its both left and right, 135 when its left but not averaged
+    :param clim: list, upper and lower limit of the colorbar
+    :return:
+    """
+    # fit a probabilistic SRM
+    model = shared_response(data, features=n)
+    # get the component X time series of each trial in the SRM, and put it into
+    # a nested array. 70 -> length of one trial / averaged trial type
+    trialmodels_ = np.array(
+        [model.s_[:, 70 * i:70 * (i + 1)].ravel() for i in range(trialtypes)])
+    dist_mat = sp_distance.squareform(
+        sp_distance.pdist(trialmodels_, metric='correlation'))
+    plt.figure(figsize=[50, 50])
+    plt.imshow(dist_mat, cmap='viridis', clim=clim)
+
+    # set a figure title according to the number of trialtypes plotted
+    type = 'left and right' if trialtypes == 18 else 'left'
+    plt.title(f"Correlation distance between trialtypes for {type} stimulation")
+    plt.colorbar()
+    fname = Path(figdir) / f'group/meg' / \
+                            f'group_task-memento_srm-{n}_trialdist_{trialtypes}.png'
+    logging.info(f"Saving a distance matrix with {n} features to {fname}")
+    plt.savefig(fname)
+    plt.close('all')
 
 
 def concatenate_data(data, field='normalized_data'):
