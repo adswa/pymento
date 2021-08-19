@@ -74,7 +74,8 @@ def get_general_data_structure(subject,
     :param timespan: str, an identifier of the time span of data to be used for
     model fitting. Must be one of 'decision' (time locked around the decision
     in each trial), 'firststim' (time locked to the first stimulus, for the
-    stimulus duration), or 'fulltrial' (entire 7second epoch).
+    stimulus duration), or 'fulltrial' (entire 7second epoch), 'secondstim',
+    'delay'.
     :return:
     """
     # initialize a dict to hold data over all subjects in the model
@@ -334,7 +335,8 @@ def plot_trial_components_from_srm(subject,
     :param timespan: str, an identifier of the time span of data to be used for
     model fitting. Must be one of 'decision' (time locked around the decision
     in each trial), 'firststim' (time locked to the first stimulus, for the
-    stimulus duration), or 'fulltrial' (entire 7second epoch).
+    stimulus duration), 'fulltrial' (entire 7second epoch), 'secondstim',
+    'delay'.
     :return:
     models, dict with feature number as keys and corresponding models as values
     data: list of dicts, with all trial information
@@ -502,7 +504,8 @@ def combine_data(df,
     :param timespan: str, an identifier of the time span of data to be used for
     model fitting. Must be one of 'decision' (time locked around the decision
     in each trial), 'firststim' (time locked to the first stimulus, for the
-    stimulus duration), or 'fulltrial' (entire 7second epoch).
+    stimulus duration), or 'fulltrial' (entire 7second epoch), 'secondstim',
+    'delay'.
     :return: all_trial_infos; dict; with trial-wise information
     """
     all_trial_infos = {}
