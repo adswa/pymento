@@ -531,6 +531,14 @@ def combine_data(df,
             # onset of the first stimulation
             data = data[:, :70]
             assert data.shape == (306, 70)
+        elif timespan == 'delay':
+            # take the 2 seconds after the first stimulus
+            data = data[:, 70:270]
+            assert data.shape == (306, 200)
+        elif timespan == 'secondstim':
+            # take 700 ms after the first stimulus + delay phase
+            data = data[:, 270:340]
+            assert data.shape == (306, 70)
         elif timespan == 'decision':
             # we need an adaptive slice of data (centered around the exact time
             # point at which a decision was made in a given trial.
