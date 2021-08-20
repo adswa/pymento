@@ -24,9 +24,12 @@ from pymento_meg.proc.epoch import get_stimulus_characteristics
 import scipy.spatial.distance as sp_distance
 import matplotlib.pyplot as plt
 
-
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
-
+# set font specifications for plots
+font = {'family': 'normal',
+        'weight': 'bold',
+        'size': 50}
+plt.rc('font', **font)
 
 # map a set of reward magnitude and probability (in the order) to trial types.
 # the characteristic combinations with letters are frequent (50-75 over the
