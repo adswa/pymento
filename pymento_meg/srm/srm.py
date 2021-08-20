@@ -1,12 +1,9 @@
 """
 Module for fitting shared response models.
-
-TODO: preprocess all files starting from first stimulus, with
-downsampling to 100Hz.
+TODO:
 Reduce epoch length to 6 seconds
+OR reduce epoch length further, to potentially loose fewer trials
 
-get data from the log files about button presses and sort the trials into
-left and right
 write all shared responses into a matrix, check for consistent correlation
 pattern across subjects
 
