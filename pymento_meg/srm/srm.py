@@ -419,9 +419,14 @@ def compute_raw_distances(data,
         zdistmat[sub] = np.arctanh(corrdist)
     # average the matrices
     avg = np.mean(np.array([v for k, v in zdistmat.items()]), axis=0)
+    # transform it back to correlation distance
+    avg = np.nan_to_num(avg, posinf=1)
+    avg_corrdist = 1 - avg
+    assert not (avg_corrdist <= -1).any()
+    assert not (avg_corrdist >= 1).any()
     # plot it
     plt.figure(figsize=[50, 50])
-    plt.imshow(avg, cmap='viridis')
+    plt.imshow(avg_corrdist, cmap='viridis')
     plt.colorbar()
     # set a figure title according to the number of trialtypes plotted
     type = 'left and right' if trialtypes in [18, 270] else 'left'
