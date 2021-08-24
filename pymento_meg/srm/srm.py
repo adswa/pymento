@@ -377,7 +377,8 @@ def compute_raw_distances(data,
                           figdir,
                           trialtypes,
                           triallength,
-                          feature=None):
+                          feature=None,
+                          nametmpl='group_task-memento_raw_avg.png'):
     """
     Take a list of lists with time series from N subjects.
     For each subject/list in this data, build a trialtype-by-trialtype
@@ -432,8 +433,8 @@ def compute_raw_distances(data,
     type = 'left and right' if trialtypes in [18, 270] else 'left'
     plt.title(f"Average of subject-wise raw data trial distances for "
               f"{type} stimulation")
-    fname = Path(figdir) / f'group/meg' / \
-                f'group_task-memento_raw_avg_trialdist_{trialtypes}.png'
+    fname = Path(figdir) / f'group/meg' / f'{nametmpl}'
+    logging.info(f'Saving averaged distance matrix to {fname}')
     plt.savefig(fname)
 
 
