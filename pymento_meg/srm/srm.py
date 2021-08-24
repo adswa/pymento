@@ -334,7 +334,8 @@ def test_and_train_split(datadir,
                           figdir=figdir,
                           trialtypes=18,
                           triallength=triallength,
-                          feature='train'
+                          feature='train',
+                          nametmpl='group_task-memento_raw_avg_trialdist_18.png'
                           )
 
     compute_raw_distances(mean_test_data_fullseries,
@@ -345,28 +346,25 @@ def test_and_train_split(datadir,
                           feature='test'
                           )
 
-    # transform subject raw data into shared model room
+    # transform subject raw data into shared model room, plot subject specific
+    # and averaged distance matrices
     for n in [5, 10, 20, 40, 80, 160]:
         shared_test = models[n]['full'].transform(mean_test_data_fullseries)
-        for idx, sub in enumerate(subjects):
-            plot_trialtype_distance_matrix(shared_test[idx],
-                                           n=sub,
-                                           figdir=figdir,
-                                           trialtypes=18,
-                                           on_model_data=False,
-                                           feature='test' + str(n),
-                                           triallength=triallength)
-
-    for n in [5, 10, 20, 40, 80, 160]:
-        shared_test = models[n]['full'].transform(mean_train_data_fullseries)
-        for idx, sub in enumerate(subjects):
-            plot_trialtype_distance_matrix(shared_test[idx],
-                                           n=sub,
-                                           figdir=figdir,
-                                           trialtypes=18,
-                                           on_model_data=False,
-                                           feature='train' + str(n),
-                                           triallength=triallength)
+        compute_raw_distances(data=shared_test,
+                              subjects=subjects,
+                              figdir=figdir,
+                              trialtypes=18,
+                              triallength=triallength,
+                              feature='test'+str(n),
+                              nametmpl=f'group_task-memento_srm{n}-avg_test{18}.png')
+        shared_train = models[n]['full'].transform(mean_train_data_fullseries)
+        compute_raw_distances(data=shared_train,
+                              subjects=subjects,
+                              figdir=figdir,
+                              trialtypes=18,
+                              triallength=triallength,
+                              feature='train'+str(n),
+                              nametmpl=f'group_task-memento_srm{n}-avg_train{18}.png')
 
     return train_data_fullseries, train_data_leftseries, \
            mean_train_data_fullseries, mean_train_data_leftseries,
