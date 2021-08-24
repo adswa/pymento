@@ -325,13 +325,115 @@ def test_and_train_split(datadir,
                                        trialtypes=270,
                                        triallength=triallength)
 
+    # create subject specific and averaged distance matrices from raw data
+    compute_raw_distances(mean_train_data_fullseries,
+                          subjects,
+                          figdir=figdir,
+                          trialtypes=18,
+                          triallength=triallength,
+                          feature='train'
+                          )
+
+    compute_raw_distances(mean_test_data_fullseries,
+                          subjects,
+                          figdir=figdir,
+                          trialtypes=18,
+                          triallength=triallength,
+                          feature='test'
+                          )
+
+    # transform subject raw data into shared model room
+    for n in [5, 10, 20, 40, 80, 160]:
+        shared_test = models[n]['full'].transform(mean_test_data_fullseries)
+        for idx, sub in enumerate(subjects):
+            plot_trialtype_distance_matrix(shared_test[idx],
+                                           n=sub,
+                                           figdir=figdir,
+                                           trialtypes=18,
+                                           on_model_data=False,
+                                           feature='test' + str(n),
+                                           triallength=triallength)
+
+    for n in [5, 10, 20, 40, 80, 160]:
+        shared_test = models[n]['full'].transform(mean_train_data_fullseries)
+        for idx, sub in enumerate(subjects):
+            plot_trialtype_distance_matrix(shared_test[idx],
+                                           n=sub,
+                                           figdir=figdir,
+                                           trialtypes=18,
+                                           on_model_data=False,
+                                           feature='train' + str(n),
+                                           triallength=triallength)
 
 
     return train_data_fullseries, train_data_leftseries, \
            mean_train_data_fullseries, mean_train_data_leftseries,
 
 
-def plot_trialtype_distance_matrix(data, n, figdir, trialtypes=18, clim=[0,1]):
+def compute_raw_distances(data,
+                          subjects,
+                          figdir,
+                          trialtypes,
+                          triallength,
+                          feature=None):
+    """
+    Take a list of lists with time series from N subjects.
+    For each subject/list in this data, build a trialtype-by-trialtype
+    correlation distance matrix.
+
+    Then, take the N distance matrices, transform them from correlation distance
+    to correlation, and Fisher-z-transform them. Afterwards, average them across
+    subjects
+    :param data: Data to use for distance matrix creation. Should be a list of
+    arrays
+    :param trialtypes: Number of consecutive trial types in the time series to
+    plot. 9 or 18 for single/averaged trials left or left+right, or n*trialtypes
+    :return:
+    """
+    # create & plot distance matrices of raw data per subject. Return dist_mat
+    distmat = {}
+    for idx, sub in enumerate(subjects):
+        distmat[sub] = \
+            plot_trialtype_distance_matrix(data[idx],
+                                           n=sub,
+                                           figdir=figdir,
+                                           trialtypes=trialtypes,
+                                           on_model_data=False,
+                                           triallength=triallength,
+                                           feature=feature)
+    # Fisher-z transform the matrices
+    zdistmat = {}
+    for sub in subjects:
+        # transform data from correlation distance back to correlation
+        corrdist = 1 - distmat[sub]
+        assert (corrdist >= -1).all() & (corrdist <= 1).all(),\
+            "We have impossible correlations"
+        # fisher z-transform
+        print(sub)
+        zdistmat[sub] = np.arctanh(corrdist)
+    # average the matrices
+    avg = np.mean(np.array([v for k, v in zdistmat.items()]), axis=0)
+    # plot it
+    plt.figure(figsize=[50, 50])
+    plt.imshow(avg, cmap='viridis')
+    plt.colorbar()
+    # set a figure title according to the number of trialtypes plotted
+    type = 'left and right' if trialtypes in [18, 270] else 'left'
+    plt.title(f"Average of subject-wise raw data trial distances for "
+              f"{type} stimulation")
+    fname = Path(figdir) / f'group/meg' / \
+                    f'group_task-memento_raw_avg_trialdist_{trialtypes}.png'
+    plt.savefig(fname)
+
+
+def plot_trialtype_distance_matrix(data,
+                                   n,
+                                   figdir,
+                                   trialtypes=18,
+                                   clim=[0,1],
+                                   on_model_data=True,
+                                   feature=None,
+                                   triallength=70):
     """
     A generic function to fit SRMs and plot distance matrices on trial data
     :param data: list of lists, needs to be one list per subject with time
@@ -341,14 +443,29 @@ def plot_trialtype_distance_matrix(data, n, figdir, trialtypes=18, clim=[0,1]):
     :param trialtypes: Number of trialtypes to plot. 9 if only left trials are
     used, 18 when its both left and right, 135 when its left but not averaged
     :param clim: list, upper and lower limit of the colorbar
+    :param on_model_data: bool, if True, fit an SRM model and base the distance
+    matrix on the shared components. If False, base the distance matrix on raw
+    data. In the latter case, data needs to be a single time series, no list of
+    lists, and n needs to be a subject identifier
+    :param triallength: int, length of a single trial in samples. Defaults to 70
     :return:
     """
-    # fit a probabilistic SRM
-    model = shared_response(data, features=n)
-    # get the component X time series of each trial in the SRM, and put it into
-    # a nested array. 70 -> length of one trial / averaged trial type
-    trialmodels_ = np.array(
-        [model.s_[:, 70 * i:70 * (i + 1)].ravel() for i in range(trialtypes)])
+    if on_model_data:
+        assert len(data) > 1
+        assert isinstance(data, list)
+        # fit a probabilistic SRM
+        model = shared_response(data, features=n)
+        # get the component X time series of each trial in the SRM, and put it into
+        # a nested array. 70 -> length of one trial / averaged trial type
+        trialmodels_ = np.array(
+            [model.s_[:, triallength * i:triallength * (i + 1)].ravel()
+             for i in range(trialtypes)])
+    else:
+        assert isinstance(data, np.ndarray)
+        trialmodels_ = np.array(
+            [data[:, triallength * i:triallength * (i + 1)].ravel()
+             for i in range(trialtypes)])
+
     dist_mat = sp_distance.squareform(
         sp_distance.pdist(trialmodels_, metric='correlation'))
     plt.figure(figsize=[50, 50])
@@ -356,14 +473,25 @@ def plot_trialtype_distance_matrix(data, n, figdir, trialtypes=18, clim=[0,1]):
 
     # set a figure title according to the number of trialtypes plotted
     type = 'left and right' if trialtypes in [18, 270] else 'left'
-    plt.title(f"Correlation distance between trialtypes for {type} stimulation")
+    if on_model_data:
+        plt.title(f"Correlation distance between trialtypes for "
+                  f"{type} stimulation")
+        fname = Path(figdir) / f'group/meg' / \
+                f'group_task-memento_srm-{n}_trialdist_{trialtypes}.png'
+    else:
+        plt.title(f"Correlation distance between trialtypes for "
+                  f"{type} stimulation in raw data")
+        fname = Path(figdir) / f'group/meg' / \
+                f'group_task-memento_raw_sub-{n}_trialdist_{trialtypes}_feature-{feature}.png'
     plt.colorbar()
-    fname = Path(figdir) / f'group/meg' / \
-                            f'group_task-memento_srm-{n}_trialdist_{trialtypes}.png'
+
     logging.info(f"Saving a distance matrix with {n} features to {fname}")
     plt.savefig(fname)
     plt.close('all')
-    return model
+    if on_model_data:
+        return model
+    else:
+        return dist_mat
 
 
 def concatenate_data(data, field='normalized_data'):
