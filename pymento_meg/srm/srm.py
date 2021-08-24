@@ -309,17 +309,22 @@ def test_and_train_split(datadir,
         models[n]['full'] = plot_trialtype_distance_matrix(
             mean_train_data_fullseries,
             n,
-            figdir=figdir)
+            figdir=figdir,
+            triallength=triallength
+            )
         models[n]['left'] = plot_trialtype_distance_matrix(
             mean_train_data_leftseries,
             n,
             figdir=figdir,
             trialtypes=9,
-            clim=[0, 0.5])
+            clim=[0, 0.5],
+            triallength=triallength)
         plot_trialtype_distance_matrix(train_data_fullseries,
                                        n,
                                        figdir=figdir,
-                                       trialtypes=270)
+                                       trialtypes=270,
+                                       triallength=triallength)
+
 
 
     return train_data_fullseries, train_data_leftseries, \
