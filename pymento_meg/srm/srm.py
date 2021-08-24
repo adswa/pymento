@@ -149,13 +149,16 @@ def test_and_train_split(datadir,
     blocks. This is done for a train set and a test set.
     Then, trials within each trial type block are averaged for noise reduction.
 
-    # TODO: Maybe use trainingsdata of shorter length (e.g., visual stim), and
+    # TODO: Maybe use training data of shorter length (e.g., visual stim), and
     # test data of longer length/different trial segments
     # TODO: use the first 500 ms
 
-    # TODO: thresholding für die mean trial distanzmatrizen
-    # TODO: sanity check mit test daten
-    # TODO: Transformation von test daten mit srm vom training
+    # TODO: threshold für die mean trial distance matrices
+    # TODO: sanity check mit test data
+    # TODO: Transformation von test data mit srm vom training
+    :param datadir:
+    :param bidsdir:
+    :param figdir:
     :param subjects: set of str of subject identifiers. Default are subjects
     with the largest number of suitable trial data (30+ per condition)
     :param ntrain: int, number of trials to put in training set
@@ -300,8 +303,8 @@ def test_and_train_split(datadir,
            len(test_data_leftseries) == \
            len(subjects)
 
-    # create and plot a distance matrix of SRMs fit on the averaged artificial
-    # train timeseries with both left and right stimuli
+    # create & plot distance matrices of SRMs with different no of components,
+    # fit on the averaged and unaveraged artificial train timeseries. Return SRM
     # loop through different number of features
     models = {}
     for n in [5, 10, 20, 40, 80, 160]:
@@ -365,7 +368,6 @@ def test_and_train_split(datadir,
                                            feature='train' + str(n),
                                            triallength=triallength)
 
-
     return train_data_fullseries, train_data_leftseries, \
            mean_train_data_fullseries, mean_train_data_leftseries,
 
@@ -386,6 +388,10 @@ def compute_raw_distances(data,
     subjects
     :param data: Data to use for distance matrix creation. Should be a list of
     arrays
+    :param subjects: list, of subject identifiers
+    :param feature: str, some additional identifier, used in figure name
+    :param figdir: str, path to where plots are saved
+    :param triallength: int, length of a single trial in samples
     :param trialtypes: Number of consecutive trial types in the time series to
     plot. 9 or 18 for single/averaged trials left or left+right, or n*trialtypes
     :return:
@@ -422,7 +428,7 @@ def compute_raw_distances(data,
     plt.title(f"Average of subject-wise raw data trial distances for "
               f"{type} stimulation")
     fname = Path(figdir) / f'group/meg' / \
-                    f'group_task-memento_raw_avg_trialdist_{trialtypes}.png'
+                f'group_task-memento_raw_avg_trialdist_{trialtypes}.png'
     plt.savefig(fname)
 
 
@@ -430,7 +436,7 @@ def plot_trialtype_distance_matrix(data,
                                    n,
                                    figdir,
                                    trialtypes=18,
-                                   clim=[0,1],
+                                   clim=[0, 1],
                                    on_model_data=True,
                                    feature=None,
                                    triallength=70):
@@ -443,6 +449,7 @@ def plot_trialtype_distance_matrix(data,
     :param trialtypes: Number of trialtypes to plot. 9 if only left trials are
     used, 18 when its both left and right, 135 when its left but not averaged
     :param clim: list, upper and lower limit of the colorbar
+    :param feature: str, some additional identifier, used in figure name
     :param on_model_data: bool, if True, fit an SRM model and base the distance
     matrix on the shared components. If False, base the distance matrix on raw
     data. In the latter case, data needs to be a single time series, no list of
@@ -455,7 +462,7 @@ def plot_trialtype_distance_matrix(data,
         assert isinstance(data, list)
         # fit a probabilistic SRM
         model = shared_response(data, features=n)
-        # get the component X time series of each trial in the SRM, and put it into
+        # get the componentXtime series of each trial in SRM, and put it into
         # a nested array. 70 -> length of one trial / averaged trial type
         trialmodels_ = np.array(
             [model.s_[:, triallength * i:triallength * (i + 1)].ravel()
@@ -477,12 +484,12 @@ def plot_trialtype_distance_matrix(data,
         plt.title(f"Correlation distance between trialtypes for "
                   f"{type} stimulation")
         fname = Path(figdir) / f'group/meg' / \
-                f'group_task-memento_srm-{n}_trialdist_{trialtypes}.png'
+                    f'group_task-memento_srm-{n}_trialdist_{trialtypes}.png'
     else:
         plt.title(f"Correlation distance between trialtypes for "
                   f"{type} stimulation in raw data")
         fname = Path(figdir) / f'group/meg' / \
-                f'group_task-memento_raw_sub-{n}_trialdist_{trialtypes}_feature-{feature}.png'
+                    f'group_task-memento_raw_sub-{n}_trialdist_{trialtypes}_feature-{feature}.png'
     plt.colorbar()
 
     logging.info(f"Saving a distance matrix with {n} features to {fname}")
@@ -497,7 +504,8 @@ def plot_trialtype_distance_matrix(data,
 def concatenate_data(data, field='normalized_data'):
     """
     Concatenate trial data in a list of dictionaries
-    :param data:
+    :param data: nested dict, contains all trial infos
+    :param field: str, dict key in info dict in general data structure
     :return:
     """
     time_series = np.concatenate([info[field] for info in data],
@@ -511,7 +519,6 @@ def concatenate_means(data):
     time_series = np.concatenate(data, axis=1)
     assert time_series.shape[0] == 306
     return time_series
-
 
 
 def plot_trial_components_from_srm(subject,
@@ -628,10 +635,10 @@ def add_trial_types(subject,
     # make sure we have a minimal amount of trials to fit the model
     assert all([Lcounts[i] > 5 for i in Lcounts])
     #assert all([Rcounts[i] > 5 for i in Rcounts])
-    # participants with <10 trials per condition: 7, 8 (not yet preprocessed)
-    # participants with 10+ trials per condition: 1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
-    # participants with 20+ trials per condition: 3, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
-    # participants with 30+ trials per condition: 11, 12, 14, 16, 17, 18, 19, 20, 22
+
+    # 10+:1,2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
+    # 20+: 3, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
+    # 30+ trials per condition: 11, 12, 14, 16, 17, 18, 19, 20, 22
 
     return all_trial_info
 
@@ -640,10 +647,12 @@ def plot_distance_matrix(model, idx, figdir):
     """
     plot a distance matrix between time points from the shared response.
     :param model:
+    :param idx
     :param figdir:
     :return:
     """
-    dist_mat = sp_distance.squareform(sp_distance.pdist(model.s_.T, metric='correlation'))
+    dist_mat = sp_distance.squareform(sp_distance.pdist(model.s_.T,
+                                                        metric='correlation'))
     plt.xlabel('t (100 = 1sec)')
     plt.ylabel('t (100 = 1sec)')
     plt.imshow(dist_mat, cmap='viridis')
@@ -921,7 +930,7 @@ def get_nobrainer_trials(subject, bidsdir):
                if i not in right and i not in left]
 
     # brainer and no-brainer trials should add up
-    assert len(brainer) + len(right) + len (left) == len(df['trial_no'].values)
+    assert len(brainer) + len(right) + len(left) == len(df['trial_no'].values)
     # make sure that right and left no brainers do not intersect - if they have
     # common values, something went wrong
     assert not bool(set(right) & set(left))
@@ -1018,7 +1027,7 @@ def plot_srm_model(df,
             fig.legend(title='Condition', loc='upper left',
                        labels=['brainer', 'nobrainer'])
         if timespan == 'fulltrial':
-            # define the timing of significant events in the timecourse of a trial:
+            # define the timing of significant events in the trial timecourse:
             # onset and offset of visual stimuli
             events = [0, 70, 270, 340]
             # plot horizontal lines to mark the end of visual stimulation
@@ -1038,8 +1047,12 @@ def _select_channels(epochs):
     """
 
     right_chs = mne.read_vectorview_selection(['Right-occipital'])
-    idx_right = [epochs.columns.get_loc(s.replace(' ','')) for s in right_chs]
+    idx_right = [epochs.columns.get_loc(s.replace(' ', '')) for s in right_chs]
     left_chs = mne.read_vectorview_selection(['Left-occipital'])
-    idx_left = [epochs.columns.get_loc(s.replace(' ','')) for s in left_chs]
-    idx_left = [186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 234, 235, 236, 237, 238, 239, 246, 247, 248]
-    idx_right = [231, 232, 233, 240, 241, 242, 243, 244, 245, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 279, 280, 281, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296]
+    idx_left = [epochs.columns.get_loc(s.replace(' ', '')) for s in left_chs]
+    idx_left = [186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198,
+                199, 200, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223,
+                224, 234, 235, 236, 237, 238, 239, 246, 247, 248]
+    idx_right = [231, 232, 233, 240, 241, 242, 243, 244, 245, 261, 262, 263,
+                 264, 265, 266, 267, 268, 269, 270, 271, 272, 279, 280, 281,
+                 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296]
