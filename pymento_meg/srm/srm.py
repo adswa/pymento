@@ -193,15 +193,18 @@ def test_and_train_split(datadir,
     train_data = {}
     mean_train_data = {}
     test_data = {}
+    mean_test_data = {}
     for data, position, index in [(leftdata, 'left', 'Lchar'),
                                   (rightdata, 'right', 'Rchar')]:
         train_data[position] = {}
         mean_train_data[position] = {}
         test_data[position] = {}
+        mean_test_data[position] = {}
         for sub in subjects:
             train = []
             mean_train = []
             test = []
+            mean_test = []
             for trialtype in trialorder:
                 trials = [i for i in data if (i['subject'] == sub and
                                               i[index] == trialtype)]
@@ -222,27 +225,45 @@ def test_and_train_split(datadir,
                     axis=0)
                 assert mean.shape[0] == 306
                 mean_train.append(mean)
+                # do the same for test trials
+                mean = np.mean(
+                    [t['normalized_data'] for t in shuffled[-ntest:]],
+                    axis=0)
+                assert mean.shape[0] == 306
+                mean_test.append(mean)
             # after looping through 9 trial types make sure we have the expected
             # amount of data
             assert len(train) == 9 * ntrain
             assert len(test) == 9 * ntest
             assert len(mean_train) == 9
+            assert len(mean_test) == 9
             train_data[position][sub] = train
             mean_train_data[position][sub] = mean_train
             test_data[position][sub] = test
+            mean_test_data[position][sub] = mean_test
     # join the data from left and right into nested lists. Also make a only-left
     # series
     mean_train_data_fullseries = []
     mean_train_data_leftseries = []
+    mean_test_data_fullseries = []
+    mean_test_data_leftseries = []
     for sub in subjects:
         left = concatenate_means(mean_train_data['left'][sub])
         right = concatenate_means(mean_train_data['right'][sub])
         assert left.shape == right.shape
         mean_train_data_fullseries.append(concatenate_means([left, right]))
         mean_train_data_leftseries.append(left)
+        # also for test data
+        left = concatenate_means(mean_test_data['left'][sub])
+        right = concatenate_means(mean_test_data['right'][sub])
+        assert left.shape == right.shape
+        mean_test_data_fullseries.append(concatenate_means([left, right]))
+        mean_test_data_leftseries.append(left)
     assert len(mean_train_data_fullseries) == \
            len(mean_train_data_leftseries) == \
-           len(subjects)
+           len(subjects) == \
+           len(mean_test_data_leftseries) == \
+           len(mean_test_data_fullseries)
 
     train_data_fullseries = []
     train_data_leftseries = []
@@ -264,6 +285,9 @@ def test_and_train_split(datadir,
         assert left.shape == right.shape
         test_data_fullseries.append(concatenate_means([left, right]))
         test_data_leftseries.append(left)
+    assert len(test_data_fullseries) == \
+           len(test_data_leftseries) == \
+           len(subjects)
 
     # create and plot a distance matrix of SRMs fit on the averaged artificial
     # train timeseries with both left and right stimuli
