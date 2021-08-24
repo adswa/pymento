@@ -150,8 +150,7 @@ def test_and_train_split(datadir,
     # TODO: Maybe use trainingsdata of shorter length (e.g., visual stim), and
     # test data of longer length/different trial segments
     # TODO: use the first 500 ms
-    # TODO: AVERAGE PER TRIAL TYPE FOR NOISE REDUCTION
-    # TODO: append the second trials!
+
     # TODO: thresholding für die mean trial distanzmatrizen
     # TODO: sanity check mit test daten
     # TODO: Transformation von test daten mit srm vom training
