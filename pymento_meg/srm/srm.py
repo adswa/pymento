@@ -559,7 +559,8 @@ def combine_data(df,
     model fitting. Must be one of 'decision' (time locked around the decision
     in each trial), 'firststim' (time locked to the first stimulus, for the
     stimulus duration), or 'fulltrial' (entire 7second epoch), 'secondstim',
-    'delay'.
+    'delay', or a time frame within the experiment in samples (100Hz sampling
+    rate)
     :return: all_trial_infos; dict; with trial-wise information
     """
     all_trial_infos = {}
@@ -569,6 +570,12 @@ def combine_data(df,
         # extract the information on decision time for all trials at once.
         trials_to_rts = get_decision_timespan_on_and_offsets(subject=sub,
                                                              bidsdir=bidsdir)
+    if isinstance(timespan, list):
+        logging.info(f"Received a list as a time span. Attempting to "
+                     f"subset the available trial data in range "
+                     f"{timespan[0]}, {timespan[1]}")
+    else:
+        logging.info(f"Selecting data for the event description {timespan}.")
 
     for epoch in unique_epochs:
         # get the trial number as a key
@@ -608,8 +615,11 @@ def combine_data(df,
             data = data[:, onset:offset]
             assert data.shape == (306, 80)
         else:
-            raise NotImplementedError(f"The timespan {timespan} is not "
-                                      f"implemented.")
+            if isinstance(timespan, list):
+                data = data[:, timespan[0]:timespan[1]]
+            else:
+                raise NotImplementedError(f"The timespan {timespan} is not "
+                                          f"implemented.")
         # normalize (z-score) the data within sensors
         normalized_data = stats.zscore(data, axis=1, ddof=0)
         all_trial_infos[trial_no] = {'epoch': epoch,
