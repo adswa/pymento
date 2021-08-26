@@ -366,6 +366,22 @@ def test_and_train_split(datadir,
                               feature='train'+str(n),
                               nametmpl=f'group_task-memento_srm{n}-avg_train{18}.png')
 
+    # finally, average timeseries over subjects, and build distance matrices
+    for (data, label) in [(mean_train_data_fullseries, 'train'),
+                          (mean_test_data_fullseries, 'test')]:
+        mean = np.mean(data, axis=0)
+        assert mean.shape[0] == 306
+        # make the distance matrix
+        compute_raw_distances(data=[mean],
+                              subjects=['group'],
+                              figdir=figdir,
+                              trialtypes=18,
+                              triallength=triallength,
+                              feature=label,
+                              nametmpl=f'groupavg_task-memento_raw-{label}.png')
+
+
+
     return train_data_fullseries, train_data_leftseries, \
            mean_train_data_fullseries, mean_train_data_leftseries,
 
