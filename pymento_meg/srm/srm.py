@@ -574,6 +574,7 @@ def compute_raw_distances(data,
     # average the matrices
     avg = np.mean(np.array([v for k, v in zdistmat.items()]), axis=0)
     # transform it back to correlation distance
+    # TODO: backcheck wither this is correct!
     avg = np.nan_to_num(avg, posinf=1)
     avg_corrdist = 1 - avg
     assert not (avg_corrdist <= -1).any()
