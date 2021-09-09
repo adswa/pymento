@@ -361,12 +361,27 @@ def test_and_train_split(datadir,
     models = {}
     for n in [5, 10, 20, 40, 80, 160]:
         models[n] = {}
+        # This fits a probabilistic SRM with n features and returns the model
+        # Based on the shared response space of the model, it plots the
+        # correlation distance between all combinations of trial types in the
+        # data (here: left and right visual stimulation, averaged)
+        # RELEVANCE: This plot shows whether trial information from the
+        # experiment structure is preserved in the model build from averaged
+        # trials
         models[n]['full'] = plot_trialtype_distance_matrix(
             results['averaged_trials']['train']['full'], #mean_train_data_fullseries
             n,
             figdir=figdir,
             triallength=triallength
             )
+        # This fits a probabilistic SRM with n features and returns the model
+        # Based on the shared response space of the model, it plots the
+        # correlation distance between all combinations of trial types in the
+        # data (here: left visual stimulation only, averaged)
+        # Importantly the plot is scaled (clim) to enhance correlation patterns
+        # RELEVANCE: This plot shows whether trial information from the
+        # experiment structure is preserved in the model build from averaged
+        # trials
         models[n]['left'] = plot_trialtype_distance_matrix(
             results['averaged_trials']['train']['left'], #mean_train_data_leftseries,
             n,
@@ -374,6 +389,14 @@ def test_and_train_split(datadir,
             trialtypes=9,
             clim=[0, 0.5],
             triallength=triallength)
+        # This fits a probabilistic SRM with n features and returns the model
+        # Based on the shared response space of the model, it plots the
+        # correlation distance between all combinations of trial types in the
+        # data (here: left and right visual stimulation, original time series
+        # (not-averaged!))
+        # RELEVANCE: This plot shows whether trial information from the
+        # experiment structure is preserved in the model build from individual
+        # trials
         plot_trialtype_distance_matrix(
             results['original_trials']['train']['full'], #train_data_fullseries,
             n,
@@ -382,6 +405,13 @@ def test_and_train_split(datadir,
             triallength=triallength)
 
     # create subject specific and averaged distance matrices from raw data
+
+    # This plot uses the MEG data and computes correlation distances between the
+    # data in each trial type (here, on averaged train data). It is the baseline
+    # of which trialtype-experiment structure is embedded into the data that the
+    # model is trained on. It does so subject-wise, but it also averages the
+    # subject-wise distance matrices
+    # RELEVANCE: TODO
     compute_raw_distances(
         results['averaged_trials']['train']['full'],#mean_train_data_fullseries,
         subjects,
@@ -391,7 +421,12 @@ def test_and_train_split(datadir,
         feature='train',
         nametmpl='group_task-memento_raw_avg_trialdist_18.png'
         )
-
+    # This plot uses the MEG data and computes correlation distances between the
+    # data in each trial type (here, on averaged test data). It is the baseline
+    # of which trialtype-experiment structure is embedded into the data that the
+    # model has not seen yet It does so subject-wise, but it also averages the
+    # subject-wise distance matrices
+    # RELEVANCE: TODO
     compute_raw_distances(
         results['averaged_trials']['test']['full'],#mean_test_data_fullseries,
         subjects,
@@ -403,6 +438,15 @@ def test_and_train_split(datadir,
 
     # transform subject raw data into shared model room, plot subject specific
     # and averaged distance matrices
+
+    # This plot takes subject data in shared response space that the model has
+    # not seen during training, and creates a distance matrix between the data
+    # in all trialtypes for each subject.
+    # It is an indicator whether trialtype-experiment
+    # features are present in data transformed with the model. It can be
+    # compared to the distance matrices that were created from non-transformed
+    # MEG data of the same subject. It also averages all individual subject
+    # distance matrices into one matrix
     for n in [5, 10, 20, 40, 80, 160]:
         shared_test = models[n]['full'].transform(
             results['averaged_trials']['test']['full'])
