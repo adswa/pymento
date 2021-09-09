@@ -12,6 +12,8 @@ pattern across subjects
 
 import mne
 import logging
+import random
+
 import numpy as np
 import pandas as pd
 
@@ -30,6 +32,8 @@ font = {'family': 'normal',
         'weight': 'bold',
         'size': 50}
 plt.rc('font', **font)
+# set a seed to make train and test splits deterministic
+random.seed(423)
 
 # map a set of reward magnitude and probability (in the order) to trial types.
 # the characteristic combinations with letters are frequent (50-75 over the
@@ -177,8 +181,6 @@ def test_and_train_split(datadir,
     training_set_right:  dict; overview of trials used as training and test data
      for each subject
     """
-    import random
-    random.seed(423)
 
     timespan_left = timespan['left']
     timespan_right = timespan['right']
