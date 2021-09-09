@@ -354,6 +354,22 @@ def test_and_train_split(datadir,
                                                              trialorder=trialorder,
                                                              leftdata=leftdata,
                                                              rightdata=rightdata)
+    # create plots based on the data
+    plot_many_distance_matrices(results=results,
+                                triallength=triallength,
+                                figdir=figdir,
+                                subjects=subjects)
+    return results
+
+
+def plot_many_distance_matrices(results,
+                                triallength,
+                                figdir,
+                                subjects):
+    """
+    Plot a variety of distance matrices from raw, model, and transformed data
+    on single-subject and group level.
+    """
 
     # create & plot distance matrices of SRMs with different no of components,
     # fit on the averaged and unaveraged artificial train timeseries. Return SRM
@@ -369,7 +385,7 @@ def test_and_train_split(datadir,
         # experiment structure is preserved in the model build from averaged
         # trials
         models[n]['full'] = plot_trialtype_distance_matrix(
-            results['averaged_trials']['train']['full'], #mean_train_data_fullseries
+            results['averaged_trials']['train']['full'],
             n,
             figdir=figdir,
             triallength=triallength
@@ -383,7 +399,7 @@ def test_and_train_split(datadir,
         # experiment structure is preserved in the model build from averaged
         # trials
         models[n]['left'] = plot_trialtype_distance_matrix(
-            results['averaged_trials']['train']['left'], #mean_train_data_leftseries,
+            results['averaged_trials']['train']['left'],
             n,
             figdir=figdir,
             trialtypes=9,
@@ -398,7 +414,7 @@ def test_and_train_split(datadir,
         # experiment structure is preserved in the model build from individual
         # trials
         plot_trialtype_distance_matrix(
-            results['original_trials']['train']['full'], #train_data_fullseries,
+            results['original_trials']['train']['full'],
             n,
             figdir=figdir,
             trialtypes=270,
@@ -413,7 +429,7 @@ def test_and_train_split(datadir,
     # subject-wise distance matrices
     # RELEVANCE: TODO
     compute_raw_distances(
-        results['averaged_trials']['train']['full'],#mean_train_data_fullseries,
+        results['averaged_trials']['train']['full'],
         subjects,
         figdir=figdir,
         trialtypes=18,
@@ -428,7 +444,7 @@ def test_and_train_split(datadir,
     # subject-wise distance matrices
     # RELEVANCE: TODO
     compute_raw_distances(
-        results['averaged_trials']['test']['full'],#mean_test_data_fullseries,
+        results['averaged_trials']['test']['full'],
         subjects,
         figdir=figdir,
         trialtypes=18,
