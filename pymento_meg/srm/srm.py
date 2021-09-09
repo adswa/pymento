@@ -137,74 +137,23 @@ def get_general_data_structure(subject,
     return fullsample, data
 
 
-def test_and_train_split(datadir,
-                         bidsdir,
-                         figdir,
-                         subjects=['011', '012', '014', '016', '017',
-                                   '018', '019', '020', '022'],
-                         ntrain=15,
-                         ntest=15,
-                         timespan={'left': 'firststim',
-                                   'right': 'secondstim'}):
+def _create_splits_from_left_and_right_stimulation(subjects,
+                                                   leftdata,
+                                                   rightdata,
+                                                   trialorder,
+                                                   ntrain,
+                                                   ntest):
     """
-    Create artificially synchronized time series data. In these artificially
-    synchronized timeseries, N=ntrain trials per trial type (unique probability-
-    magnitude combinations of the first stimulus) are first concatenated in
-    blocks. This is done for a train set and a test set.
-    Then, trials within each trial type block are averaged for noise reduction.
-
-    # TODO: Maybe use training data of shorter length (e.g., visual stim), and
-    # test data of longer length/different trial segments
-    # TODO: use the first 500 ms
-
-    # TODO: threshold für die mean trial distance matrices
-    # TODO: sanity check mit test data
-    # TODO: Transformation von test data mit srm vom training
-    :param datadir:
-    :param bidsdir:
-    :param figdir:
-    :param subjects: set of str of subject identifiers. Default are subjects
-    with the largest number of suitable trial data (30+ per condition)
-    :param ntrain: int, number of trials to put in training set
-    :param ntest: int, number of trials to put in test set
-    :param timespan: dict, a specification of the time span to use for
-     subsetting the data. When it isn't a string identifier from combine_data,
-     it can be a list with start and end sample in 100Hz, e.g. {'left': [0, 70],
-     'right': [270, 340]}
+    Create a number of data aggregates, split into test and train sets, both in
+    raw form and in averaged form.
+    :param subjects: list of subjects included in the data
+    :param leftdata: dict, contains the data from the left stimulation
+    :param rightdata: dict, contains the data from the right stimulation
+    :param ntrain: int, number of trials to use in training
+    :param ntest: int, number of trials to use in testing
+    :param trialorder: list, order in which trials should be concatenated
     :return:
-    train_series: list of N=subjects lists artificial time series data,
-    ready for SRM
-    mean_train_series: list of N=subjects lists averaged artificial time series
-     data, ready for SRM
-    training_set_left: dict; overview of trials used as training and test data
-     for each subject
-    training_set_right:  dict; overview of trials used as training and test data
-     for each subject
     """
-
-    timespan_left = timespan['left']
-    timespan_right = timespan['right']
-    triallength = 70 if isinstance(timespan_left, str) \
-        else timespan_left[1] - timespan_left[0]
-    logging.info(f"Setting trial length to {triallength}")
-    # first stimulus data
-    leftsample, leftdata = get_general_data_structure(subject=subjects,
-                                                      datadir=datadir,
-                                                      bidsdir=bidsdir,
-                                                      condition='left-right',
-                                                      timespan=timespan_left)
-    # second stimulus data
-    rightsample, rightdata = get_general_data_structure(subject=subjects,
-                                                        datadir=datadir,
-                                                        bidsdir=bidsdir,
-                                                        condition='left-right',
-                                                        timespan=timespan_right)
-    # define trialorder. according to reward magnitude below
-    trialorder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
-    # order according to probability:
-    # trialorder = ['E', 'H', 'I', 'C', 'F', 'A', 'G', 'B', 'D']
-    # order according to expected value (prob*reward):
-    # trialorder = ['A', 'C', 'E', 'B', 'F', 'H', 'D', 'G', 'I']
 
     train_data = {}
     mean_train_data = {}
@@ -304,6 +253,90 @@ def test_and_train_split(datadir,
     assert len(test_data_fullseries) == \
            len(test_data_leftseries) == \
            len(subjects)
+
+    return test_data_fullseries, test_data_leftseries, train_data_fullseries, \
+           train_data_fullseries, mean_train_data_fullseries, \
+           mean_train_data_leftseries, mean_test_data_fullseries, \
+           mean_train_data_leftseries
+
+
+def test_and_train_split(datadir,
+                         bidsdir,
+                         figdir,
+                         subjects=['011', '012', '014', '016', '017',
+                                   '018', '019', '020', '022'],
+                         ntrain=15,
+                         ntest=15,
+                         timespan={'left': 'firststim',
+                                   'right': 'secondstim'}):
+    """
+    Create artificially synchronized time series data. In these artificially
+    synchronized timeseries, N=ntrain trials per trial type (unique probability-
+    magnitude combinations of the first stimulus) are first concatenated in
+    blocks. This is done for a train set and a test set.
+    Then, trials within each trial type block are averaged for noise reduction.
+
+    # TODO: Maybe use training data of shorter length (e.g., visual stim), and
+    # test data of longer length/different trial segments
+    # TODO: use the first 500 ms
+
+    # TODO: threshold für die mean trial distance matrices
+    # TODO: sanity check mit test data
+    # TODO: Transformation von test data mit srm vom training
+    :param datadir:
+    :param bidsdir:
+    :param figdir:
+    :param subjects: set of str of subject identifiers. Default are subjects
+    with the largest number of suitable trial data (30+ per condition)
+    :param ntrain: int, number of trials to put in training set
+    :param ntest: int, number of trials to put in test set
+    :param timespan: dict, a specification of the time span to use for
+     subsetting the data. When it isn't a string identifier from combine_data,
+     it can be a list with start and end sample in 100Hz, e.g. {'left': [0, 70],
+     'right': [270, 340]}
+    :return:
+    train_series: list of N=subjects lists artificial time series data,
+    ready for SRM
+    mean_train_series: list of N=subjects lists averaged artificial time series
+     data, ready for SRM
+    training_set_left: dict; overview of trials used as training and test data
+     for each subject
+    training_set_right:  dict; overview of trials used as training and test data
+     for each subject
+    """
+    timespan_left = timespan['left']
+    timespan_right = timespan['right']
+    triallength = 70 if isinstance(timespan_left, str) \
+        else timespan_left[1] - timespan_left[0]
+    logging.info(f"Setting trial length to {triallength}")
+    # first stimulus data
+    leftsample, leftdata = get_general_data_structure(subject=subjects,
+                                                      datadir=datadir,
+                                                      bidsdir=bidsdir,
+                                                      condition='left-right',
+                                                      timespan=timespan_left)
+    # second stimulus data
+    rightsample, rightdata = get_general_data_structure(subject=subjects,
+                                                        datadir=datadir,
+                                                        bidsdir=bidsdir,
+                                                        condition='left-right',
+                                                        timespan=timespan_right)
+    # define trialorder. according to reward magnitude below
+    trialorder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+    # order according to probability:
+    # trialorder = ['E', 'H', 'I', 'C', 'F', 'A', 'G', 'B', 'D']
+    # order according to expected value (prob*reward):
+    # trialorder = ['A', 'C', 'E', 'B', 'F', 'H', 'D', 'G', 'I']
+    test_data_fullseries, test_data_leftseries, train_data_fullseries, \
+    train_data_fullseries, mean_train_data_fullseries, \
+    mean_train_data_leftseries, mean_test_data_fullseries, \
+    mean_train_data_leftseries = \
+        _create_splits_from_left_and_right_stimulation(subjects=subjects,
+                                                       ntrain=ntrain,
+                                                       ntest=ntest,
+                                                       trialorder=trialorder,
+                                                       leftdata=leftdata,
+                                                       rightdata=rightdata)
 
     # create & plot distance matrices of SRMs with different no of components,
     # fit on the averaged and unaveraged artificial train timeseries. Return SRM
