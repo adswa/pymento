@@ -415,8 +415,29 @@ def test_and_train_split(datadir,
                               nametmpl=f'group_task-memento_srm{n}-avg_test{18}.png')
         # average the transformed time series across subjects, build a single
         # distance matrix from this
+        mean_shared_test = np.mean(shared_test, axis=0)
+        assert mean_shared_test.shape[0] == n
+        # make the distance matrix
+        # this plot displays correlation distance between data from different
+        # trials in the experiment, computed from unseen test data that was
+        # transformed into the shared space.
+        plot_trialtype_distance_matrix(
+            mean_shared_test,
+            n='group',
+            figdir=figdir,
+            trialtypes=18,
+            on_model_data=False,
+            triallength=triallength,
+            feature=f'transformed-test-average-with-srm{n}')
 
-
+        # This plot takes subject data in shared response space that the model has
+        # been trained on, and creates a distance matrix between the data
+        # in all trialtypes for each subject.
+        # It is an indicator whether trialtype-experiment
+        # features are present in data transformed with the model. It can be
+        # compared to the distance matrices that were created from non-transformed
+        # MEG data of the same subject. It also averages all individual subject
+        # distance matrices into one matrix
         shared_train = models[n]['full'].transform(
             results['averaged_trials']['train']['full'])
         compute_raw_distances(data=shared_train,
@@ -426,8 +447,24 @@ def test_and_train_split(datadir,
                               triallength=triallength,
                               feature='train'+str(n),
                               nametmpl=f'group_task-memento_srm{n}-avg_train{18}.png')
+        # average the transformed time series across subjects, build a single
+        # distance matrix from this
+        mean_shared_train = np.mean(shared_train, axis=0)
+        assert mean_shared_train.shape[0] == n
+        # make the distance matrix
+        plot_trialtype_distance_matrix(
+            mean_shared_train,
+            n='group',
+            figdir=figdir,
+            trialtypes=18,
+            on_model_data=False,
+            triallength=triallength,
+            feature=f'transformed-train-average-with-srm{n}')
 
-    # finally, average timeseries over subjects, and build distance matrices
+
+
+    # finally, average non-transformed timeseries over subjects,
+    # and build distance matrices
     for (data, label) in [(results['averaged_trials']['train']['full'], 'train'),
                           (results['averaged_trials']['test']['full'], 'test')]:
         mean = np.mean(data, axis=0)
