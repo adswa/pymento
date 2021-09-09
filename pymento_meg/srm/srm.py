@@ -152,7 +152,8 @@ def _create_splits_from_left_and_right_stimulation(subjects,
     :param ntrain: int, number of trials to use in training
     :param ntest: int, number of trials to use in testing
     :param trialorder: list, order in which trials should be concatenated
-    :return:
+    :return: nested dict, with keys indicating original or averaged, then train
+    or test, and then left or fullseries
     """
 
     train_data = {}
@@ -254,10 +255,30 @@ def _create_splits_from_left_and_right_stimulation(subjects,
            len(test_data_leftseries) == \
            len(subjects)
 
-    return test_data_fullseries, test_data_leftseries, train_data_fullseries, \
-           train_data_fullseries, mean_train_data_fullseries, \
-           mean_train_data_leftseries, mean_test_data_fullseries, \
-           mean_train_data_leftseries
+    # return all this data as a dict
+    results = {'original_trials':
+                   {'test':
+                        {'left': test_data_leftseries,
+                         'full': test_data_fullseries
+                        },
+                    'train':
+                        {'left': train_data_leftseries,
+                         'full': train_data_fullseries
+                        }
+                    },
+               'averaged_trials':
+                   {'test':
+                        {'left': mean_test_data_leftseries,
+                         'full': mean_test_data_fullseries
+                        },
+                    'train':
+                        {'left': mean_train_data_leftseries,
+                         'full': mean_train_data_fullseries
+                        }
+                    }
+               }
+
+    return results
 
 
 def test_and_train_split(datadir,
@@ -327,16 +348,12 @@ def test_and_train_split(datadir,
     # trialorder = ['E', 'H', 'I', 'C', 'F', 'A', 'G', 'B', 'D']
     # order according to expected value (prob*reward):
     # trialorder = ['A', 'C', 'E', 'B', 'F', 'H', 'D', 'G', 'I']
-    test_data_fullseries, test_data_leftseries, train_data_fullseries, \
-    train_data_fullseries, mean_train_data_fullseries, \
-    mean_train_data_leftseries, mean_test_data_fullseries, \
-    mean_train_data_leftseries = \
-        _create_splits_from_left_and_right_stimulation(subjects=subjects,
-                                                       ntrain=ntrain,
-                                                       ntest=ntest,
-                                                       trialorder=trialorder,
-                                                       leftdata=leftdata,
-                                                       rightdata=rightdata)
+    results = _create_splits_from_left_and_right_stimulation(subjects=subjects,
+                                                             ntrain=ntrain,
+                                                             ntest=ntest,
+                                                             trialorder=trialorder,
+                                                             leftdata=leftdata,
+                                                             rightdata=rightdata)
 
     # create & plot distance matrices of SRMs with different no of components,
     # fit on the averaged and unaveraged artificial train timeseries. Return SRM
@@ -345,46 +362,50 @@ def test_and_train_split(datadir,
     for n in [5, 10, 20, 40, 80, 160]:
         models[n] = {}
         models[n]['full'] = plot_trialtype_distance_matrix(
-            mean_train_data_fullseries,
+            results['averaged_trials']['train']['full'], #mean_train_data_fullseries
             n,
             figdir=figdir,
             triallength=triallength
             )
         models[n]['left'] = plot_trialtype_distance_matrix(
-            mean_train_data_leftseries,
+            results['averaged_trials']['train']['left'], #mean_train_data_leftseries,
             n,
             figdir=figdir,
             trialtypes=9,
             clim=[0, 0.5],
             triallength=triallength)
-        plot_trialtype_distance_matrix(train_data_fullseries,
-                                       n,
-                                       figdir=figdir,
-                                       trialtypes=270,
-                                       triallength=triallength)
+        plot_trialtype_distance_matrix(
+            results['original_trials']['train']['full'], #train_data_fullseries,
+            n,
+            figdir=figdir,
+            trialtypes=270,
+            triallength=triallength)
 
     # create subject specific and averaged distance matrices from raw data
-    compute_raw_distances(mean_train_data_fullseries,
-                          subjects,
-                          figdir=figdir,
-                          trialtypes=18,
-                          triallength=triallength,
-                          feature='train',
-                          nametmpl='group_task-memento_raw_avg_trialdist_18.png'
-                          )
+    compute_raw_distances(
+        results['averaged_trials']['train']['full'],#mean_train_data_fullseries,
+        subjects,
+        figdir=figdir,
+        trialtypes=18,
+        triallength=triallength,
+        feature='train',
+        nametmpl='group_task-memento_raw_avg_trialdist_18.png'
+        )
 
-    compute_raw_distances(mean_test_data_fullseries,
-                          subjects,
-                          figdir=figdir,
-                          trialtypes=18,
-                          triallength=triallength,
-                          feature='test'
-                          )
+    compute_raw_distances(
+        results['averaged_trials']['test']['full'],#mean_test_data_fullseries,
+        subjects,
+        figdir=figdir,
+        trialtypes=18,
+        triallength=triallength,
+        feature='test'
+        )
 
     # transform subject raw data into shared model room, plot subject specific
     # and averaged distance matrices
     for n in [5, 10, 20, 40, 80, 160]:
-        shared_test = models[n]['full'].transform(mean_test_data_fullseries)
+        shared_test = models[n]['full'].transform(
+            results['averaged_trials']['test']['full'])
         compute_raw_distances(data=shared_test,
                               subjects=subjects,
                               figdir=figdir,
@@ -392,7 +413,12 @@ def test_and_train_split(datadir,
                               triallength=triallength,
                               feature='test'+str(n),
                               nametmpl=f'group_task-memento_srm{n}-avg_test{18}.png')
-        shared_train = models[n]['full'].transform(mean_train_data_fullseries)
+        # average the transformed time series across subjects, build a single
+        # distance matrix from this
+
+
+        shared_train = models[n]['full'].transform(
+            results['averaged_trials']['train']['full'])
         compute_raw_distances(data=shared_train,
                               subjects=subjects,
                               figdir=figdir,
@@ -402,8 +428,8 @@ def test_and_train_split(datadir,
                               nametmpl=f'group_task-memento_srm{n}-avg_train{18}.png')
 
     # finally, average timeseries over subjects, and build distance matrices
-    for (data, label) in [(mean_train_data_fullseries, 'train'),
-                          (mean_test_data_fullseries, 'test')]:
+    for (data, label) in [(results['averaged_trials']['train']['full'], 'train'),
+                          (results['averaged_trials']['test']['full'], 'test')]:
         mean = np.mean(data, axis=0)
         assert mean.shape[0] == 306
         # make the distance matrix
@@ -415,10 +441,7 @@ def test_and_train_split(datadir,
                               feature=label,
                               nametmpl=f'groupavg_task-memento_raw-{label}.png')
 
-
-
-    return train_data_fullseries, train_data_leftseries, \
-           mean_train_data_fullseries, mean_train_data_leftseries,
+    return
 
 
 def compute_raw_distances(data,
