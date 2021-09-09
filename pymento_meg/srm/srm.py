@@ -348,12 +348,13 @@ def test_and_train_split(datadir,
     # trialorder = ['E', 'H', 'I', 'C', 'F', 'A', 'G', 'B', 'D']
     # order according to expected value (prob*reward):
     # trialorder = ['A', 'C', 'E', 'B', 'F', 'H', 'D', 'G', 'I']
-    results = _create_splits_from_left_and_right_stimulation(subjects=subjects,
-                                                             ntrain=ntrain,
-                                                             ntest=ntest,
-                                                             trialorder=trialorder,
-                                                             leftdata=leftdata,
-                                                             rightdata=rightdata)
+    results = _create_splits_from_left_and_right_stimulation(
+        subjects=subjects,
+        ntrain=ntrain,
+        ntest=ntest,
+        trialorder=trialorder,
+        leftdata=leftdata,
+        rightdata=rightdata)
     # create plots based on the data
     plot_many_distance_matrices(results=results,
                                 triallength=triallength,
@@ -466,13 +467,14 @@ def plot_many_distance_matrices(results,
     for n in [5, 10, 20, 40, 80, 160]:
         shared_test = models[n]['full'].transform(
             results['averaged_trials']['test']['full'])
-        compute_raw_distances(data=shared_test,
-                              subjects=subjects,
-                              figdir=figdir,
-                              trialtypes=18,
-                              triallength=triallength,
-                              feature='test'+str(n),
-                              nametmpl=f'group_task-memento_srm{n}-avg_test{18}.png')
+        compute_raw_distances(
+            data=shared_test,
+            subjects=subjects,
+            figdir=figdir,
+            trialtypes=18,
+            triallength=triallength,
+            feature='test'+str(n),
+            nametmpl=f'group_task-memento_srm{n}-avg_test{18}.png')
         # average the transformed time series across subjects, build a single
         # distance matrix from this
         mean_shared_test = np.mean(shared_test, axis=0)
@@ -490,23 +492,24 @@ def plot_many_distance_matrices(results,
             triallength=triallength,
             feature=f'transformed-test-average-with-srm{n}')
 
-        # This plot takes subject data in shared response space that the model has
-        # been trained on, and creates a distance matrix between the data
+        # This plot takes subject data in shared response space that the model
+        # was trained on, and creates a distance matrix between the data
         # in all trialtypes for each subject.
         # It is an indicator whether trialtype-experiment
         # features are present in data transformed with the model. It can be
-        # compared to the distance matrices that were created from non-transformed
+        # compared to the dist matrices that were created from non-transformed
         # MEG data of the same subject. It also averages all individual subject
         # distance matrices into one matrix
         shared_train = models[n]['full'].transform(
             results['averaged_trials']['train']['full'])
-        compute_raw_distances(data=shared_train,
-                              subjects=subjects,
-                              figdir=figdir,
-                              trialtypes=18,
-                              triallength=triallength,
-                              feature='train'+str(n),
-                              nametmpl=f'group_task-memento_srm{n}-avg_train{18}.png')
+        compute_raw_distances(
+            data=shared_train,
+            subjects=subjects,
+            figdir=figdir,
+            trialtypes=18,
+            triallength=triallength,
+            feature='train'+str(n),
+            nametmpl=f'group_task-memento_srm{n}-avg_train{18}.png')
         # average the transformed time series across subjects, build a single
         # distance matrix from this
         mean_shared_train = np.mean(shared_train, axis=0)
@@ -521,12 +524,11 @@ def plot_many_distance_matrices(results,
             triallength=triallength,
             feature=f'transformed-train-average-with-srm{n}')
 
-
-
     # finally, average non-transformed timeseries over subjects,
     # and build distance matrices
-    for (data, label) in [(results['averaged_trials']['train']['full'], 'train'),
-                          (results['averaged_trials']['test']['full'], 'test')]:
+    for (data, label) in \
+            [(results['averaged_trials']['train']['full'], 'train'),
+             (results['averaged_trials']['test']['full'], 'test')]:
         mean = np.mean(data, axis=0)
         assert mean.shape[0] == 306
         # make the distance matrix
