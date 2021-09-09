@@ -284,12 +284,10 @@ def _create_splits_from_left_and_right_stimulation(subjects,
 def test_and_train_split(datadir,
                          bidsdir,
                          figdir,
-                         subjects=['011', '012', '014', '016', '017',
-                                   '018', '019', '020', '022'],
+                         subjects=None,
                          ntrain=15,
                          ntest=15,
-                         timespan={'left': 'firststim',
-                                   'right': 'secondstim'}):
+                         timespan=None):
     """
     Create artificially synchronized time series data. In these artificially
     synchronized timeseries, N=ntrain trials per trial type (unique probability-
@@ -325,6 +323,13 @@ def test_and_train_split(datadir,
     training_set_right:  dict; overview of trials used as training and test data
      for each subject
     """
+    if subjects is None:
+        # default to a list of subjects with the most good trial events
+        subjects = ['011', '012', '014', '016', '017',
+                    '018', '019', '020', '022']
+    if timespan is None:
+        timespan = {'left': 'firststim',
+                    'right': 'secondstim'}
     timespan_left = timespan['left']
     timespan_right = timespan['right']
     triallength = 70 if isinstance(timespan_left, str) \
@@ -614,7 +619,7 @@ def plot_trialtype_distance_matrix(data,
                                    n,
                                    figdir,
                                    trialtypes=18,
-                                   clim=[0, 1],
+                                   clim=None,
                                    on_model_data=True,
                                    feature=None,
                                    triallength=70):
@@ -635,6 +640,9 @@ def plot_trialtype_distance_matrix(data,
     :param triallength: int, length of a single trial in samples. Defaults to 70
     :return:
     """
+    if clim is None:
+        # default to a range of 0 to 1
+        clim = [0, 1]
     if on_model_data:
         assert len(data) > 1
         assert isinstance(data, list)
