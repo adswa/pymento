@@ -488,7 +488,7 @@ def plot_many_distance_matrices(results,
         # this plot displays correlation distance between data from different
         # trials in the experiment, computed from unseen test data that was
         # transformed into the shared space.
-        plot_trialtype_distance_matrix(
+        mean_shared_test_dist = plot_trialtype_distance_matrix(
             mean_shared_test,
             n='group',
             figdir=figdir,
@@ -496,7 +496,12 @@ def plot_many_distance_matrices(results,
             on_model_data=False,
             triallength=triallength,
             feature=f'transformed-test-average-with-srm{n}')
-
+        logging.info(f'Permutation test on transformed test data with {n} '
+                     f'components:')
+        correlate_distance_matrix_quadrants(
+            mean_shared_test_dist,
+            figdir=figdir + '/group/meg',
+            name=f'averaged_transformed_train_data_srm{n}.png')
         # This plot takes subject data in shared response space that the model
         # was trained on, and creates a distance matrix between the data
         # in all trialtypes for each subject.
@@ -520,7 +525,7 @@ def plot_many_distance_matrices(results,
         mean_shared_train = np.mean(shared_train, axis=0)
         assert mean_shared_train.shape[0] == n
         # make the distance matrix
-        plot_trialtype_distance_matrix(
+        mean_shared_train_dist = plot_trialtype_distance_matrix(
             mean_shared_train,
             n='group',
             figdir=figdir,
@@ -528,7 +533,13 @@ def plot_many_distance_matrices(results,
             on_model_data=False,
             triallength=triallength,
             feature=f'transformed-train-average-with-srm{n}')
-
+        logging.info(f'Permutation test on transformed train data with {n} '
+                     f'components:')
+        correlate_distance_matrix_quadrants(
+            mean_shared_test_dist,
+            figdir=figdir + '/group/meg',
+            name=f'averaged_transformed_train_data_srm{n}.png'
+        )
     # finally, average non-transformed timeseries over subjects,
     # and build distance matrices
     for (data, label) in \
@@ -546,6 +557,94 @@ def plot_many_distance_matrices(results,
                               nametmpl=f'groupavg_task-memento_raw-{label}.png')
 
     return
+
+
+def correlate_distance_matrix_quadrants(distmat, figdir, name):
+    """
+    Take the lower triangle matrix of each quadrant in the distance matrix,
+    and then correlate all quadrants lower triangle matrices with eachother.
+    Repeat this process, but with permutated values.
+    Find the percentile of the non-permutated value within the permutated ones.
+    :param distmat: array, contains the values of the distance matrix
+    :param figdir: str, path to where figures are saved
+    :param name: str, file name
+    :return:
+    """
+    # ensure that the distance matrix has the expected shape
+    assert distmat.shape == (18, 18)
+    # split it into quadrants:
+    #  |a|c|
+    #  |b|d|
+    #
+    a, b, c, d = distmat[:9, :9], distmat[9:, :9], \
+                 distmat[:9, 9:], distmat[9:, 9:]
+    # shift the lower triangle one to the left, to not include the diagonal
+    inds = np.tril_indices(9, -1)
+    # transform all quadrants lower triangles into arrays
+    a_1d = np.asarray(a[inds])
+    b_1d = np.asarray(b[inds])
+    c_1d = np.asarray(c[inds])
+    d_1d = np.asarray(d[inds])
+    observed_correlations = _get_quadrant_corrs(a_1d, b_1d, c_1d, d_1d)
+    # now, permutate the inner structure of the vectors and recompute the
+    # correlation 10000 times
+    rng = np.random.default_rng()
+    permutations = []
+    for i in range(10000):
+        for q in [a_1d, b_1d, c_1d, d_1d]:
+            rng.shuffle(q)
+        permutations.append(_get_quadrant_corrs(a_1d, b_1d, c_1d, d_1d))
+
+    results = {}
+    from scipy.stats import percentileofscore
+    import seaborn as sns
+    sns.set_style("darkgrid")
+    font = {'family': 'normal',
+            'weight': 'bold',
+            'size': 12}
+    plt.rc('font', **font)
+    for quad_combination, idx in [('ad', 0), ('ab', 1), ('ac', 2), ('db', 3),
+                                  ('dc', 4)]:
+        dist = [l[idx] for l in permutations]
+        perc = percentileofscore(dist, observed_correlations[idx])
+        results[quad_combination] = perc
+        # plot a histogram
+        fig = sns.histplot(dist, kde=True)
+        plt.axvline(observed_correlations[idx], c='black', ls='--', lw=1)
+        plt.title(f'Distribution of random correlations between quadrants \n'
+                  f'{quad_combination[0]} and {quad_combination[1]}, '
+                  f'and observed correlation')
+        plt.text(observed_correlations[idx]-0.25, 300,
+                 f'r={observed_correlations[idx]:.2f}, \n'
+                 f'({perc}th)')
+        plt.text(-0.6, 450, " a  c \n b  d ", fontweight='light',
+                 bbox={'boxstyle': 'square', 'facecolor': 'white'})
+        plt.xlabel('Pearson correlation')
+        fname = figdir + '/' + f'correlation_{quad_combination}_{name}'
+        plt.savefig(fname)
+        plt.close()
+        logging.info(f'Saving results of the permutation test to {fname}')
+    print(results)
+
+    return results
+
+
+def _get_quadrant_corrs(a, b, c, d):
+    """
+    get the correlations between four quadrants
+    :param a, b, c, d: array, 1D vector corresponding to the lower triangle of
+     each quadrant of a distance matrix
+    :return:
+    """
+    # correlation between the intertrial distance of the left set of stimuli
+    # and the intertrial distance of the right stimuli
+    ad = np.corrcoef(a, d)[0][1]
+    ab = np.corrcoef(a, b)[0][1]
+    ac = np.corrcoef(a, c)[0][1]
+    db = np.corrcoef(d, b)[0][1]
+    dc = np.corrcoef(d, c)[0][1]
+    return ad, ab, ac, db, dc
+
 
 
 def compute_raw_distances(data,
