@@ -27,11 +27,6 @@ import scipy.spatial.distance as sp_distance
 import matplotlib.pyplot as plt
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
-# set font specifications for plots
-font = {'family': 'normal',
-        'weight': 'bold',
-        'size': 50}
-plt.rc('font', **font)
 # set a seed to make train and test splits deterministic
 random.seed(423)
 
@@ -702,11 +697,17 @@ def compute_raw_distances(data,
     assert not (avg_corrdist <= -1).any()
     assert not (avg_corrdist >= 1).any()
     # plot it
+    # set font specifications for plots
+    font = {'family': 'normal',
+            'weight': 'bold',
+            'size': 50}
+    plt.rc('font', **font)
     plt.figure(figsize=[50, 50])
     plt.imshow(avg_corrdist, cmap='viridis')
     plt.colorbar()
     # set a figure title according to the number of trialtypes plotted
     type = 'left and right' if trialtypes in [18, 270] else 'left'
+    # TODO: The titles are wrong, need to become more generic
     plt.title(f"Average of subject-wise raw data trial distances for "
               f"{type} stimulation")
     fname = Path(figdir) / f'group/meg' / f'{nametmpl}'
@@ -760,6 +761,11 @@ def plot_trialtype_distance_matrix(data,
 
     dist_mat = sp_distance.squareform(
         sp_distance.pdist(trialmodels_, metric='correlation'))
+    # set font specifications for plots
+    font = {'family': 'normal',
+            'weight': 'bold',
+            'size': 50}
+    plt.rc('font', **font)
     plt.figure(figsize=[50, 50])
     plt.imshow(dist_mat, cmap='viridis', clim=clim)
 
