@@ -544,7 +544,7 @@ def plot_many_distance_matrices(results,
         correlate_distance_matrix_quadrants(
             mean_shared_test_dist,
             figdir=figdir + '/group/meg',
-            name=f'averaged_transformed_train_data_srm{n}.png')
+            name=f'averaged_transformed_test_data_srm{n}.png')
         # This plot takes subject data in shared response space that the model
         # was trained on, and creates a distance matrix between the data
         # in all trialtypes for each subject.
