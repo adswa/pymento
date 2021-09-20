@@ -662,7 +662,6 @@ def correlate_distance_matrix_quadrants(distmat, figdir, name):
     results = {}
     from scipy.stats import percentileofscore
     import seaborn as sns
-    sns.set_style("darkgrid")
     font = {'family': 'normal',
             'weight': 'bold',
             'size': 12}
