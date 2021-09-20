@@ -85,14 +85,12 @@ def remove_eyeblinks_and_heartbeat(raw,
     epochs_ar, reject_log = ar.transform(epochs, return_log=True)
 
     # run an ICA to capture heartbeat and eyeblink artifacts.
-    # use picard algorithm because it promised
     # set a seed for reproducibility.
     # ICA should figure its component number out itself.
     # We fit it on a set of epochs excluding the initial bad epochs following
     # https://github.com/autoreject/autoreject/blob/dfbc64f49eddeda53c5868290a6792b5233843c6/examples/plot_autoreject_workflow.py
     logging.info('Fitting the ICA')
-    ica = ICA(method='picard',
-              max_iter='auto', random_state=42)
+    ica = ICA(max_iter='auto', random_state=42)
     ica.fit(epochs[~reject_log.bad_epochs])
 
     # use the EOG channel to select ICA components:

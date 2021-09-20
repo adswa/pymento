@@ -9,4 +9,3 @@ pyvista
 mne-bids
 autoreject
 scipy
-python-picard
