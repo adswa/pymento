@@ -357,11 +357,11 @@ def test_and_train_split(datadir,
         leftdata=leftdata,
         rightdata=rightdata)
     # create plots based on the data
-    plot_many_distance_matrices(results=results,
-                                triallength=triallength,
-                                figdir=figdir,
-                                subjects=subjects)
-    return results
+    models = plot_many_distance_matrices(results=results,
+                                         triallength=triallength,
+                                         figdir=figdir,
+                                         subjects=subjects)
+    return results, models
 
 
 def plot_many_distance_matrices(results,
@@ -620,7 +620,7 @@ def plot_many_distance_matrices(results,
                                        name=name
                                        )
 
-    return
+    return models
 
 
 def correlate_distance_matrix_quadrants(distmat, figdir, name):
