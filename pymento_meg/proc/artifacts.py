@@ -38,14 +38,14 @@ def remove_eyeblinks_and_heartbeat(raw,
     # evoked eyeblinks and heartbeats for diagnostic plots
     logging.info("Searching for eyeblink and heartbeat artifacts in the data")
     eog_evoked = create_eog_epochs(filt_raw).average()
-    eog_evoked.apply_baseline(baseline=(-0.5, -0.2))
+    eog_evoked.apply_baseline(baseline=(None, -0.2))
     if subject == '008':
         # subject 008's ECG channel is flat. It will not find any heartbeats by
         # default. We let it estimate heartbeat from magnetometers. For this,
         # we'll drop the ECG channel
         filt_raw.drop_channels('ECG003')
     ecg_evoked = create_ecg_epochs(filt_raw).average()
-    ecg_evoked.apply_baseline(baseline=(-0.5, -0.2))
+    ecg_evoked.apply_baseline(baseline=(None, -0.2))
     # make sure that we actually found sensible artifacts here
     eog_fig = eog_evoked.plot_joint()
     for i, fig in enumerate(eog_fig):
