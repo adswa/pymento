@@ -79,7 +79,7 @@ def save_derivatives_to_bids_dir(raw_sss, subject, bidsdir, figdir):
     # save raw fif data and events
     events_data, event_dict = get_events(raw_sss)
     _check_if_bids_directory_exists(bids_path)
-    raw_sss.save(bids_path)
+    raw_sss.save(bids_path, overwrite=True)
     # TODO: use figdir variable
 
 
