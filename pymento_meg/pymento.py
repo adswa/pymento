@@ -9,6 +9,7 @@ from pymento_meg.orig.restructure import (
 )
 from pymento_meg.proc.preprocess import (
     maxwellfilter,
+    ZAPline,
     _filter_data,
 )
 from pymento_meg.proc.bids import (
@@ -74,6 +75,11 @@ def signal_space_separation(bidspath, subject, figdir, derived_path):
         task="memento",
         suffix="meg",
     )
+
+    # ZAPline power-line and presentation screen noise
+    raw = ZAPline(raw=raw,
+                  subject=subject,
+                  figdir=figdir)
     # Events are now Annotations, also get them as events
     events = get_events(raw)
 

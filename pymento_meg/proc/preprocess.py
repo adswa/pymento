@@ -3,6 +3,8 @@ import os
 import logging
 
 from pathlib import Path
+from meegkit.dss import dss_line
+
 from pymento_meg.utils import (
     _construct_path,
 )
@@ -16,6 +18,138 @@ from pymento_meg.viz.plots import (
 
 preconditioned = False
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
+
+# for each subject, a dictionary of specific frequency characteristics of noise.
+# This is necessary because some but not all subjects have two peaks around 60Hz
+# The dictionary specifies the frequencies, and the nremove parametrization of
+# dss_line. All have been found via manual search and trial&error
+ZAPlinefreqs = {
+    '001': {'freqs': [50, 58.5],
+            'components': [10, 13]},
+    '002': {'freqs': [50, 58.5],
+            'components': [10, 7]},
+    '003': {'freqs': [50, 58.5],
+            'components': [10, 11]},
+    '004': {'freqs':[50, 58.5],
+            'components': [10, 10]},
+    '005': {'freqs': [50, 58.5, 61],
+            'components': [10, 10, 10]},
+    '006':  {'freqs': [50, 58.5, 61],
+             'components': [10, 7, 10]},
+    '007': {'freqs': [50, 58.5],
+            'components': [10, 4]},
+    '008': {'freqs': [50, 58.5],
+            'components': [10, 10]},
+    '009': {'freqs': [50, 58.5],
+            'components': [10, 10]},
+    '010': {'freqs': [50, 58.5, 61],
+            'components': [10, 11, 10]},
+    '011': {'freqs': [50, 58.5],
+            'components': [10, 10]},
+    '012': {'freqs': [50, 58.5],
+            'components': [10, 10]},
+    '013': {'freqs': [50, 58.5],
+            'components': [10, 9]},
+    '014': {'freqs': [50, 58.5, 61],
+            'components': [10, 8, 10]},
+    '015': {'freqs': [50, 58.5],
+            'components': [10, 8]},
+    '016': {'freqs': [50, 58.5, 61],
+            'components': [10, 9, 10]},
+    '017': {'freqs': [50, 58.5, 60.5],
+            'components': [10, 10, 10]},
+    '018': {'freqs': [50, 58.5, 61],
+            'components': [10, 8, 10]},
+    '019': {'freqs': [50, 58.5, 60.5],
+            'components': [10, 6, 10]},
+    '020': {'freqs': [50, 58.5, 60.5],
+            'components': [10, 6, 10]},
+    '021':  {'freqs': [50, 58.5, 60.5],
+            'components': [10, 7, 10]},
+    '022': {'freqs': [50, 58.5, 60.5],
+            'components': [10, 7, 10]}
+}
+
+# for each subject, a dictionary of flat & bad channels
+bads = {
+    '001': ['MEG0812', 'MEG0823', 'MEG1512'],
+    '002': ['MEG0823', 'MEG1512', 'MEG1623'],
+    '003': ['MEG0823', 'MEG1132', 'MEG1512'],
+    '004': ['MEG0823', 'MEG1512', 'MEG2343'],
+    '005': ['MEG2111', 'MEG2112', 'MEG2433', 'MEG0521', 'MEG0522', 'MEG0523', 'MEG0811', 'MEG0812', 'MEG0823', 'MEG1512', 'MEG2332', 'MEG2533'],
+    '006': ['MEG0823', 'MEG1512'],
+    '007': ['MEG0823', 'MEG1512'],
+    '008': ['MEG0611', 'MEG0823', 'MEG1412', 'MEG1432', 'MEG1433', 'MEG1512', 'MEG1911', 'MEG1912'],
+    '009': ['MEG0513', 'MEG0522', 'MEG0523', 'MEG0923', 'MEG1512'],
+    '010': ['MEG0213', 'MEG0313', 'MEG0343', 'MEG0823', 'MEG1011', 'MEG1322', 'MEG1512', 'MEG0511', 'MEG0521'],
+    '011': ['MEG1512', 'MEG2533'],
+    '012': ['MEG0823', 'MEG1512'],
+    '013': ['MEG0823', 'MEG1512', 'MEG2623'],
+    '014': ['MEG0823', 'MEG1512', 'MEG1711', 'MEG1712', 'MEG1713', 'MEG2533'],
+    '015': ['MEG0823', 'MEG1512'],
+    '016': ['MEG0823', 'MEG1512', 'MEG2623', 'MEG2643'],
+    '017': ['MEG0721', 'MEG0823', 'MEG0912', 'MEG1512', 'MEG1522', 'MEG2513'],
+    '018': ['MEG0823', 'MEG1512', 'MEG2332'],
+    '019': ['MEG0823', 'MEG1011', 'MEG1512'],
+    '020': ['MEG0823', 'MEG1512', 'MEG1612', 'MEG2622', 'MEG2623'],
+    '021': ['MEG0823', 'MEG2632'],
+    '022': ['MEG0922', 'MEG2632'],
+}
+
+
+def ZAPline(raw, subject, figdir):
+    """
+    Prior to running signal space separation, we are removing power-line noise
+    at 50Hz, and noise from the presentation monitor at around 58.5Hz
+    :return:
+    """
+    # get all data from MEG sensors as a matrix
+    raw.load_data()
+    raw.info['bads'].extend(bads[subject])
+    meg_ch_idx = mne.pick_types(raw.info, meg=True)
+    data = raw.get_data(picks=meg_ch_idx)
+    fig = raw.plot_psd(fmin=1, fmax=150)
+    figpath = _construct_path(
+        [
+            Path(figdir),
+            f"sub-{subject}",
+            "meg",
+            f"sub-{subject}_nofilter.png",
+        ]
+    )
+    fig.savefig(figpath)
+    # get the relevant frequencies for each subject
+    i = 0
+    for freq in ZAPlinefreqs[subject]['freqs']:
+        logging.info(
+            f"Filtering noise at {freq}Hz from raw data of subject"
+            f" sub-{subject} with n="
+            f"{ZAPlinefreqs[subject]['components'][i]} components")
+        clean, artifact = \
+            dss_line(data.T,
+                     fline=freq,
+                     sfreq=1000,
+                     nremove=ZAPlinefreqs[subject]['components'][i])
+        # diagnostic plot
+        raw._data[meg_ch_idx] = clean.T
+        fig = raw.plot_psd(fmin=1, fmax=150)
+        figpath = _construct_path(
+            [
+                Path(figdir),
+                f"sub-{subject}",
+                "meg",
+                f"sub-{subject}_zapline_{freq}hz-filter.png",
+            ]
+        )
+        logging.info(
+            f"Saving PSD plot into {figpath}")
+        fig.savefig(figpath)
+        # overwrite data with cleaned data for next frequency
+        data = clean.T
+        i += 1
+    del data, clean, artifact
+    return raw
 
 
 def motion_estimation(subject, raw, figdir="/tmp/"):
