@@ -137,7 +137,7 @@ def epoch_and_clean_trials(subject,
     # ensure the data is loaded prior to filtering
     raw.load_data()
     # high-pass doesn't make sense, raw data has 0.1Hz high-pass filter already!
-    _filter_data(raw, h_freq=40)
+    _filter_data(raw, h_freq=100)
     # ICA to detect and repair artifacts
     logging.info('Removing eyeblink and heartbeat artifacts')
     remove_eyeblinks_and_heartbeat(raw=raw,
