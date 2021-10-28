@@ -73,7 +73,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     # No baseline correction as it would interfere with ICA.
     logging.info("Epoching filtered data")
     epochs = mne.Epochs(filt_raw, events, event_id=eventid,
-                        tmin=0, tmax=7,
+                        tmin=0, tmax=3,
                         picks='meg', baseline=None)
     # First, estimate rejection criteria for high-amplitude artifacts. This is
     # done via autoreject

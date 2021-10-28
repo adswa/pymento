@@ -150,7 +150,7 @@ def epoch_and_clean_trials(subject,
     # fixation cross. Do not baseline correct the data.
     logging.info('Creating epochs')
     epochs = mne.Epochs(raw, events, event_id=eventid,
-                        tmin=0, tmax=7,
+                        tmin=0, tmax=3,
                         picks='meg', baseline=None)
     # ADD SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH! ONLY THIS WAY WE CAN
     # LATER RECOVER WHICH TRIAL PARAMETERS WE'RE LOOKING AT BASED ON THE LOGS AS
