@@ -182,9 +182,6 @@ def remove_eyeblinks_and_heartbeat(raw,
         ]
     )
     sources.savefig(fname)
-    del filt_raw
-    del epochs
-    del epochs_ar
     # apply the ICA to the raw data
     logging.info('Applying ICA to the raw data.')
     raw.load_data()

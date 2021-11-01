@@ -138,29 +138,14 @@ def epoch_and_clean_trials(subject,
     raw.load_data()
     # high-pass doesn't make sense, raw data has 0.1Hz high-pass filter already!
     _filter_data(raw, h_freq=100)
-    # the memory demand of the data analysis is quite high. We crop the data in
-    # to two pieces
-    first_half = raw.copy()
-    first_half.crop(tmin=0, tmax=1800, include_tmax=False)
-    second_half = raw.copy()
-    second_half.crop(tmin=1800, tmax=raw.times[-1])
-    del raw
     # ICA to detect and repair artifacts
     logging.info('Removing eyeblink and heartbeat artifacts')
-    remove_eyeblinks_and_heartbeat(raw=first_half,
+    remove_eyeblinks_and_heartbeat(raw=raw,
                                    subject=subject,
                                    figdir=diagdir,
                                    events=events,
                                    eventid=eventid
                                    )
-    remove_eyeblinks_and_heartbeat(raw=second_half,
-                                   subject=subject,
-                                   figdir=diagdir,
-                                   events=events,
-                                   eventid=eventid
-                                   )
-    # concatenate the data halves again:
-    raw = mne.concatenate_raws([first_half, second_half])
     # get the actual epochs: chunk the trial into epochs starting from the
     # fixation cross. Do not baseline correct the data.
     logging.info('Creating epochs')
