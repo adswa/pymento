@@ -7,6 +7,7 @@ from pymento_meg.utils import (
 from pymento_meg.orig.restructure import (
     read_data_original,
 )
+
 from pymento_meg.proc.preprocess import (
     maxwellfilter,
     ZAPline,
@@ -15,6 +16,7 @@ from pymento_meg.proc.preprocess import (
 from pymento_meg.proc.bids import (
     read_bids_data,
     get_events,
+    save_derivatives_to_bids_dir,
 )
 from pymento_meg.proc.artifacts import (
     remove_eyeblinks_and_heartbeat,
@@ -76,10 +78,6 @@ def signal_space_separation(bidspath, subject, figdir, derived_path):
         suffix="meg",
     )
 
-    # ZAPline power-line and presentation screen noise
-    raw = ZAPline(raw=raw,
-                  subject=subject,
-                  figdir=figdir)
     # Events are now Annotations, also get them as events
     events = get_events(raw)
 
@@ -103,6 +101,14 @@ def signal_space_separation(bidspath, subject, figdir, derived_path):
         filtering=False,
         filter_args=None,
     )
+
+    # ZAPline power-line and presentation screen noise
+    raw_sss_zaplined = ZAPline(raw=raw_sss,
+                               subject=subject,
+                               figdir=figdir)
+    # save processed files into their own BIDS directory
+    save_derivatives_to_bids_dir(raw_sss=raw_sss, subject=subject, bidsdir=outdir, figdir=figdir)
+
 
 
 def epoch_and_clean_trials(subject,

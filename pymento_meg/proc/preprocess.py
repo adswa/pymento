@@ -8,9 +8,7 @@ from meegkit.dss import dss_line
 from pymento_meg.utils import (
     _construct_path,
 )
-from pymento_meg.proc.bids import (
-    save_derivatives_to_bids_dir,
-)
+
 from pymento_meg.viz.plots import (
     plot_psd,
     plot_noisy_channel_detection,
@@ -106,7 +104,6 @@ def ZAPline(raw, subject, figdir):
     """
     # get all data from MEG sensors as a matrix
     raw.load_data()
-    raw.info['bads'].extend(bads[subject])
     meg_ch_idx = mne.pick_types(raw.info, meg=True)
     data = raw.get_data(picks=meg_ch_idx)
     fig = raw.plot_psd(fmin=1, fmax=150)
@@ -312,8 +309,6 @@ def maxwellfilter(
         head_pos=head_pos,
         verbose=True,
     )
-    # save processed files into their own BIDS directory
-    save_derivatives_to_bids_dir(raw_sss=raw_sss, subject=subject, bidsdir=outdir, figdir=figdir)
 
     if filtering:
         logging.info(
@@ -327,7 +322,7 @@ def maxwellfilter(
         # TODO: save file
         return raw_sss_filtered
 
-    fig = plot_psd(raw_sss, subject, figdir, filtering)
+    plot_psd(raw_sss, subject, figdir, filtering)
     return raw_sss
 
 
