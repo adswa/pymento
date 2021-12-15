@@ -59,13 +59,14 @@ def simulate_raw(signal,
 
 
 def make_signal(frequency=10,
-                     theta=0,
-                     amplitude=1,
-                     stype='sine',
-                     data_size = 10000,
-                     signal_size=1000,
-                     outdir=None
-                     ):
+                theta=0,
+                amplitude=1,
+                stype='sine',
+                data_size=10000,
+                signal_size=1000,
+                outdir=None,
+                nsignal=1,
+                ):
     """
     Generate different signals with a given phase offset
     :param frequency: float, signal frequency
@@ -73,6 +74,7 @@ def make_signal(frequency=10,
     :param amplitude: float, amplitude of the signal
     :param data_size: int, length of the total time series
     :param signal_size: int, length of signal embedded in the time series
+    :param nsignal: int, number of waves in the signal
     :return:
     """
     # noise is drawn from a standard normal distribution.
@@ -82,24 +84,29 @@ def make_signal(frequency=10,
     # generate a sine wave with known properties
     timeseries = np.zeros(data_size)
     x = np.arange(0, 1, 1 / signal_size)
-    if stype == 'sine':
-        # make a sine wave
-        signal = amplitude * np.sin(2 * np.pi * frequency * x)
-    else:
-        # make something more interesting
-        phase = 7
-        srate = 1000
-        signal = np.sin(phase*2*np.pi + 2*np.pi*frequency*x)
-        modWidth= 700
-        taper = 10
-        width = int(np.floor((modWidth/1000)*srate))
-        win = tukey(width, taper)
-        w = np.zeros(len(signal))
-        w[200:200+len(win)] = win
-        signal = signal * w
-    # scale signal to be between zero and one
-    signal = np.interp(signal, (signal.min(), signal.max()), (-1, +1))
-    timeseries[theta:theta+signal_size] = signal
+    for i in range(nsignal):
+        if stype == 'sine':
+            # make a sine wave
+            signal = amplitude * np.sin(2 * np.pi * frequency * x)
+        else:
+            # make something more interesting
+            phase = 7
+            srate = 1000
+            signal = np.sin(phase*2*np.pi + 2*np.pi*(frequency+i*3)*x)
+            modWidth= 700
+            taper = 10
+            width = int(np.floor((modWidth/1000)*srate))
+            win = tukey(width, taper)
+            w = np.zeros(len(signal))
+            w[200:200+len(win)] = win
+            signal = signal * w
+        # scale signal to be between zero and one
+        signal = np.interp(signal, (signal.min(), signal.max()), (-1, +1))
+        if i != 0:
+            theta += i*1000
+            if theta+signal_size > len(timeseries):
+                theta = theta+signal_size - len(timeseries) + 333
+        timeseries[theta:theta+signal_size] += signal
     fig, ax = plt.subplots()
     ax = sns.lineplot(x=timeseries, linewidth=1)
     ax.set(xlabel='samples',
@@ -293,6 +300,7 @@ def simulate(n=15,
              weights={},
              raw=None,
              signal=None,
+             nsignal=1
              ):
     """
     Simulate data
@@ -305,6 +313,7 @@ def simulate(n=15,
     :param raw: list or None, pre-existing raw data to reuse for model fitting
     :param signal: list or None, pre-existing signal to reuse. Must be given
     when raw is not None
+    :param nsignal: int, number of signals in the simulated data
     :return:
     """
     if raw and (not signal or not weights):
@@ -316,12 +325,15 @@ def simulate(n=15,
         if offset:
             # make data without any offset:
             simulated_data = \
-                [simulate_raw(make_signal(stype='else', theta=theta),
+                [simulate_raw(make_signal(stype='else',
+                                          theta=theta,
+                                          nsignal=nsignal),
                               s_without_signal=percent_nosignal,
                               weights=weights.get(i, None))
                     for i, theta in enumerate(rng.uniform(0, 9000, n).astype(int))]
         else:
-            simulated_data = [simulate_raw(make_signal(stype='else'),
+            simulated_data = [simulate_raw(make_signal(stype='else',
+                                                       nsignal=nsignal),
                                            s_without_signal=percent_nosignal,
                                            weights=weights.get(i, None))
                               for i in range(n)]
@@ -394,7 +406,7 @@ def get_transformations(model, raw, comp):
 
 
 
-def letsroll(n=15, k=3, percent_nosignal=0.3, outdir='/tmp'):
+def letsroll(n=15, k=3, percent_nosignal=0.3, outdir='/tmp', nsignal=1):
     """Run the simulations.
     :param n: int, number of subjects to simulate
     :param k: int, number of features for SRM
@@ -409,7 +421,8 @@ def letsroll(n=15, k=3, percent_nosignal=0.3, outdir='/tmp'):
                  offset=False,
                  space='time-resolved',
                  k=k,
-                 outdir=outdir)
+                 outdir=outdir,
+                 nsignal=nsignal)
     print("Raw data, no offset:")
     QC(raw, weights, signal, model, transformed)
     # now with offset
@@ -419,7 +432,8 @@ def letsroll(n=15, k=3, percent_nosignal=0.3, outdir='/tmp'):
                  offset=True,
                  space='time-resolved',
                  k=k,
-                 outdir=outdir)
+                 outdir=outdir,
+                 nsignal=nsignal)
     print("Raw data, with offset:")
     QC(raw, weights, signal, model, transformed)
     # now with offset and power spectrum transformation
@@ -429,7 +443,8 @@ def letsroll(n=15, k=3, percent_nosignal=0.3, outdir='/tmp'):
                  offset=True,
                  space='spectral',
                  k=k,
-                 outdir=outdir)
+                 outdir=outdir,
+                 nsignal=nsignal)
     print("Spectral data, with offset:")
     QC(raw, weights, signal, model, transformed)
 
@@ -440,7 +455,8 @@ def letsroll(n=15, k=3, percent_nosignal=0.3, outdir='/tmp'):
                  offset=True,
                  space='time-resolved',
                  k=k,
-                 outdir=outdir)
+                 outdir=outdir,
+                 nsignal=nsignal)
     print("Same data, time-resolved and with offset:")
     QC(raw, weights, signal, model, transformed)
     # reuse previously simulated data for this run
@@ -453,7 +469,8 @@ def letsroll(n=15, k=3, percent_nosignal=0.3, outdir='/tmp'):
                  outdir=outdir,
                  raw=raw,
                  signal=signal,
-                 weights=weights)
+                 weights=weights,
+                 nsignal=nsignal)
     print("Same data, spectral and with offset:")
     QC(raw, weights, signal, model, transformed)
 
@@ -470,7 +487,8 @@ def letsroll(n=15, k=3, percent_nosignal=0.3, outdir='/tmp'):
                  space='time-resolved',
                  k=k,
                  outdir=outdir,
-                 weights=subject_weights)
+                 weights=subject_weights,
+                 nsignal=nsignal)
     print("Raw data, no offset, fixed weights:")
     QC(raw, weights, signal, model, transformed)
     # comparable to
@@ -480,7 +498,8 @@ def letsroll(n=15, k=3, percent_nosignal=0.3, outdir='/tmp'):
                                                         space='spectral',
                                                         k=k,
                                                         outdir='/tmp',
-                                                        weights=subject_weights)
+                                                        weights=subject_weights,
+                                                        nsignal=nsignal)
     print("Spectral data, with offset, fixed weights:")
     QC(raw, weights, signal, model, transformed)
 
