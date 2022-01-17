@@ -365,7 +365,7 @@ def epoch_and_clean():
     elif args.event == 'visualfix':
         eventid = {'visualfix/fixCross': 10}
     elif args.event == 'visualsecond':
-        eventid = {'visualsecond/rOpt'}
+        eventid = {'visualsecond/rOpt': 24}
     elif args.event == 'buttonpress':
         # set eventid to be the button press for left or right
         eventid = {'press/left': 1,
