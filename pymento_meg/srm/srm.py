@@ -656,6 +656,8 @@ def correlate_distance_matrix_quadrants(distmat, figdir, name):
     permutations = []
     for i in range(10000):
         for q in [a_1d, b_1d, c_1d, d_1d]:
+            # TODO: potentially wrong, ask mih for dist matrix
+            # do a mantel test
             rng.shuffle(q)
         permutations.append(_get_quadrant_corrs(a_1d, b_1d, c_1d, d_1d))
 
