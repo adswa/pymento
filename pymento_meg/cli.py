@@ -362,6 +362,8 @@ def epoch_and_clean():
                    "visualfirst/lOpt9": 20}
     elif args.event == 'visualfix':
         eventid = {'visualfix/fixCross': 10}
+    elif args.event == 'visualsecond':
+        eventid = {'visualsecond/rOpt'}
     logging.info(f"Using the following event ids for epoching: {eventid}")
     epoch_and_clean_trials(subject=args.subject,
                            diagdir=args.diagdir,
