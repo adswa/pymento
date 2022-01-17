@@ -230,9 +230,11 @@ def parse_args_epochnclean():
         help="An identifier for the timepoint at which an epoch will start. "
              "Currently implemented: 'visualfix' (the start of the "
              "fixation cross in each trial), 'visualfirst' (the start of the "
-             "left visual stimulus).",
+             "left visual stimulus), 'visualsecond' (the start of the right "
+             "visual stimulus), 'buttonpress' (a button press for the left or "
+             "right option).",
         default='visualfirst',
-        choices=['visualfirst', 'visualfix'],
+        choices=['visualfirst', 'visualfix', 'visualsecond', 'buttonpress'],
     )
 
     args = parser.parse_args()
