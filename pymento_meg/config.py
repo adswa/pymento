@@ -10,6 +10,10 @@ General configurations and mappings
 # different versions of the task saved a different amount of variables as a
 # Matlab struct into the log file.
 # This file contains information on the variables and their indexes per subject.
+# Quick overview on the meaning of the variables:
+# pointdiff = points gained in the trial (0.5, 1, 2, 4 if success, nan if not)
+# points = total points (only non-nan when the trial was successful)
+# breaktrial = takes value of 1 if trial ends with a break (5 times)
 
 smaller_onsets = [
     "fix_onset",
