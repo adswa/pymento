@@ -72,6 +72,18 @@ def remove_eyeblinks_and_heartbeat(raw,
     # define the actual events (7 seconds from onset of event_id)
     # No baseline correction as it would interfere with ICA.
     logging.info("Epoching filtered data")
+    if eventid == {'press/left': 1,
+                   'press/right': 4
+                   }:
+        # when centered on the response, move back in time
+        epochs = mne.Epochs(filt_raw, events, event_id=eventid,
+                            tmin=-3, tmax=0,
+                            picks='meg', baseline=None)
+    else:
+        epochs = mne.Epochs(filt_raw, events, event_id=eventid,
+                            tmin=0, tmax=3,
+                            picks='meg', baseline=None)
+
     epochs = mne.Epochs(filt_raw, events, event_id=eventid,
                         tmin=0, tmax=3,
                         picks='meg', baseline=None)

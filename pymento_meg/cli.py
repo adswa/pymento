@@ -364,6 +364,11 @@ def epoch_and_clean():
         eventid = {'visualfix/fixCross': 10}
     elif args.event == 'visualsecond':
         eventid = {'visualsecond/rOpt'}
+    elif args.event == 'buttonpress':
+        # set eventid to be the button press for left or right
+        eventid = {'press/left': 1,
+                   'press/right': 4
+                   }
     logging.info(f"Using the following event ids for epoching: {eventid}")
     epoch_and_clean_trials(subject=args.subject,
                            diagdir=args.diagdir,
