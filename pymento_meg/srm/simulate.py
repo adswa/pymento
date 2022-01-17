@@ -108,7 +108,7 @@ def make_signal(frequency=10,
                 theta = theta+signal_size - len(timeseries) + 333
         timeseries[theta:theta+signal_size] += signal
     fig, ax = plt.subplots()
-    ax = sns.lineplot(x=timeseries, linewidth=1)
+    ax = sns.lineplot(x=np.arange(0, data_size), y=timeseries, linewidth=1)
     ax.set(xlabel='samples',
            ylabel='amplitude',
            title=f'Artificially generated signal component ({frequency}Hz)')
