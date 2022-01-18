@@ -10,6 +10,9 @@ from autoreject import (
 import logging
 from pymento_meg.utils import _construct_path
 from pathlib import Path
+import matplotlib.pyplot as plt
+plt.tight_layout()
+
 
 
 def remove_eyeblinks_and_heartbeat(raw,
