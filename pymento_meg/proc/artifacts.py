@@ -104,6 +104,33 @@ def remove_eyeblinks_and_heartbeat(raw,
     ica = ICA(max_iter='auto', n_components=45, random_state=42)
     ica.fit(epochs[~reject_log.bad_epochs])
 
+    # visualize the components
+    components = ica.plot_components()
+    for i, fig in enumerate(components):
+        fname = _construct_path(
+            [
+                Path(figdir),
+                f"sub-{subject}",
+                "meg",
+                f"ica-components_sub-{subject}_{i}.png",
+            ]
+        )
+        fig.savefig(fname)
+    # visualize the time series of components and save it
+    plt.rcParams['figure.figsize'] = 30, 20
+    comp_sources = ica.plot_sources(epochs)
+    fname = _construct_path(
+        [
+            Path(figdir),
+            f"sub-{subject}",
+            "meg",
+            f"ica-components_sources_sub-{subject}.png",
+        ]
+    )
+    comp_sources.savefig(fname)
+    # reset plotting params
+    plt.rcParams['figure.figsize'] = plt.rcParamsDefault['figure.figsize']
+
     # use the EOG channel to select ICA components:
     ica.exclude = []
     # find which ICs match the EOG pattern
