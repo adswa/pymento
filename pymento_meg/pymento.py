@@ -202,6 +202,17 @@ def epoch_and_clean_trials(subject,
         ]
     )
     fig.savefig(fname)
+    # plot psd of cleaned epochs
+    psd = epochs_clean.plot_psd()
+    fname = _construct_path(
+        [
+            Path(diagdir),
+            f"sub-{subject}",
+            "meg",
+            f"psd_cleaned-epochs-{subject}.png",
+        ]
+    )
+    psd.savefig(fname)
 
 
 def SRM(subject,
