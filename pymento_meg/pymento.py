@@ -164,11 +164,19 @@ def epoch_and_clean_trials(subject,
                                    eventid=eventid
                                    )
     # get the actual epochs: chunk the trial into epochs starting from the
-    # fixation cross. Do not baseline correct the data.
+    # event ID. Do not baseline correct the data.
     logging.info('Creating epochs')
-    epochs = mne.Epochs(raw, events, event_id=eventid,
-                        tmin=0, tmax=3,
-                        picks='meg', baseline=None)
+    if eventid == {'press/left': 1,
+                   'press/right': 4
+                   }:
+        # when centered on the response, move back in time
+        epochs = mne.Epochs(raw, events, event_id=eventid,
+                            tmin=-3, tmax=0,
+                            picks='meg', baseline=None)
+    else:
+        epochs = mne.Epochs(raw, events, event_id=eventid,
+                            tmin=0, tmax=3,
+                            picks='meg', baseline=None)
     # ADD SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH! ONLY THIS WAY WE CAN
     # LATER RECOVER WHICH TRIAL PARAMETERS WE'RE LOOKING AT BASED ON THE LOGS AS
     # THE EPOCH REJECTION WILL REMOVE TRIALS
