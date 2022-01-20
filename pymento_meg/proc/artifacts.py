@@ -4,6 +4,7 @@ from mne.preprocessing import (
     create_eog_epochs,
     ICA,
 )
+from pymento_meg.config import ica_comps
 from autoreject import (
     AutoReject
 )
@@ -31,6 +32,10 @@ def remove_eyeblinks_and_heartbeat(raw,
     :param subject: str, subject identifier, e.g., '001'
     :param figdir:
     """
+    # get ICA components for the given subject
+    eog_indices = ica_comps[subject]['eog']
+    ecg_indices = ica_comps[subject]['ecg']
+
     # prior to an ICA, it is recommended to high-pass filter the data
     # as low frequency artifacts can alter the ICA solution. We fit the ICA
     # to high-pass filtered (1Hz) data, and apply it to non-highpass-filtered
@@ -134,25 +139,29 @@ def remove_eyeblinks_and_heartbeat(raw,
     # reset plotting params
     plt.rcParams['figure.figsize'] = plt.rcParamsDefault['figure.figsize']
 
-    # use the EOG channel to select ICA components:
-    ica.exclude = []
-    # find which ICs match the EOG pattern
-    logging.info("Search for ICA components that capture eye blink artifacts")
-    eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
-    ica.exclude = eog_indices
-
-    # barplot of ICA component "EOG match" scores
-    scores = ica.plot_scores(eog_scores)
+    # plot EOG components
+    overlay_eog = ica.plot_overlay(eog_evoked, exclude=ica_comps[subject]['eog'])
     fname = _construct_path(
         [
             Path(figdir),
             f"sub-{subject}",
             "meg",
-            f"ica-scores_artifact-eog_sub-{subject}.png",
+            f"ica-eog-components_over-avg-epochs_sub-{subject}.png",
         ]
     )
-    scores.savefig(fname)
-    # plot diagnostics
+    overlay_eog.savefig(fname)
+    # plot ECG components
+    overlay_ecg = ica.plot_overlay(ecg_evoked, exclude=ica_comps[subject]['ecg'])
+    fname = _construct_path(
+        [
+            Path(figdir),
+            f"sub-{subject}",
+            "meg",
+            f"ica-ecg-components_over-avg-epochs_sub-{subject}.png",
+        ]
+    )
+    overlay_ecg.savefig(fname)
+    # plot EOG component properties
     figs = ica.plot_properties(filt_raw, picks=eog_indices)
     for i, fig in enumerate(figs):
         fname = _construct_path(
@@ -164,6 +173,23 @@ def remove_eyeblinks_and_heartbeat(raw,
             ]
         )
         fig.savefig(fname)
+    # plot ECG component properties
+    figs = ica.plot_properties(filt_raw, picks=ecg_indices)
+    for i, fig in enumerate(figs):
+        fname = _construct_path(
+            [
+                Path(figdir),
+                f"sub-{subject}",
+                "meg",
+                f"ica-property{i}_artifact-eog_sub-{subject}.png",
+            ]
+        )
+        fig.savefig(fname)
+
+    # Set the indices to be excluded
+    ica.exclude = eog_indices
+    ica.exclude.extend(ecg_indices)
+
     # plot ICs applied to the averaged EOG epochs, with EOG matches highlighted
     sources = ica.plot_sources(eog_evoked)
     fname = _construct_path(
@@ -175,42 +201,6 @@ def remove_eyeblinks_and_heartbeat(raw,
         ]
     )
     sources.savefig(fname)
-    # find ECG components
-    logging.info("Search for ICA components that capture heartbeat artifacts")
-    ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw, method='ctps',
-                                                threshold='auto')
-    if subject == '008':
-        # because this subject misses the ECG channel, automatic detection of
-        # ECG components fails. However, visual inspection shows a clear heart
-        # beat in component 17. This should be stable across reruns as long as
-        # the seed isn't changed.
-        logging.info("For subject 8, setting a predefined component.")
-        ecg_indices = [17]
-
-    ica.exclude.extend(ecg_indices)
-
-    scores = ica.plot_scores(ecg_scores)
-    fname = _construct_path(
-        [
-            Path(figdir),
-            f"sub-{subject}",
-            "meg",
-            f"ica-scores_artifact-ecg_sub-{subject}.png",
-        ]
-    )
-    scores.savefig(fname)
-
-    figs = ica.plot_properties(filt_raw, picks=ecg_indices)
-    for i, fig in enumerate(figs):
-        fname = _construct_path(
-            [
-                Path(figdir),
-                f"sub-{subject}",
-                "meg",
-                f"ica-property{i}_artifact-ecg_sub-{subject}.png",
-            ]
-        )
-        fig.savefig(fname)
 
     # plot ICs applied to the averaged ECG epochs, with ECG matches highlighted
     sources = ica.plot_sources(ecg_evoked)
@@ -227,4 +217,3 @@ def remove_eyeblinks_and_heartbeat(raw,
     logging.info('Applying ICA to the raw data.')
     raw.load_data()
     ica.apply(raw)
-    return raw
