@@ -152,7 +152,7 @@ def epoch_and_clean_trials(subject,
     raw.load_data()
     if subject == '017':
         logging.info('Setting additional bad channels for subject 17')
-        raw.info['bads'] = ['0313', '0513', '0523']
+        raw.info['bads'] = ['MEG0313', 'MEG0513', 'MEG0523']
     # high-pass doesn't make sense, raw data has 0.1Hz high-pass filter already!
     _filter_data(raw, h_freq=100)
     # ICA to detect and repair artifacts
