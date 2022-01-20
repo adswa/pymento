@@ -197,7 +197,7 @@ def epoch_and_clean_trials(subject,
     epochs.resample(sfreq=200, verbose=True)
     # use autoreject to repair bad epochs
     ar = AutoReject(random_state=42)
-    epochs_clean = ar.fit_transform(epochs)
+    epochs_clean, reject_log = ar.fit_transform(epochs, return_log=True)
     # save the cleaned, epoched data to disk.
     outpath = _construct_path(
         [
