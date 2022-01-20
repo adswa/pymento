@@ -220,6 +220,17 @@ def epoch_and_clean_trials(subject,
         ]
     )
     fig.savefig(fname)
+    # plot the average of all cleaned epochs
+    fig = epochs_clean.average().plot()
+    fname = _construct_path(
+        [
+            Path(diagdir),
+            f"sub-{subject}",
+            "meg",
+            f"clean-epoch_average_sub-{subject}.png",
+        ]
+    )
+    fig.savefig(fname)
     # plot psd of cleaned epochs
     psd = epochs_clean.plot_psd()
     fname = _construct_path(
