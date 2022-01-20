@@ -107,7 +107,7 @@ def signal_space_separation(bidspath, subject, figdir, derived_path):
                                subject=subject,
                                figdir=figdir)
     # save processed files into their own BIDS directory
-    save_derivatives_to_bids_dir(raw_sss=raw_sss, subject=subject,
+    save_derivatives_to_bids_dir(raw_sss=raw_sss_zaplined, subject=subject,
                                  bidsdir=derived_path, figdir=figdir)
 
 
