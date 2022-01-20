@@ -39,7 +39,7 @@ ZAPlinefreqs = {
             'components': [10, 4]},
     '008': {'freqs': [50, 58.5],
             'components': [10, 10]},
-    '009': {'freqs': [50, 58.5],
+    '009': {'freqs': [50, 58.5],            # maybe dont do 9
             'components': [10, 10]},
     '010': {'freqs': [50, 58.5, 61],
             'components': [10, 11, 10]},

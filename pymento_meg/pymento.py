@@ -101,6 +101,13 @@ def signal_space_separation(bidspath, subject, figdir, derived_path):
         filtering=False,
         filter_args=None,
     )
+    # don't ZAPline the data of subject 9, it introduces counter artifacts and
+    # causes problems with the later ICA
+    if subject == '009':
+        # save processed files into their own BIDS directory
+        save_derivatives_to_bids_dir(raw_sss=raw_sss, subject=subject,
+                                     bidsdir=derived_path, figdir=figdir)
+        return
 
     # ZAPline power-line and presentation screen noise
     raw_sss_zaplined = ZAPline(raw=raw_sss,
@@ -143,6 +150,9 @@ def epoch_and_clean_trials(subject,
     # https://www.sciencedirect.com/science/article/pii/S0165027021000157
     # ensure the data is loaded prior to filtering
     raw.load_data()
+    if subject == '017':
+        logging.info('Setting additional bad channels for subject 17')
+        raw.info['bads'] = ['0313', '0513', '0523']
     # high-pass doesn't make sense, raw data has 0.1Hz high-pass filter already!
     _filter_data(raw, h_freq=100)
     # ICA to detect and repair artifacts
