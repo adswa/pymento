@@ -181,7 +181,7 @@ def remove_eyeblinks_and_heartbeat(raw,
                 Path(figdir),
                 f"sub-{subject}",
                 "meg",
-                f"ica-property{i}_artifact-eog_sub-{subject}.png",
+                f"ica-property{i}_artifact-ecg_sub-{subject}.png",
             ]
         )
         fig.savefig(fname)
