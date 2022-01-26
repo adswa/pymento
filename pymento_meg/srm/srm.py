@@ -23,6 +23,10 @@ from pathlib import Path
 from scipy import stats
 from pymento_meg.orig.behavior import read_bids_logfile
 from pymento_meg.proc.epoch import get_stimulus_characteristics
+from pymento_meg.srm.simulate import (
+    transform_to_power,
+    get_transformations
+)
 
 import scipy.spatial.distance as sp_distance
 import matplotlib.pyplot as plt
@@ -56,6 +60,116 @@ trial_characteristics = {
 }
 
 
+def plot_global_field_power(epochs):
+    """
+    :return: Calculate and plot global field power, a measure of agreement of
+    the signals picked up by all sensors across the entire scalp. Zero if all
+    sensors have the same value at a given time point, non-zero if signals
+    differ. GFP peaks may reflect “interesting” brain activity. Mathematically,
+    the GFP is the population standard deviation across all sensors, calculated
+    separately for every time point."""
+
+    avg = epochs.average()
+    gfp = avg.data.std(axis=0, ddof=0)
+    # plot
+    fig, ax = plt.subplots()
+    ax.plot(avg.times, gfp * 1e6)
+    ax.set(xlabel='Time (s)', ylabel='GFP (µV)', title='MEG')
+    fname = TODO
+    fig.savefig(fname)
+
+
+def srm_with_spectral_transformation(subject, datadir, bidsdir):
+    """
+    Fit a shared response model on data transformed into frequency space.
+    This is the practical implementation of the work simulated in
+    pymento_meg.srm.simulate
+    Currently for use with epochs that start with the second stimulus
+    presentation
+    # TODO: do this only with a subset of sensors
+    :return:
+    """
+    logging.warning("CAVE: I expect to operate on epochs starting with the 2nd "
+                    "stimulation. Abort if it runs on the full 7s trial epochs")
+    # read in epochs from all subjects. We don't need a special subset of the
+    # data, and take the full timespan of each 3s epoch.
+
+    # TODO: investigate why trials are not ordered
+    fullsample, data = get_general_data_structure(subject=subject,
+                                                  datadir=datadir,
+                                                  bidsdir=bidsdir,
+                                                  condition='nobrain-brain',
+                                                  timespan=[0, 300])
+
+    # create a train and a test set
+    trainset, testset = train_test_set(fullsample,
+                                       data,
+                                       ntrain=140,
+                                       ntest=100)
+    # transform the epochs to a time resolved and a spectral space. In order to
+    # get components reflecting processes within 3 second epochs, we loosen the
+    # subject definition, and regard each individual epoch as a subject
+    train_spectral, train_series = epochs_to_spectral_space(trainset)
+    test_spectral, test_series = epochs_to_spectral_space(testset)
+    # TODO: Think about how to create the input data. series of epochs for each
+    # subject? Or pretend that every epoch is a new subject?
+    # fit a shared response model on training data in spectral space
+    model = shared_response(train_spectral, features=10)
+    # transform the test data with it
+
+
+
+def epochs_to_spectral_space(data):
+    """
+    Transform epoch data into spectral space. Takes a dictionary with n subjects
+    as keys, transforms each subjects epochs into spectral space, concatenates
+    them
+    :param data: nested dict, top level keys are subjects, lower level dicts are
+     trial data of one epoch
+    :return:
+    series: list of lists
+    """
+    subjects = data.keys()
+    series_spectral = []
+    series_time = []
+    for sub in subjects:
+        epochs = [info['normalized_data'] for info in data[sub]]
+        spectral_series = [transform_to_power(e) for e in epochs]
+        assert spectral_series[0].shape[0] == epochs[0].shape[0] == 306
+        series_spectral.extend(spectral_series)
+        series_time.extend(epochs)
+    assert len(series_spectral) == len(series_time) #== len(subjects)
+    return series_spectral, series_time
+
+
+def train_test_set(fullsample, data, ntrain=140, ntest=100):
+    logging.info(f"Splitting the data into {ntrain} training epochs and "
+                 f"{ntest} testing epochs.")
+    testset = {}
+    trainset = {}
+    subjects = fullsample.keys()
+    for subject in subjects:
+        train = []
+        test = []
+        trials = [i for i in data if i['subject'] == subject]
+        # we need to have at least as many trials per condition as the
+        # sum of training data and testing data
+        assert len(trials) >= ntrain + ntest
+        # for each trialtype, pick n random trials for training,
+        # shuffle the list with a random seed to randomize trial order
+        shuffled = random.sample(trials, len(trials))
+        train.extend(shuffled[:ntrain])
+        # pick test trials from the other side of the shuffled list
+        test.extend(shuffled[-ntest:])
+        assert all([i not in test for i in train])
+        testset[subject] = test
+        trainset[subject] = train
+        assert len(testset[subject]) == ntest
+        assert len(trainset[subject]) == ntrain
+    return trainset, testset
+
+
+
 def get_general_data_structure(subject,
                                datadir,
                                bidsdir,
@@ -77,6 +191,8 @@ def get_general_data_structure(subject,
     stimulus duration), or 'fulltrial' (entire 7second epoch), 'secondstim',
     'delay'.
     :return:
+    fullsample: dict; holds data of all subjects (keys are subjects)
+    data: list of dicts, each entry is a dict with one epoch of one subject.
     """
     # initialize a dict to hold data over all subjects in the model
     fullsample = {}
