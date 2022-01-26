@@ -1006,7 +1006,8 @@ def add_trial_types(subject,
                                                       'LoptMag',
                                                       'LoptProb',
                                                       'RoptMag',
-                                                      'RoptProb']
+                                                      'RoptProb',
+                                                      'RT']
                                              )
 
     # add the probability and magnitude information
@@ -1015,12 +1016,14 @@ def add_trial_types(subject,
         LPrb = stim_char[stim_char['trial_no'] == info]['LoptProb'].item()
         RMag = stim_char[stim_char['trial_no'] == info]['RoptMag'].item()
         RPrb = stim_char[stim_char['trial_no'] == info]['RoptProb'].item()
+        RT = stim_char[stim_char['trial_no'] == info]['RT'].item()
         all_trial_info[info]['LoptMag'] = LMag
         all_trial_info[info]['LoptProb'] = LPrb
         all_trial_info[info]['RoptMag'] = RMag
         all_trial_info[info]['RoptProb'] = RPrb
         all_trial_info[info]['Lchar'] = trial_characteristics[(LMag, LPrb)]
         all_trial_info[info]['Rchar'] = trial_characteristics[(RMag, RPrb)]
+        all_trial_info[info]['RT'] = RT
 
     # get a count of trials per characteristic
     Lchars = [info['Lchar'] for info in all_trial_info.values()]
