@@ -138,7 +138,173 @@ def get_transformations(model, test_series, comp):
     return transformations
 
 
-def epochs_to_spectral_space(data):
+def _get_mean_and_std_from_transformed(transformed, i):
+    """Helper to get mean and std vectors for a given component i from the
+    transformed dict
+
+    :param transformed: dict, contains transformed data
+    :param i: component index
+    """
+    mean = np.mean(np.asarray(
+        [ts for ts in transformed[sub][i] for sub in transformed.keys()]),
+        axis=0)
+    # potentially change to standard error by dividing by np.sqrt(nepochs)
+    std = np.std(np.asarray(
+        [ts for ts in transformed[sub][i] for sub in transformed.keys()]),
+        axis=0)
+    return mean, std
+
+
+def _plot_transformed_components(transformed, k, data, adderror=False):
+    """
+    :param trainset: either trainset or testset
+    :return:
+    """
+    # plot transformed components:
+    palette = sns.color_palette('rocket', k)
+    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
+    for i in range(k):
+        mean, std = _get_mean_and_std_from_transformed(transformed, i)
+        ax[i].plot(mean, color=palette[i])
+        if adderror:
+            # to add standard deviations around the mean. We didn't find expected
+            # congruency/reduced variability in those plots.
+            ax[i].fill_between(range(len(mean)), mean-std, mean+std, alpha=0.4,
+                               color=palette[i])
+        for a in ax:
+            a.set(ylabel='amplitude')
+        ax[-1].set(xlabel='samples')
+        fig.suptitle('Averaged signal in shared space, component-wise ',
+                     verticalalignment='bottom')
+        fig.tight_layout()
+
+        # but there is also no congruency in the raw data (similar high stds):
+        # mean = np.mean(np.asarray([np.mean(np.asarray(i), axis=0) for i in train_series]), axis=0)
+        # std = np.std(np.asarray([np.mean(np.asarray(i), axis=0) for i in train_series]), axis=0)
+        # fig, ax = plt.subplots(figsize=(20, 5))
+        # ax.plot(mean)
+        # ax.fill_between(range(len(mean), mean-std, mean+std)
+
+    # Plot transformed data component-wise, but for left and right epochs
+    # separately. First, get indices for left and right choice
+    i = 0
+    left = []
+    right = []
+    for sub in transformed.keys():
+        for epoch in data[sub]:
+            if epoch['choice'] == 2:
+                right.append(i)
+            elif epoch['choice'] == 1:
+                left.append(i)
+            i += 1
+
+    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
+    b = 0
+    for choice, ids in [('left', left), ('right', right)]:
+        palette = sns.color_palette('rocket', k*2)
+
+        for i in range(k):
+            comp = []
+            for sub in transformed.keys():
+                comp.extend(transformed[sub][i])
+            assert len(comp) == len(left) + len(right)
+            d = [l for idx, l in enumerate(comp) if idx in ids]
+            color_idx = b + i
+            mean = np.mean(np.asarray(d), axis=0)
+            ax[i].plot(mean, color=palette[color_idx])
+            if adderror:
+                ax[i].fill_between(range(len(mean)),
+                                   mean-std,
+                                   mean+std,
+                                   alpha=0.3,
+                                   color=palette[color_idx])
+        b = 10
+    for a in ax:
+        a.set(ylabel='amplitude')
+    ax[-1].set(xlabel='samples')
+    fig.suptitle(f'Avg signal in shared space for left & right choices, '
+                 f'component-wise ', verticalalignment='bottom')
+    fig.tight_layout()
+
+    # Center the timeseries at the decision time point of each trial. CAVE, this
+    # relies on the sampling rate (100), changes in sampling rate need adjusting
+    RT = [np.round(epoch['RT']*100)
+          for subject in data for epoch in data[subject]]
+    # time window centered around the reaction, in 100Hz
+    win = 40
+
+    palette = sns.color_palette('rocket', k)
+    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
+    for i in range(k):
+
+        comp = []
+        for sub in transformed.keys():
+            comp.extend(transformed[sub][i])
+        assert len(comp) == len(left) + len(right)
+        d = [comp[idx][int(rt - win/2):int(rt + win/2)]
+             for idx, rt in enumerate(RT)]
+        mean = np.mean(np.asarray(
+            [lst for lst in d if len(lst) == win]),
+            axis=0)
+        ax[i].plot(mean, color=palette[i])
+        if adderror:
+            std = np.std(np.asarray([l for l in d if len(l) == win]), axis=0)
+            ax[i].fill_between(range(len(std)), mean-std, mean+std, alpha=0.3,
+                               color=palette[i])
+    for a in ax:
+        a.set(ylabel='amplitude')
+        a.vlines(20,
+                 ymin=-2.5 if adderror else -0.25,
+                 ymax=2.5 if adderror else 0.25,
+                 color='black',
+                 linestyle='dotted')
+        a.text(win/2, -0.2, 'response')
+    ax[-1].set(xlabel='samples')
+    fig.suptitle('Avg signal in shared space, response-locked, component-wise ',
+                   verticalalignment='bottom')
+    fig.tight_layout()
+
+
+    # now for left and right
+    palette = sns.color_palette('rocket', k*2)
+    b = 0
+    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
+    for choice, ids in [('left', left), ('right', right)]:
+        for i in range(k):
+            color_idx = b + i
+            comp = []
+            for sub in transformed.keys():
+                comp.extend(transformed[sub][i])
+            assert len(comp) == len(left) + len(right)
+            d = [comp[idx][int(rt - win/2):int(rt + win/2)] for idx, rt in
+                 enumerate(RT) if idx in ids]
+            mean = np.mean(np.asarray([lst for lst in d if len(lst) == win]),
+                           axis=0)
+            ax[i].plot(mean, color=palette[color_idx])
+            if adderror:
+                std = np.std(np.asarray([lst for lst in d if len(lst) == win]),
+                             axis=0)
+                ax[i].fill_between(range(len(std)), mean - std, mean + std,
+                                   alpha=0.3,
+                                   color=palette[color_idx])
+        b = 10
+        for a in ax:
+            a.set(ylabel='amplitude')
+            a.vlines(20,
+                     ymin=-2.5 if adderror else -0.25,
+                     ymax=2.5 if adderror else 0.25,
+                     color='black',
+                     linestyle='dotted')
+            a.text(20, -0.5, 'response')
+        ax[-1].set(xlabel='samples')
+        fig.suptitle('Avg signal in shared space, left vs. right, component-wise ',
+                     verticalalignment='bottom')
+        fig.tight_layout()
+
+    return
+
+
+def epochs_to_spectral_space(data, subjectwise=False):
     """
     Transform epoch data into spectral space. Takes a dictionary with n subjects
     as keys, transforms each subjects epochs into spectral space, concatenates
