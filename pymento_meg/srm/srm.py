@@ -80,7 +80,10 @@ def plot_global_field_power(epochs):
     fig.savefig(fname)
 
 
-def srm_with_spectral_transformation(subject, datadir, bidsdir):
+def srm_with_spectral_transformation(subject,
+                                     datadir,
+                                     bidsdir,
+                                     k=10):
     """
     Fit a shared response model on data transformed into frequency space.
     This is the practical implementation of the work simulated in
@@ -112,11 +115,19 @@ def srm_with_spectral_transformation(subject, datadir, bidsdir):
     # subject definition, and regard each individual epoch as a subject
     train_spectral, train_series = epochs_to_spectral_space(trainset)
     test_spectral, test_series = epochs_to_spectral_space(testset)
-    # TODO: Think about how to create the input data. series of epochs for each
-    # subject? Or pretend that every epoch is a new subject?
     # fit a shared response model on training data in spectral space
-    model = shared_response(train_spectral, features=10)
+    model = shared_response(train_spectral, features=k)
     # transform the test data with it
+    transformed = get_transformations(model, train_series, k)
+
+    # Alternative: concatenate epochs within subjects to longer time series
+    train_spectral, train_series = epochs_to_spectral_space_subjectwise(trainset)
+    test_spectral, test_series = epochs_to_spectral_space_subjectwise(testset)
+    # fit a shared response model on training data in spectral space
+    model = shared_response(train_spectral, features=k)
+    # transform the test data with it
+    transformed = get_transformations(model, test_series, k)
+
 
 
 
