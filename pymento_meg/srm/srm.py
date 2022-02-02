@@ -60,14 +60,24 @@ def plot_global_field_power(epochs):
 def srm_with_spectral_transformation(subject,
                                      datadir,
                                      bidsdir,
-                                     k=10):
+                                     k=10,
+                                     ntrain=140,
+                                     ntest=100,
+                                     modelfit='epochwise'):
     """
     Fit a shared response model on data transformed into frequency space.
     This is the practical implementation of the work simulated in
-    pymento_meg.srm.simulate
-    Currently for use with epochs that start with the second stimulus
-    presentation
-    # TODO: do this only with a subset of sensors
+    pymento_meg.srm.simulate.
+
+    :param subject: list, all subjects to include
+    :param ntrain: int, number of epochs to use in training
+    :param ntest: int, number of epochs to use in testing
+    :param datadir: str, path to directory with epoched data
+    :param bidsdir: str, path to directory with bids data
+    :param k: int, number of components used in SRM fitting
+    :param modelfit: str, either 'epochwise' or 'subjectwise'. Determines
+     whether SRM is fit on all epochs as if they were subjects, or subjectwise
+     on concatenated epochs
     :return:
     """
     logging.warning("CAVE: I expect to operate on epochs starting with the 2nd "
@@ -85,27 +95,47 @@ def srm_with_spectral_transformation(subject,
     # create a train and a test set
     trainset, testset = train_test_set(fullsample,
                                        data,
-                                       ntrain=140,
-                                       ntest=100)
-    # transform the epochs to a time resolved and a spectral space. In order to
-    # get components reflecting processes within 3 second epochs, we loosen the
-    # subject definition, and regard each individual epoch as a subject
-    train_spectral, train_series = epochs_to_spectral_space(trainset)
-    test_spectral, test_series = epochs_to_spectral_space(testset)
+                                       ntrain=ntrain,
+                                       ntest=ntest)
+    if modelfit == 'epochs':
+        # transform  epochs to a time resolved and a spectral space. In order to
+        # get components reflecting processes within 3 second epochs, loosen the
+        # subject definition, and regard each individual epoch as a subject
+        train_spectral, train_series = epochs_to_spectral_space(trainset)
+        test_spectral, test_series = epochs_to_spectral_space(testset)
+    elif modelfit == 'subjectwise':
+        # Alternative: average epochs within subjects (in spectral space)
+        train_spectral, train_series = \
+            epochs_to_spectral_space(trainset, subjectwise=True)
+        test_spectral, test_series = \
+            epochs_to_spectral_space(testset, subjectwise=True)
+    else:
+        logging.info(f"Unknown parameter {modelfit} for modelfit.")
+        return
+
     # fit a shared response model on training data in spectral space
-    model = shared_response(train_spectral, features=k)
+    model = shared_response([ts for k, ts in train_spectral.values()],
+                            features=k)
     # transform the test data with it
     transformed = get_transformations(model, train_series, k)
 
-    # Alternative: concatenate epochs within subjects to longer time series
-    train_spectral, train_series = epochs_to_spectral_space_subjectwise(trainset)
-    test_spectral, test_series = epochs_to_spectral_space_subjectwise(testset)
-    # fit a shared response model on training data in spectral space
-    model = shared_response(train_spectral, features=k)
-    # transform the test data with it
-    transformed = get_transformations(model, test_series, k)
 
 
+def get_transformations(model, test_series, comp):
+    """
+    Transform raw data into model space.
+    :param model:
+    :param raw:
+    :param comp: number of components in the model
+    :return:
+    """
+    transformations = {}
+    for id, sub in enumerate(test_series.keys()):
+        transformations[sub] = {}
+        for k in range(comp):
+            transformations[sub][k] = \
+                [np.dot(model.w_[id].T, ts)[k] for ts in test_series[sub]]
+    return transformations
 
 
 def epochs_to_spectral_space(data):
