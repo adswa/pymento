@@ -392,7 +392,7 @@ def plot_simulation(signal, transformed, sub, weights, model):
 
 def get_transformations(model, raw, comp):
     """
-    Transform raw data into model space and plot it
+    Transform raw data into model space.
     :param model:
     :param raw:
     :param comp: number of components in the model
