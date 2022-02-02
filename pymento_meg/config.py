@@ -377,3 +377,28 @@ ica_comps = {
     '022': {'ecg': [8, 33],
             'eog': [2, 24]},    # drops 18 epochs
 }
+
+
+# map a set of reward magnitude and probability (in the order) to trial types.
+# the characteristic combinations with letters are frequent (50-75 over the
+# course of the experiment) and occur in the left and right stimulus. The
+# non-letter combinations occur only on the right side, and some of them are
+# infrequent (between 1 and 5? occurrences over the course of the experiment)
+trial_characteristics = {
+    (0.5, 0.4): 'A',
+    (0.5, 0.8): 'B',
+    (1, 0.2): 'C',
+    (1, 0.8): 'D',
+    (2, 0.1): 'E',
+    (2, 0.2): 'F',
+    (2, 0.4): 'G',
+    (4, 0.1): 'H',
+    (4, 0.2): 'I',
+    (0.5, 0.1): '0.5-0.1',
+    (0.5, 0.2): '0.5-0.2',
+    (1, 0.4): '1.0-0.4',
+    (1, 0.1): '1.0-0.1',
+    (2, 0.8): '2.0-0.8',
+    (4, 0.4): '4.0-0.4',
+    (4, 0.8): '4.0-0.8'
+}
