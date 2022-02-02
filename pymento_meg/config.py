@@ -333,7 +333,7 @@ event_dict = {
 #                                             threshold='auto')
 ica_comps = {
     '001': {'ecg': [1, 4],
-            'eog': [0, 23]},    # drops 50 epochs for 3 sec from second stim
+            'eog': [0, 23]},    # drops 50 epochs
     '002': {'ecg': [24, 34],
             'eog': [33]},       # drops 120 epochs
     '003': {'ecg': [13, 29],
@@ -353,11 +353,11 @@ ica_comps = {
     '010': {'ecg': [5, 15],
             'eog': [0]},        # drops 24 epochs
     '011': {'ecg': [2, 3],
-            'eog': [0, 12]},    # drops 2 epochs
+            'eog': [0, 12]},    # drops 3 epochs
     '012': {'ecg': [6, 34],
             'eog': [0, 5]},     # drops 51 epochs
     '013': {'ecg': [7, 14],
-            'eog': [2, 24]},    # drops 10 epochs
+            'eog': [2, 24]},    # drops 10  (40?) epochs
     '014': {'ecg': [5, 17, 25],
             'eog': [0, 6]},     # drops 27 epochs
     '015': {'ecg': [1, 6],
@@ -369,7 +369,7 @@ ica_comps = {
     '018': {'ecg': [22, 31],
             'eog': [2]},        # drops 3 epochs
     '019': {'ecg': [4, 31],
-            'eog': [13]},       # drops 42 epochs
+            'eog': [13]},       # drops 42 (11?) epochs
     '020': {'ecg': [10, 43],
             'eog': [7, 31]},    # drops 3 epochs
     '021': {'ecg': [5, 32, 42],
