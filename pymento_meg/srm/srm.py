@@ -307,23 +307,27 @@ def _plot_transformed_components(transformed, k, data, adderror=False):
 def epochs_to_spectral_space(data, subjectwise=False):
     """
     Transform epoch data into spectral space. Takes a dictionary with n subjects
-    as keys, transforms each subjects epochs into spectral space, concatenates
-    them
+    as keys, transforms each subjects epochs into spectral space, returns each
+    epoch as if it was its own subject
     :param data: nested dict, top level keys are subjects, lower level dicts are
      trial data of one epoch
     :return:
     series: list of lists
     """
     subjects = data.keys()
-    series_spectral = []
-    series_time = []
+    series_spectral = {}
+    series_time = {}
     for sub in subjects:
         epochs = [info['normalized_data'] for info in data[sub]]
         spectral_series = [transform_to_power(e) for e in epochs]
         assert spectral_series[0].shape[0] == epochs[0].shape[0] == 306
-        series_spectral.extend(spectral_series)
-        series_time.extend(epochs)
-    assert len(series_spectral) == len(series_time) #== len(subjects)
+        if subjectwise:
+            # average over epochs. This results in one train epoch only.
+            spectral_series = np.mean(np.asarray(spectral_series), axis=0)
+            assert spectral_series.shape[0] == epochs[0].shape[0] == 306
+        series_spectral[sub] = spectral_series
+        series_time[sub] = epochs
+    assert len(series_spectral) == len(series_time) == len(subjects)
     return series_spectral, series_time
 
 
