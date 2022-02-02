@@ -30,6 +30,7 @@ from pymento_meg.srm.simulate import (
 
 import scipy.spatial.distance as sp_distance
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 # set a seed to make train and test splits deterministic
