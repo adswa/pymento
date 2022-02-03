@@ -114,10 +114,10 @@ def srm_with_spectral_transformation(subject,
         return
 
     # fit a shared response model on training data in spectral space
-    model = shared_response([ts for k, ts in train_spectral.values()],
+    model = shared_response([ts for k, ts in train_spectral.items()],
                             features=k)
     # transform the test data with it
-    transformed = get_transformations(model, train_series, k)
+    transformed = get_transformations(model, test_series, k)
 
 
 
@@ -146,18 +146,18 @@ def _get_mean_and_std_from_transformed(transformed, i):
     :param i: component index
     """
     mean = np.mean(np.asarray(
-        [ts for ts in transformed[sub][i] for sub in transformed.keys()]),
+        [ts for sub in transformed.keys() for ts in transformed[sub][i]]),
         axis=0)
     # potentially change to standard error by dividing by np.sqrt(nepochs)
     std = np.std(np.asarray(
-        [ts for ts in transformed[sub][i] for sub in transformed.keys()]),
+        [ts for sub in transformed.keys() for ts in transformed[sub][i]]),
         axis=0)
     return mean, std
 
 
 def _plot_transformed_components(transformed, k, data, adderror=False):
     """
-    :param trainset: either trainset or testset
+    :param data: either trainset or testset
     :return:
     """
     # plot transformed components:
@@ -207,7 +207,7 @@ def _plot_transformed_components(transformed, k, data, adderror=False):
             comp = []
             for sub in transformed.keys():
                 comp.extend(transformed[sub][i])
-            assert len(comp) == len(left) + len(right)
+            #assert len(comp) == len(left) + len(right)
             d = [l for idx, l in enumerate(comp) if idx in ids]
             color_idx = b + i
             mean = np.mean(np.asarray(d), axis=0)
@@ -240,9 +240,9 @@ def _plot_transformed_components(transformed, k, data, adderror=False):
         comp = []
         for sub in transformed.keys():
             comp.extend(transformed[sub][i])
-        assert len(comp) == len(left) + len(right)
+        #assert len(comp) == len(left) + len(right)
         d = [comp[idx][int(rt - win/2):int(rt + win/2)]
-             for idx, rt in enumerate(RT)]
+             for idx, rt in enumerate(RT) if not np.isnan(rt)]
         mean = np.mean(np.asarray(
             [lst for lst in d if len(lst) == win]),
             axis=0)
@@ -275,9 +275,9 @@ def _plot_transformed_components(transformed, k, data, adderror=False):
             comp = []
             for sub in transformed.keys():
                 comp.extend(transformed[sub][i])
-            assert len(comp) == len(left) + len(right)
+            #assert len(comp) == len(left) + len(right)
             d = [comp[idx][int(rt - win/2):int(rt + win/2)] for idx, rt in
-                 enumerate(RT) if idx in ids]
+                 enumerate(RT) if idx in ids and not np.isnan(rt)]
             mean = np.mean(np.asarray([lst for lst in d if len(lst) == win]),
                            axis=0)
             ax[i].plot(mean, color=palette[color_idx])
