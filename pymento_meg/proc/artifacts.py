@@ -20,7 +20,8 @@ def remove_eyeblinks_and_heartbeat(raw,
                                    subject,
                                    figdir,
                                    events,
-                                   eventid):
+                                   eventid
+                                   ):
     """
     Find and repair eyeblink and heartbeat artifacts in the data.
     Data should be filtered.

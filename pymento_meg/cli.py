@@ -225,6 +225,11 @@ def parse_args_epochnclean():
         required=True,
     )
     parser.add_argument(
+        "--epochlength",
+        help="""Length of the epochs to split into in seconds""",
+        default=3,
+    )
+    parser.add_argument(
         "--event",
         "-e",
         help="An identifier for the timepoint at which an epoch will start. "
@@ -377,6 +382,7 @@ def epoch_and_clean():
                            bidsdir=args.bidsdir,
                            datadir=args.datadir,
                            derivdir=args.derivdir,
+                           epochlength=int(args.epochlength),
                            eventid=eventid)
 
 

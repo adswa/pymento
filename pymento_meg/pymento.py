@@ -124,6 +124,7 @@ def epoch_and_clean_trials(subject,
                            bidsdir,
                            datadir,
                            derivdir,
+                           epochlength=3,
                            eventid={'visualfix/fixCross': 10}):
     """
     Chunk the data into epochs starting at the eventid specified per trial,
@@ -136,6 +137,7 @@ def epoch_and_clean_trials(subject,
     event logs from the experiment
     :param datadir: str, path to a directory with SSS-processed data
     :param derivdir: str, path to a directory where cleaned epochs can be saved
+    :param epochlength: int, length of epoch
     :param eventid: dict, the event to start an Epoch from
     """
     # construct name of the first split
@@ -165,17 +167,17 @@ def epoch_and_clean_trials(subject,
                                    )
     # get the actual epochs: chunk the trial into epochs starting from the
     # event ID. Do not baseline correct the data.
-    logging.info('Creating epochs')
+    logging.info(f'Creating epochs of length {epochlength}')
     if eventid == {'press/left': 1,
                    'press/right': 4
                    }:
         # when centered on the response, move back in time
         epochs = mne.Epochs(raw, events, event_id=eventid,
-                            tmin=-3, tmax=0,
+                            tmin=-epochlength, tmax=0,
                             picks='meg', baseline=None)
     else:
         epochs = mne.Epochs(raw, events, event_id=eventid,
-                            tmin=0, tmax=3,
+                            tmin=0, tmax=epochlength,
                             picks='meg', baseline=None)
     # ADD SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH! ONLY THIS WAY WE CAN
     # LATER RECOVER WHICH TRIAL PARAMETERS WE'RE LOOKING AT BASED ON THE LOGS AS
