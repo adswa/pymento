@@ -194,9 +194,9 @@ def epoch_and_clean_trials(subject,
     # to associate the trial metadata to the correct trials in the data
     epochs.metadata = metadata
     epochs.load_data()
-    # downsample the data to 200Hz
-    logging.info('Resampling epoched data down to 200 Hz')
-    epochs.resample(sfreq=200, verbose=True)
+    ## downsample the data to 200Hz
+    #logging.info('Resampling epoched data down to 200 Hz')
+    #epochs.resample(sfreq=200, verbose=True)
     # use autoreject to repair bad epochs
     ar = AutoReject(random_state=42)
     epochs_clean, reject_log = ar.fit_transform(epochs, return_log=True)
