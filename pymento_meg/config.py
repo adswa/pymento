@@ -363,7 +363,7 @@ ica_comps = {
     '015': {'ecg': [1, 6],
             'eog': [0, 16]},    # drops 20 epochs
     '016': {'ecg': [1],
-            'eog': [2, 15]},    # drops 4 epochs
+            'eog': [0, 15]},    # drops 4 epochs
     '017': {'ecg': [16, 6],     # set bad channels: 0313 0513 0523
             'eog': [4, 21]},    # drops 62 epochs
     '018': {'ecg': [22, 31],
