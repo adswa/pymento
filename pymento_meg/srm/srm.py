@@ -1502,11 +1502,6 @@ def add_trial_types(subject,
     from collections import Counter
     Lcounts = Counter(Lchars)
     Rcounts = Counter(Rchars)
-    # make sure we have a minimal amount of trials to fit the model
-    assert all([Lcounts[i] > 5 for i in Lcounts])
-    assert all([Rcounts[i] > 5 for i in Rcounts])
-
-
     return all_trial_info
 
 
