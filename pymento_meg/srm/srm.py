@@ -219,7 +219,7 @@ def _plot_transformed_components(transformed, k, data, adderror=False):
                                    mean+std,
                                    alpha=0.3,
                                    color=palette[color_idx])
-        b = 10
+        b = k
     for a in ax:
         a.set(ylabel='amplitude')
     ax[-1].set(xlabel='samples')
@@ -288,7 +288,7 @@ def _plot_transformed_components(transformed, k, data, adderror=False):
                 ax[i].fill_between(range(len(std)), mean - std, mean + std,
                                    alpha=0.3,
                                    color=palette[color_idx])
-        b = 10
+        b = k
         for a in ax:
             a.set(ylabel='amplitude')
             a.vlines(20,
