@@ -85,7 +85,7 @@ def srm_with_spectral_transformation(subject,
     # read in epochs from all subjects. We don't need a special subset of the
     # data, and take the full timespan of each 3s epoch.
 
-    # TODO: investigate why trials are not ordered
+    # TODO: distinguish trials with positive and negative feedback
     fullsample, data = get_general_data_structure(subject=subject,
                                                   datadir=datadir,
                                                   bidsdir=bidsdir,
@@ -118,6 +118,7 @@ def srm_with_spectral_transformation(subject,
                             features=k)
     # transform the test data with it
     transformed = get_transformations(model, test_series, k)
+    _plot_transformed_components(transformed, k, testset, adderror=False)
 
 
 
