@@ -28,7 +28,7 @@ from pymento_meg.srm.simulate import (
     transform_to_power,
     get_transformations
 )
-
+from pymento_meg.utils import _construct_path
 import scipy.spatial.distance as sp_distance
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -156,9 +156,22 @@ def _get_mean_and_std_from_transformed(transformed, i):
     return mean, std
 
 
-def _plot_transformed_components(transformed, k, data, adderror=False):
+def _plot_transformed_components(transformed,
+                                 k,
+                                 data,
+                                 adderror=False,
+                                 window=0.4,
+                                 freq=100,
+                                 figdir='/tmp'
+                                 ):
     """
+    :transformed: dict, raw data transformed into shared space
     :param data: either trainset or testset
+    :param k: int, number of features in the model
+    :param adderror: bool, whether to add the standard deviation around means
+    :param window: float, number of seconds centered around a decision to plot
+    :param freq: int, sampling frequency of the raw data
+    :param figdir: str, Path to a place to save figures
     :return:
     """
     # plot transformed components:
@@ -172,12 +185,21 @@ def _plot_transformed_components(transformed, k, data, adderror=False):
             # congruency/reduced variability in those plots.
             ax[i].fill_between(range(len(mean)), mean-std, mean+std, alpha=0.4,
                                color=palette[i])
-        for a in ax:
-            a.set(ylabel='amplitude')
-        ax[-1].set(xlabel='samples')
-        fig.suptitle('Averaged signal in shared space, component-wise ',
-                     verticalalignment='bottom')
-        fig.tight_layout()
+    for a in ax:
+        a.set(ylabel='amplitude')
+    ax[-1].set(xlabel='samples')
+    fig.suptitle('Averaged signal in shared space, component-wise ',
+                 verticalalignment='bottom')
+    fig.tight_layout()
+    fname = _construct_path(
+        [
+            Path(figdir),
+            f"group",
+            "meg",
+            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+        ]
+    )
+    fig.savefig(fname)
 
         # but there is also no congruency in the raw data (similar high stds):
         # mean = np.mean(np.asarray([np.mean(np.asarray(i), axis=0) for i in train_series]), axis=0)
@@ -226,13 +248,20 @@ def _plot_transformed_components(transformed, k, data, adderror=False):
     fig.suptitle(f'Avg signal in shared space for left & right choices, '
                  f'component-wise ', verticalalignment='bottom')
     fig.tight_layout()
+    fname = _construct_path(
+        [
+            Path(figdir),
+            f"group",
+            "meg",
+            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_leftvsright.png",
+        ]
+    )
+    fig.savefig(fname)
 
-    # Center the timeseries at the decision time point of each trial. CAVE, this
-    # relies on the sampling rate (100), changes in sampling rate need adjusting
-    RT = [np.round(epoch['RT']*100)
+    RT = [np.round(epoch['RT']*freq)
           for subject in data for epoch in data[subject]]
-    # time window centered around the reaction, in 100Hz
-    win = 40
+    # 0.4s time window centered around the reaction
+    win = window*freq
 
     palette = sns.color_palette('rocket', k)
     fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
@@ -254,7 +283,7 @@ def _plot_transformed_components(transformed, k, data, adderror=False):
                                color=palette[i])
     for a in ax:
         a.set(ylabel='amplitude')
-        a.vlines(20,
+        a.vlines(win/2,
                  ymin=-2.5 if adderror else -0.25,
                  ymax=2.5 if adderror else 0.25,
                  color='black',
@@ -264,7 +293,15 @@ def _plot_transformed_components(transformed, k, data, adderror=False):
     fig.suptitle('Avg signal in shared space, response-locked, component-wise ',
                    verticalalignment='bottom')
     fig.tight_layout()
-
+    fname = _construct_path(
+        [
+            Path(figdir),
+            f"group",
+            "meg",
+            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked.png",
+        ]
+    )
+    fig.savefig(fname)
 
     # now for left and right
     palette = sns.color_palette('rocket', k*2)
@@ -289,19 +326,83 @@ def _plot_transformed_components(transformed, k, data, adderror=False):
                                    alpha=0.3,
                                    color=palette[color_idx])
         b = k
-        for a in ax:
-            a.set(ylabel='amplitude')
-            a.vlines(20,
-                     ymin=-2.5 if adderror else -0.25,
-                     ymax=2.5 if adderror else 0.25,
-                     color='black',
-                     linestyle='dotted')
-            a.text(20, -0.5, 'response')
-        ax[-1].set(xlabel='samples')
-        fig.suptitle('Avg signal in shared space, left vs. right, component-wise ',
-                     verticalalignment='bottom')
-        fig.tight_layout()
+    for a in ax:
+        a.set(ylabel='amplitude')
+        a.vlines(win/2,
+                 ymin=-2.5 if adderror else -0.25,
+                 ymax=2.5 if adderror else 0.25,
+                 color='black',
+                 linestyle='dotted')
+        a.text(win/2, -0.5, 'response')
+    ax[-1].set(xlabel='samples')
+    fig.suptitle('Avg signal in shared space, left vs. right, component-wise ',
+                 verticalalignment='bottom')
+    fig.tight_layout()
+    fname = _construct_path(
+        [
+            Path(figdir),
+            f"group",
+            "meg",
+            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked_leftvsright.png",
+        ]
+    )
+    fig.savefig(fname)
 
+    # split between brainer and no-brainer trials
+    i = 0
+    brainer = []
+    nobrainer = []
+    for sub in transformed.keys():
+        for epoch in data[sub]:
+            if epoch['trial_type'] == 'brainer':
+                brainer.append(i)
+            elif epoch['trial_type'] in ('nobrainer_right', 'nobrainer_left'):
+                nobrainer.append(i)
+            i += 1
+
+    palette = sns.color_palette('rocket', k*2)
+    b = 0
+    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
+    for choice, ids in [('brainer', brainer), ('nobrainer', nobrainer)]:
+        for i in range(k):
+            color_idx = b + i
+            comp = []
+            for sub in transformed.keys():
+                comp.extend(transformed[sub][i])
+
+            d = [comp[idx][int(rt - win/2):int(rt + win/2)] for idx, rt in
+                 enumerate(RT) if idx in ids and not np.isnan(rt)]
+            mean = np.mean(np.asarray([lst for lst in d if len(lst) == win]),
+                           axis=0)
+            ax[i].plot(mean, color=palette[color_idx])
+            if adderror:
+                std = np.std(np.asarray([lst for lst in d if len(lst) == win]),
+                             axis=0)
+                ax[i].fill_between(range(len(std)), mean - std, mean + std,
+                                   alpha=0.3,
+                                   color=palette[color_idx])
+        b = k
+    for a in ax:
+        a.set(ylabel='amplitude')
+        a.vlines(win/2,
+                 ymin=-2.5 if adderror else -0.25,
+                 ymax=2.5 if adderror else 0.25,
+                 color='black',
+                 linestyle='dotted')
+        a.text(win/2, -0.5, 'response')
+    ax[-1].set(xlabel='samples')
+    fig.suptitle('Avg signal in shared space, brainer vs nobrainer, component-wise ',
+                 verticalalignment='bottom')
+    fig.tight_layout()
+    fname = _construct_path(
+        [
+            Path(figdir),
+            f"group",
+            "meg",
+            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked_brainervsnobrainer.png",
+        ]
+    )
+    fig.savefig(fname)
     return
 
 
