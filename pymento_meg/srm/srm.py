@@ -403,6 +403,64 @@ def _plot_transformed_components(transformed,
         ]
     )
     fig.savefig(fname)
+
+    # positive versus negative feedback
+    i = 0
+    negative = []
+    positive = []
+    for sub in transformed.keys():
+        for epoch in data[sub]:
+            if np.isnan(epoch['pointdiff']):
+                negative.append(i)
+            else:
+                positive.append(i)
+            i += 1
+
+    palette = sns.color_palette('rocket', k * 2)
+    b = 0
+    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
+    for choice, ids in [('negative', negative), ('positive', positive)]:
+        for i in range(k):
+            color_idx = b + i
+            comp = []
+            for sub in transformed.keys():
+                comp.extend(transformed[sub][i])
+
+            d = [comp[idx][int(rt - win / 2):int(rt + win / 2)] for idx, rt in
+                 enumerate(RT) if idx in ids and not np.isnan(rt)]
+            mean = np.mean(np.asarray([lst for lst in d if len(lst) == win]),
+                           axis=0)
+            ax[i].plot(mean, color=palette[color_idx])
+            if adderror:
+                std = np.std(np.asarray([lst for lst in d if len(lst) == win]),
+                             axis=0)
+                ax[i].fill_between(range(len(std)), mean - std, mean + std,
+                                   alpha=0.3,
+                                   color=palette[color_idx])
+        b = k
+    for a in ax:
+        a.set(ylabel='amplitude')
+        a.vlines(win / 2,
+                 ymin=-2.5 if adderror else -0.25,
+                 ymax=2.5 if adderror else 0.25,
+                 color='black',
+                 linestyle='dotted')
+        a.text(win / 2, -0.5, 'response')
+    ax[-1].set(xlabel='samples')
+    fig.suptitle(
+        'Avg signal in shared space, pos vs neg feedback, component-wise ',
+        verticalalignment='bottom')
+    fig.tight_layout()
+    fname = _construct_path(
+        [
+            Path(figdir),
+            f"group",
+            "meg",
+            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked_feedback.png",
+        ]
+    )
+    fig.savefig(fname)
+
     return
 
 
