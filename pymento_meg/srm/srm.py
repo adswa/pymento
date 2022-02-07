@@ -1415,7 +1415,8 @@ def add_trial_types(subject,
                                                       'RoptMag',
                                                       'RoptProb',
                                                       'RT',
-                                                      'choice']
+                                                      'choice',
+                                                      'pointdiff']
                                              )
 
     # add the probability and magnitude information
@@ -1426,6 +1427,7 @@ def add_trial_types(subject,
         RPrb = stim_char[stim_char['trial_no'] == info]['RoptProb'].item()
         RT = stim_char[stim_char['trial_no'] == info]['RT'].item()
         choice = stim_char[stim_char['trial_no'] == info]['choice'].item()
+        pointdiff = stim_char[stim_char['trial_no'] == info]['pointdiff'].item()
         all_trial_info[info]['LoptMag'] = LMag
         all_trial_info[info]['LoptProb'] = LPrb
         all_trial_info[info]['RoptMag'] = RMag
@@ -1434,6 +1436,7 @@ def add_trial_types(subject,
         all_trial_info[info]['Rchar'] = trial_characteristics[(RMag, RPrb)]
         all_trial_info[info]['RT'] = RT
         all_trial_info[info]['choice'] = choice
+        all_trial_info[info]['pointdiff'] = pointdiff
 
     # get a count of trials per characteristic
     Lchars = [info['Lchar'] for info in all_trial_info.values()]
@@ -1441,15 +1444,10 @@ def add_trial_types(subject,
     from collections import Counter
     Lcounts = Counter(Lchars)
     Rcounts = Counter(Rchars)
-    print(Lcounts)
-    print(Rcounts)
     # make sure we have a minimal amount of trials to fit the model
     assert all([Lcounts[i] > 5 for i in Lcounts])
-    #assert all([Rcounts[i] > 5 for i in Rcounts])
+    assert all([Rcounts[i] > 5 for i in Rcounts])
 
-    # 10+:1,2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
-    # 20+: 3, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
-    # 30+ trials per condition: 11, 12, 14, 16, 17, 18, 19, 20, 22
 
     return all_trial_info
 
