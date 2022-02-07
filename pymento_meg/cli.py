@@ -382,7 +382,7 @@ def epoch_and_clean():
                            bidsdir=args.bidsdir,
                            datadir=args.datadir,
                            derivdir=args.derivdir,
-                           epochlength=int(args.epochlength),
+                           epochlength=float(args.epochlength),
                            eventid=eventid)
 
 
