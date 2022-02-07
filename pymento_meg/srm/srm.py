@@ -397,12 +397,12 @@ def get_general_data_structure(subject,
                      f'from path {fname}.')
 
         epochs = mne.read_epochs(fname)
-        logging.info('Ensuring data has a frequency of 100Hz')
-        if epochs.info['sfreq'] > 100:
+        freq = int(epochs.info['sfreq'])
+        logging.info(f'The data has a frequency of {freq}Hz')
             # after initial preprocessing, they are downsampled to 200Hz.
             # Downsample further to 100Hz
-            epochs.resample(sfreq=100, verbose=True)
-        assert epochs.info['sfreq'] == 100
+            #epochs.resample(sfreq=100, verbose=True)
+        #assert epochs.info['sfreq'] == 100
         # read the epoch data into a dataframe
         df = epochs.to_data_frame()
 
@@ -1410,7 +1410,8 @@ def combine_data(df,
                  trials_to_trialtypes,
                  epochs_to_trials,
                  bidsdir,
-                 timespan):
+                 timespan,
+                 freq=100):
     """
     Generate a dictionary that contains all relevant information of a given
     trial, including the data, correctly slices, to train the model on.
@@ -1423,8 +1424,11 @@ def combine_data(df,
     model fitting. Must be one of 'decision' (time locked around the decision
     in each trial), 'firststim' (time locked to the first stimulus, for the
     stimulus duration), or 'fulltrial' (entire 7second epoch), 'secondstim',
-    'delay', or a time frame within the experiment in samples (100Hz sampling
-    rate)
+    'delay', or a time frame within the experiment in samples (beware of the
+    sampling rate!)
+    :param freq: int, frequency of the data. Earlier versions of this code
+    required 100Hz sampling rate, this parameter tries to make this more
+    flexible
     :return: all_trial_infos; dict; with trial-wise information
     """
     all_trial_infos = {}
@@ -1437,7 +1441,7 @@ def combine_data(df,
     if isinstance(timespan, list):
         logging.info(f"Received a list as a time span. Attempting to "
                      f"subset the available trial data in range "
-                     f"{timespan[0]}, {timespan[1]}")
+                     f"{timespan[0]}, {timespan[1]} samples")
     else:
         logging.info(f"Selecting data for the event description {timespan}.")
 
@@ -1453,21 +1457,21 @@ def combine_data(df,
         if timespan == 'fulltrial':
             # the data does not need to be shortened. just make sure it has the
             # expected dimensions
-            assert data.shape == (306, 700)
+            assert data.shape == (306, 7*freq)
         elif timespan == 'firststim':
             # we only need the first 700 milliseconds from the trial,
             # corresponding to the first 70 entries since we timelocked to the
             # onset of the first stimulation
-            data = data[:, :70]
-            assert data.shape == (306, 70)
+            data = data[:, :0.7*freq]
+            assert data.shape == (306, 0.7*freq)
         elif timespan == 'delay':
             # take the 2 seconds after the first stimulus
-            data = data[:, 70:270]
-            assert data.shape == (306, 200)
+            data = data[:, (0.7*freq):(2.7*freq)]
+            assert data.shape == (306, 2*freq)
         elif timespan == 'secondstim':
             # take 700 ms after the first stimulus + delay phase
-            data = data[:, 270:340]
-            assert data.shape == (306, 70)
+            data = data[:, (2.7*freq):(3.4*freq)]
+            assert data.shape == (306, 0.7*freq)
         elif timespan == 'decision':
             # we need an adaptive slice of data (centered around the exact time
             # point at which a decision was made in a given trial.
@@ -1477,7 +1481,7 @@ def combine_data(df,
                 continue
             onset, offset = trials_to_rts[trial_no]
             data = data[:, onset:offset]
-            assert data.shape == (306, 80)
+            assert data.shape == (306, 0.8*freq)
         else:
             if isinstance(timespan, list):
                 data = data[:, timespan[0]:timespan[1]]
@@ -1494,7 +1498,8 @@ def combine_data(df,
 
 
 def get_decision_timespan_on_and_offsets(subject,
-                                         bidsdir):
+                                         bidsdir,
+                                         freq=100):
     """
     For each trial, get a time frame around the point in time that a decision
     was made.
@@ -1520,18 +1525,19 @@ def get_decision_timespan_on_and_offsets(subject,
     for trial, rt in trials_and_rts:
         # get the right time frame. First, transform decision time into the
         # timing within the trial. this REQUIRES a sampling rate of 100Hz!
-        rt = rt * 100
-        # Now, add RT to the end of the second visual stimulus to get the
-        # decision time from trial onset
-        # (70 + 200 + 70 = 340)
-        decision_time = rt + 340
-        assert decision_time > 340
+        rt = rt * freq
+        # Now, add RT to the start of the second visual stimulus to get the
+        # approximate decision time from trial onset
+        # (0.7s + 2.0s = 2.7s)
+        decision_time = rt + 2.7 * freq
+        # plausibility check, no decision is made before a decision is possible
+        assert decision_time > 2.7 * freq
         # calculate the slice needed for indexing the data for the specific
         # trial. We round down so that the specific upper or lower time point
         # can be used as an index to subset the data frame
-        slices = [int(np.floor(decision_time - 40)),
-                  int(np.floor(decision_time + 40))]
-        assert slices[1] - slices[0] == 80
+        slices = [int(np.floor(decision_time - (0.4 * freq))),
+                  int(np.floor(decision_time + (0.4 * freq)))]
+        assert slices[1] - slices[0] == 0.8 * freq
         if trial not in trials_to_remove:
             trials_to_rts[trial] = slices
 
@@ -1698,7 +1704,8 @@ def plot_srm_model(df,
                    subject,
                    mdl='srm',
                    cond='left-right',
-                   timespan='fulltrial'):
+                   timespan='fulltrial',
+                   freq=100):
     """
     Plot the features of a shared response model
     :param df: concatenated dataframe of trial data, transformed with the
@@ -1711,6 +1718,7 @@ def plot_srm_model(df,
     :param cond: Str, name of the condition plotted. Useful values are
      'left-right', 'nobrain-brain'
     :param timespan: Str, name of the timeframe used to fit the model
+    :param freq: int, sampling rate in Hertz
     :return:
     """
     # TODO: This needs adjustment for trial names!
@@ -1739,7 +1747,8 @@ def plot_srm_model(df,
         if timespan == 'fulltrial':
             # define the timing of significant events in the trial timecourse:
             # onset and offset of visual stimuli
-            events = [0, 70, 270, 340]
+            # TODO: added flexible freq later, check that this works
+            events = [0, 0.7*freq, 2.7*freq, 3.4*freq]
             # plot horizontal lines to mark the end of visual stimulation
             [pylab.axvline(ev, linewidth=1, color='grey', linestyle='dashed')
              for ev in events]
