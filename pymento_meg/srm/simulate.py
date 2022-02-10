@@ -290,7 +290,7 @@ def plot_srm(model,
     g.plot(sns.scatterplot, sns.histplot, alpha=.2)
     g.fig.suptitle('Relationship between model weights \n'
                    'and ground truth weights for each component',
-                   verticalalignment='baseline')
+                   verticalalignment='top')
     if outdir is not None:
         # save the plot
         outpath = Path(outdir) / \
@@ -360,7 +360,7 @@ def simulate(n=15,
 def plot_simulation(signal, transformed, sub, weights, model):
     nplots = len(transformed) + 1
     fig, ax = plt.subplots(nplots, sharex=True, figsize=(20,15))
-    palette = sns.color_palette('rocket', nplots)
+    palette = sns.color_palette('husl', nplots)
 
     ax[0].plot(signal, color=palette[0])
     correlations = {}

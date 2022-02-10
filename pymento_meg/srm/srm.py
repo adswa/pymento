@@ -21,6 +21,7 @@ import pandas as pd
 from brainiak.funcalign import srm
 from pathlib import Path
 from scipy import stats
+from textwrap import wrap
 from pymento_meg.config import trial_characteristics
 from pymento_meg.orig.behavior import read_bids_logfile
 from pymento_meg.proc.epoch import get_stimulus_characteristics
@@ -165,6 +166,8 @@ def _plot_transformed_components(transformed,
                                  figdir='/tmp'
                                  ):
     """
+    For transformed data containing the motor response/decision, create a range
+    of plots illustrating the data in shared space.
     :transformed: dict, raw data transformed into shared space
     :param data: either trainset or testset
     :param k: int, number of features in the model
@@ -175,11 +178,11 @@ def _plot_transformed_components(transformed,
     :return:
     """
     # plot transformed components:
-    palette = sns.color_palette('rocket', k)
+    palette = sns.color_palette('husl', k)
     fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
     for i in range(k):
         mean, std = _get_mean_and_std_from_transformed(transformed, i)
-        ax[i].plot(mean, color=palette[i])
+        ax[i].plot(mean, color=palette[i], label=f'component {i+1}')
         if adderror:
             # to add standard deviations around the mean. We didn't find expected
             # congruency/reduced variability in those plots.
@@ -187,10 +190,12 @@ def _plot_transformed_components(transformed,
                                color=palette[i])
     for a in ax:
         a.set(ylabel='amplitude')
+        a.legend(loc="upper right", prop={'size': 6})
     ax[-1].set(xlabel='samples')
-    fig.suptitle('Averaged signal in shared space, component-wise ',
-                 verticalalignment='bottom')
-    fig.tight_layout()
+    fig.suptitle("\n".join(wrap(
+        'Averaged signal in shared space, component-wise ', 50)),
+        verticalalignment='top', fontsize=10)
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fname = _construct_path(
         [
             Path(figdir),
@@ -221,11 +226,10 @@ def _plot_transformed_components(transformed,
                 left.append(i)
             i += 1
 
+    palette = sns.color_palette('husl', k*2)
     fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
     b = 0
     for choice, ids in [('left', left), ('right', right)]:
-        palette = sns.color_palette('rocket', k*2)
-
         for i in range(k):
             comp = []
             for sub in transformed.keys():
@@ -234,7 +238,8 @@ def _plot_transformed_components(transformed,
             d = [l for idx, l in enumerate(comp) if idx in ids]
             color_idx = b + i
             mean = np.mean(np.asarray(d), axis=0)
-            ax[i].plot(mean, color=palette[color_idx])
+            ax[i].plot(mean, color=palette[color_idx],
+                       label=f'component {i+1}, {choice} choice')
             if adderror:
                 ax[i].fill_between(range(len(mean)),
                                    mean-std,
@@ -244,10 +249,13 @@ def _plot_transformed_components(transformed,
         b = k
     for a in ax:
         a.set(ylabel='amplitude')
+        a.legend(loc="upper right", prop={'size': 6})
     ax[-1].set(xlabel='samples')
-    fig.suptitle(f'Avg signal in shared space for left & right choices, '
-                 f'component-wise ', verticalalignment='bottom')
-    fig.tight_layout()
+    fig.suptitle("\n".join(wrap(
+        f'Avg signal in shared space for left & right choices, '
+        f'component-wise ', 50)),
+        verticalalignment='top', fontsize=10)
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fname = _construct_path(
         [
             Path(figdir),
@@ -263,7 +271,7 @@ def _plot_transformed_components(transformed,
     # 0.4s time window centered around the reaction
     win = window*freq
 
-    palette = sns.color_palette('rocket', k)
+    palette = sns.color_palette('husl', k)
     fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
     for i in range(k):
 
@@ -276,23 +284,24 @@ def _plot_transformed_components(transformed,
         mean = np.mean(np.asarray(
             [lst for lst in d if len(lst) == win]),
             axis=0)
-        ax[i].plot(mean, color=palette[i])
+        ax[i].plot(mean, color=palette[i], label=f'component {i+1}')
         if adderror:
             std = np.std(np.asarray([l for l in d if len(l) == win]), axis=0)
             ax[i].fill_between(range(len(std)), mean-std, mean+std, alpha=0.3,
                                color=palette[i])
     for a in ax:
         a.set(ylabel='amplitude')
-        a.vlines(win/2,
-                 ymin=-2.5 if adderror else -0.25,
-                 ymax=2.5 if adderror else 0.25,
+        a.axvline(win/2,
                  color='black',
-                 linestyle='dotted')
-        a.text(win/2, -0.2, 'response')
+                 linestyle='dotted',
+                 label='response')
+        a.legend(loc="upper right", prop={'size': 6})
     ax[-1].set(xlabel='samples')
-    fig.suptitle('Avg signal in shared space, response-locked, component-wise ',
-                   verticalalignment='bottom')
-    fig.tight_layout()
+    fig.suptitle("\n".join(wrap(
+        'Avg signal in shared space, response-locked, component-wise ', 50)),
+        verticalalignment='top', fontsize=10)
+    plt.legend(loc="upper right", prop={'size': 6})
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fname = _construct_path(
         [
             Path(figdir),
@@ -304,7 +313,7 @@ def _plot_transformed_components(transformed,
     fig.savefig(fname)
 
     # now for left and right
-    palette = sns.color_palette('rocket', k*2)
+    palette = sns.color_palette('husl', k*2)
     b = 0
     fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
     for choice, ids in [('left', left), ('right', right)]:
@@ -318,7 +327,8 @@ def _plot_transformed_components(transformed,
                  enumerate(RT) if idx in ids and not np.isnan(rt)]
             mean = np.mean(np.asarray([lst for lst in d if len(lst) == win]),
                            axis=0)
-            ax[i].plot(mean, color=palette[color_idx])
+            ax[i].plot(mean, color=palette[color_idx],
+                       label=f'component {i+1}, {choice} choice')
             if adderror:
                 std = np.std(np.asarray([lst for lst in d if len(lst) == win]),
                              axis=0)
@@ -328,16 +338,17 @@ def _plot_transformed_components(transformed,
         b = k
     for a in ax:
         a.set(ylabel='amplitude')
-        a.vlines(win/2,
-                 ymin=-2.5 if adderror else -0.25,
-                 ymax=2.5 if adderror else 0.25,
+        a.axvline(win/2,
                  color='black',
-                 linestyle='dotted')
-        a.text(win/2, -0.5, 'response')
+                 linestyle='dotted',
+                 label='response')
+        a.legend(loc="upper right", prop={'size': 6})
     ax[-1].set(xlabel='samples')
-    fig.suptitle('Avg signal in shared space, left vs. right, component-wise ',
-                 verticalalignment='bottom')
-    fig.tight_layout()
+    fig.suptitle("\n".join(wrap(
+        'Avg signal in shared space, left vs. right, component-wise ', 50)),
+        verticalalignment='top', fontsize=10)
+    plt.legend(loc="upper right", prop={'size': 6})
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fname = _construct_path(
         [
             Path(figdir),
@@ -360,7 +371,7 @@ def _plot_transformed_components(transformed,
                 nobrainer.append(i)
             i += 1
 
-    palette = sns.color_palette('rocket', k*2)
+    palette = sns.color_palette('husl', k*2)
     b = 0
     fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
     for choice, ids in [('brainer', brainer), ('nobrainer', nobrainer)]:
@@ -374,7 +385,8 @@ def _plot_transformed_components(transformed,
                  enumerate(RT) if idx in ids and not np.isnan(rt)]
             mean = np.mean(np.asarray([lst for lst in d if len(lst) == win]),
                            axis=0)
-            ax[i].plot(mean, color=palette[color_idx])
+            ax[i].plot(mean, color=palette[color_idx],
+                       label=f'component {i+1}, {choice} trials')
             if adderror:
                 std = np.std(np.asarray([lst for lst in d if len(lst) == win]),
                              axis=0)
@@ -384,16 +396,16 @@ def _plot_transformed_components(transformed,
         b = k
     for a in ax:
         a.set(ylabel='amplitude')
-        a.vlines(win/2,
-                 ymin=-2.5 if adderror else -0.25,
-                 ymax=2.5 if adderror else 0.25,
+        a.axvline(win/2,
                  color='black',
-                 linestyle='dotted')
-        a.text(win/2, -0.5, 'response')
+                 linestyle='dotted',
+                 label='response')
+        a.legend(loc="upper right", prop={'size': 6})
     ax[-1].set(xlabel='samples')
-    fig.suptitle('Avg signal in shared space, brainer vs nobrainer, component-wise ',
-                 verticalalignment='bottom')
-    fig.tight_layout()
+    fig.suptitle("\n".join(wrap(
+        'Avg signal in shared space, brainer vs nobrainer, component-wise', 50)),
+        verticalalignment='top', fontsize=10),
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fname = _construct_path(
         [
             Path(figdir),
@@ -416,10 +428,11 @@ def _plot_transformed_components(transformed,
                 positive.append(i)
             i += 1
 
-    palette = sns.color_palette('rocket', k * 2)
+    palette = sns.color_palette('husl', k * 2)
     b = 0
     fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
-    for choice, ids in [('negative', negative), ('positive', positive)]:
+    for choice, ids in [('negative feedback', negative),
+                        ('positive feedback', positive)]:
         for i in range(k):
             color_idx = b + i
             comp = []
@@ -430,7 +443,8 @@ def _plot_transformed_components(transformed,
                  enumerate(RT) if idx in ids and not np.isnan(rt)]
             mean = np.mean(np.asarray([lst for lst in d if len(lst) == win]),
                            axis=0)
-            ax[i].plot(mean, color=palette[color_idx])
+            ax[i].plot(mean, color=palette[color_idx],
+                       label=f'component {i+1}, {choice}')
             if adderror:
                 std = np.std(np.asarray([lst for lst in d if len(lst) == win]),
                              axis=0)
@@ -440,17 +454,16 @@ def _plot_transformed_components(transformed,
         b = k
     for a in ax:
         a.set(ylabel='amplitude')
-        a.vlines(win / 2,
-                 ymin=-2.5 if adderror else -0.25,
-                 ymax=2.5 if adderror else 0.25,
+        a.axvline(win / 2,
                  color='black',
-                 linestyle='dotted')
-        a.text(win / 2, -0.5, 'response')
+                 linestyle='dotted',
+                 label='response')
+        a.legend(loc="upper right", prop={'size': 6})
     ax[-1].set(xlabel='samples')
-    fig.suptitle(
-        'Avg signal in shared space, pos vs neg feedback, component-wise ',
-        verticalalignment='bottom')
-    fig.tight_layout()
+    fig.suptitle("\n".join(wrap(
+        'Avg signal in shared space, pos vs neg feedback, component-wise', 50)),
+        verticalalignment='top', fontsize=10),
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fname = _construct_path(
         [
             Path(figdir),
