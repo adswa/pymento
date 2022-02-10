@@ -276,9 +276,8 @@ def _plot_transformed_components(transformed,
                                  k,
                                  data,
                                  adderror=False,
-                                 window=0.4,
-                                 freq=100,
-                                 figdir='/tmp'
+                                 figdir='/tmp',
+                                 stderror=False
                                  ):
     """
     For transformed data containing the motor response/decision, create a range
@@ -287,16 +286,21 @@ def _plot_transformed_components(transformed,
     :param data: either trainset or testset
     :param k: int, number of features in the model
     :param adderror: bool, whether to add the standard deviation around means
-    :param window: float, number of seconds centered around a decision to plot
-    :param freq: int, sampling frequency of the raw data
     :param figdir: str, Path to a place to save figures
+    :param stderror: bool, if true, SEM is used instead of std
     :return:
     """
     # plot transformed components:
-    palette = sns.color_palette('husl', k)
-    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
+    palette, fig, ax, fname = \
+        _plot_helper(k,
+                     suptitle='Averaged signal in shared space, component-wise',
+                     name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+                     figdir=figdir,
+                     npalette=k,
+                     )
     for i in range(k):
-        mean, std = _get_mean_and_std_from_transformed(transformed, i)
+        mean, std = _get_mean_and_std_from_transformed(transformed, i,
+                                                       stderror=stderror)
         ax[i].plot(mean, color=palette[i], label=f'component {i+1}')
         if adderror:
             # to add standard deviations around the mean. We didn't find expected
@@ -304,21 +308,9 @@ def _plot_transformed_components(transformed,
             ax[i].fill_between(range(len(mean)), mean-std, mean+std, alpha=0.4,
                                color=palette[i])
     for a in ax:
-        a.set(ylabel='amplitude')
-        a.legend(loc="upper right", prop={'size': 6})
-    ax[-1].set(xlabel='samples')
-    fig.suptitle("\n".join(wrap(
-        'Averaged signal in shared space, component-wise ', 50)),
-        verticalalignment='top', fontsize=10)
+        a.legend(loc='upper right',
+                 prop={'size': 6})
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    fname = _construct_path(
-        [
-            Path(figdir),
-            f"group",
-            "meg",
-            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
-        ]
-    )
     fig.savefig(fname)
 
         # but there is also no congruency in the raw data (similar high stds):
@@ -329,30 +321,28 @@ def _plot_transformed_components(transformed,
         # ax.fill_between(range(len(mean), mean-std, mean+std)
 
     # Plot transformed data component-wise, but for left and right epochs
-    # separately. First, get indices for left and right choice
-    i = 0
-    left = []
-    right = []
-    for sub in transformed.keys():
-        for epoch in data[sub]:
-            if epoch['choice'] == 2:
-                right.append(i)
-            elif epoch['choice'] == 1:
-                left.append(i)
-            i += 1
-
-    palette = sns.color_palette('husl', k*2)
-    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
+    # separately.
+    left, right = _get_trial_indicators(transformed, data, type='choice')
+    palette, fig, ax, fname = \
+        _plot_helper(k,
+                     suptitle='Average signal in shared space for left & right choices, component-wise',
+                     name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_leftvsright.png",
+                     figdir=figdir,
+                     npalette=k*2,
+                     )
     b = 0
     for choice, ids in [('left', left), ('right', right)]:
         for i in range(k):
             comp = []
             for sub in transformed.keys():
                 comp.extend(transformed[sub][i])
-            #assert len(comp) == len(left) + len(right)
-            d = [l for idx, l in enumerate(comp) if idx in ids]
+            d = np.asarray([l for idx, l in enumerate(comp) if idx in ids])
             color_idx = b + i
-            mean = np.mean(np.asarray(d), axis=0)
+            mean = np.mean(d, axis=0)
+            if stderror:
+                std = np.std(d, axis=0, ddof=1) / np.sqrt(d.shape[0])
+            else:
+                std = np.std(d, axis=0, ddof=0)
             ax[i].plot(mean, color=palette[color_idx],
                        label=f'component {i+1}, {choice} choice')
             if adderror:
@@ -363,132 +353,126 @@ def _plot_transformed_components(transformed,
                                    color=palette[color_idx])
         b = k
     for a in ax:
-        a.set(ylabel='amplitude')
         a.legend(loc="upper right", prop={'size': 6})
-    ax[-1].set(xlabel='samples')
-    fig.suptitle("\n".join(wrap(
-        f'Avg signal in shared space for left & right choices, '
-        f'component-wise ', 50)),
-        verticalalignment='top', fontsize=10)
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    fname = _construct_path(
-        [
-            Path(figdir),
-            f"group",
-            "meg",
-            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_leftvsright.png",
-        ]
-    )
     fig.savefig(fname)
 
+
+def _plot_transformed_components_centered(transformed,
+                                          k,
+                                          data,
+                                          adderror=False,
+                                          window=0.4,
+                                          freq=100,
+                                          figdir='/tmp',
+                                          stderror=False
+                                          ):
+    """
+    For transformed data containing the motor response/decision, create a range
+    of plots illustrating the data in shared space.
+    :transformed: dict, raw data transformed into shared space
+    :param data: either trainset or testset
+    :param k: int, number of features in the model
+    :param adderror: bool, whether to add the standard deviation around means
+    :param window: float, number of seconds centered around a decision to plot
+    :param freq: int, sampling frequency of the raw data
+    :param figdir: str, Path to a place to save figures
+    :param stderror: bool, if true, SEM is used instead of std
+    :return:
+    """
+    # plots centered around reaction time
     RT = [np.round(epoch['RT']*freq)
           for subject in data for epoch in data[subject]]
-    # 0.4s time window centered around the reaction
+    # time window centered around the reaction
     win = window*freq
 
-    palette = sns.color_palette('husl', k)
-    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
-    for i in range(k):
+    palette, fig, ax, fname = \
+        _plot_helper(k,
+                     suptitle='Average signal in shared space, response-locked, component-wise',
+                     name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked.png",
+                     figdir=figdir,
+                     npalette=k * 2,
+                     vline=win/2
+                     )
 
+    for i in range(k):
         comp = []
         for sub in transformed.keys():
             comp.extend(transformed[sub][i])
-        #assert len(comp) == len(left) + len(right)
+
         d = [comp[idx][int(rt - win/2):int(rt + win/2)]
              for idx, rt in enumerate(RT) if not np.isnan(rt)]
-        mean = np.mean(np.asarray(
-            [lst for lst in d if len(lst) == win]),
-            axis=0)
+        # if an epoch does not have enough data (too short), don't use it
+        d_long_enough = np.asarray([lst for lst in d if len(lst) == win])
+        mean = np.mean(d_long_enough, axis=0)
         ax[i].plot(mean, color=palette[i], label=f'component {i+1}')
         if adderror:
-            std = np.std(np.asarray([l for l in d if len(l) == win]), axis=0)
+            if stderror:
+                std = np.std(d_long_enough, axis=0, ddof=1) / \
+                      np.sqrt(d_long_enough.shape[0])
+            else:
+                std = np.std(d_long_enough, axis=0)
             ax[i].fill_between(range(len(std)), mean-std, mean+std, alpha=0.3,
                                color=palette[i])
     for a in ax:
-        a.set(ylabel='amplitude')
-        a.axvline(win/2,
-                 color='black',
-                 linestyle='dotted',
-                 label='response')
         a.legend(loc="upper right", prop={'size': 6})
-    ax[-1].set(xlabel='samples')
-    fig.suptitle("\n".join(wrap(
-        'Avg signal in shared space, response-locked, component-wise ', 50)),
-        verticalalignment='top', fontsize=10)
     plt.legend(loc="upper right", prop={'size': 6})
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    fname = _construct_path(
-        [
-            Path(figdir),
-            f"group",
-            "meg",
-            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked.png",
-        ]
-    )
     fig.savefig(fname)
 
-    # now for left and right
-    palette = sns.color_palette('husl', k*2)
+    # now response-locked for left and right
+    left, right = _get_trial_indicators(transformed, data, type='choice')
+    palette, fig, ax, fname = \
+        _plot_helper(k,
+                     suptitle='Average signal in shared space, response-locked, left vs. right, component-wise',
+                     name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked_leftvsright.png",
+                     figdir=figdir,
+                     npalette=k * 2,
+                     vline=win/2
+                     )
     b = 0
-    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
     for choice, ids in [('left', left), ('right', right)]:
         for i in range(k):
             color_idx = b + i
             comp = []
             for sub in transformed.keys():
                 comp.extend(transformed[sub][i])
-            #assert len(comp) == len(left) + len(right)
             d = [comp[idx][int(rt - win/2):int(rt + win/2)] for idx, rt in
                  enumerate(RT) if idx in ids and not np.isnan(rt)]
-            mean = np.mean(np.asarray([lst for lst in d if len(lst) == win]),
-                           axis=0)
+            # if an epoch does not have enough data (too short), don't use it
+            d_long_enough = np.asarray([lst for lst in d if len(lst) == win])
+            mean = np.mean(d_long_enough, axis=0)
             ax[i].plot(mean, color=palette[color_idx],
                        label=f'component {i+1}, {choice} choice')
             if adderror:
-                std = np.std(np.asarray([lst for lst in d if len(lst) == win]),
-                             axis=0)
+                if stderror:
+                    std = np.std(d_long_enough, axis=0, ddof=1) / \
+                          np.sqrt(d_long_enough.shape[0])
+                else:
+                    std = np.std(d_long_enough, axis=0)
                 ax[i].fill_between(range(len(std)), mean - std, mean + std,
                                    alpha=0.3,
                                    color=palette[color_idx])
         b = k
     for a in ax:
-        a.set(ylabel='amplitude')
-        a.axvline(win/2,
-                 color='black',
-                 linestyle='dotted',
-                 label='response')
         a.legend(loc="upper right", prop={'size': 6})
-    ax[-1].set(xlabel='samples')
-    fig.suptitle("\n".join(wrap(
-        'Avg signal in shared space, left vs. right, component-wise ', 50)),
-        verticalalignment='top', fontsize=10)
     plt.legend(loc="upper right", prop={'size': 6})
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    fname = _construct_path(
-        [
-            Path(figdir),
-            f"group",
-            "meg",
-            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked_leftvsright.png",
-        ]
-    )
     fig.savefig(fname)
 
-    # split between brainer and no-brainer trials
-    i = 0
-    brainer = []
-    nobrainer = []
-    for sub in transformed.keys():
-        for epoch in data[sub]:
-            if epoch['trial_type'] == 'brainer':
-                brainer.append(i)
-            elif epoch['trial_type'] in ('nobrainer_right', 'nobrainer_left'):
-                nobrainer.append(i)
-            i += 1
-
-    palette = sns.color_palette('husl', k*2)
+    # split by difficulty (brainernobrainer)
+    brainer, nobrainer = _get_trial_indicators(transformed, data,
+                                               type='difficulty')
+    palette, fig, ax, fname = \
+        _plot_helper(k,
+                     suptitle='Average signal in shared space, response-locked, brainer vs nobrainer, component-wise',
+                     name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked_brainervsnobrainer.png",
+                     figdir=figdir,
+                     npalette=k * 2,
+                     vline=win/2
+                     )
     b = 0
-    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
+
     for choice, ids in [('brainer', brainer), ('nobrainer', nobrainer)]:
         for i in range(k):
             color_idx = b + i
@@ -498,54 +482,38 @@ def _plot_transformed_components(transformed,
 
             d = [comp[idx][int(rt - win/2):int(rt + win/2)] for idx, rt in
                  enumerate(RT) if idx in ids and not np.isnan(rt)]
-            mean = np.mean(np.asarray([lst for lst in d if len(lst) == win]),
-                           axis=0)
+            # if an epoch does not have enough data (too short), don't use it
+            d_long_enough = np.asarray([lst for lst in d if len(lst) == win])
+            mean = np.mean(d_long_enough, axis=0)
             ax[i].plot(mean, color=palette[color_idx],
                        label=f'component {i+1}, {choice} trials')
             if adderror:
-                std = np.std(np.asarray([lst for lst in d if len(lst) == win]),
-                             axis=0)
+                if stderror:
+                    std = np.std(d_long_enough, axis=0, ddof=1) / \
+                          np.sqrt(d_long_enough.shape[0])
+                else:
+                    std = np.std(d_long_enough, axis=0)
                 ax[i].fill_between(range(len(std)), mean - std, mean + std,
                                    alpha=0.3,
                                    color=palette[color_idx])
         b = k
     for a in ax:
-        a.set(ylabel='amplitude')
-        a.axvline(win/2,
-                 color='black',
-                 linestyle='dotted',
-                 label='response')
         a.legend(loc="upper right", prop={'size': 6})
-    ax[-1].set(xlabel='samples')
-    fig.suptitle("\n".join(wrap(
-        'Avg signal in shared space, brainer vs nobrainer, component-wise', 50)),
-        verticalalignment='top', fontsize=10),
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    fname = _construct_path(
-        [
-            Path(figdir),
-            f"group",
-            "meg",
-            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked_brainervsnobrainer.png",
-        ]
-    )
     fig.savefig(fname)
 
     # positive versus negative feedback
-    i = 0
-    negative = []
-    positive = []
-    for sub in transformed.keys():
-        for epoch in data[sub]:
-            if np.isnan(epoch['pointdiff']):
-                negative.append(i)
-            else:
-                positive.append(i)
-            i += 1
-
-    palette = sns.color_palette('husl', k * 2)
+    negative, positive = _get_trial_indicators(transformed, data,
+                                               type='feedback')
+    palette, fig, ax, fname = \
+        _plot_helper(k,
+                     suptitle='Average signal in shared space, response-locked, pos vs neg feedback, component-wise',
+                     name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked_brainervsnobrainer.png",
+                     figdir=figdir,
+                     npalette=k * 2,
+                     vline=win/2
+                     )
     b = 0
-    fig, ax = plt.subplots(k, sharex=True, sharey=True, figsize=(5, 20))
     for choice, ids in [('negative feedback', negative),
                         ('positive feedback', positive)]:
         for i in range(k):
@@ -556,37 +524,25 @@ def _plot_transformed_components(transformed,
 
             d = [comp[idx][int(rt - win / 2):int(rt + win / 2)] for idx, rt in
                  enumerate(RT) if idx in ids and not np.isnan(rt)]
-            mean = np.mean(np.asarray([lst for lst in d if len(lst) == win]),
-                           axis=0)
+            # if an epoch does not have enough data (too short), don't use it
+            d_long_enough = np.asarray([lst for lst in d if len(lst) == win])
+            mean = np.mean(d_long_enough, axis=0)
             ax[i].plot(mean, color=palette[color_idx],
                        label=f'component {i+1}, {choice}')
             if adderror:
-                std = np.std(np.asarray([lst for lst in d if len(lst) == win]),
-                             axis=0)
+                if stderror:
+                    std = np.std(d_long_enough, axis=0, ddof=1) / \
+                          np.sqrt(d_long_enough.shape[0])
+                else:
+                    std = np.std(d_long_enough, axis=0)
                 ax[i].fill_between(range(len(std)), mean - std, mean + std,
                                    alpha=0.3,
                                    color=palette[color_idx])
         b = k
     for a in ax:
-        a.set(ylabel='amplitude')
-        a.axvline(win / 2,
-                 color='black',
-                 linestyle='dotted',
-                 label='response')
         a.legend(loc="upper right", prop={'size': 6})
     ax[-1].set(xlabel='samples')
-    fig.suptitle("\n".join(wrap(
-        'Avg signal in shared space, pos vs neg feedback, component-wise', 50)),
-        verticalalignment='top', fontsize=10),
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    fname = _construct_path(
-        [
-            Path(figdir),
-            f"group",
-            "meg",
-            f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked_feedback.png",
-        ]
-    )
     fig.savefig(fname)
 
     return
