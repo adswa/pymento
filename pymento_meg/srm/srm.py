@@ -167,6 +167,111 @@ def _get_mean_and_std_from_transformed(transformed, i, stderror=False):
     return mean, std
 
 
+def _plot_helper(k,
+                 suptitle,
+                 name,
+                 figdir,
+                 palette='husl',
+                 npalette=None,
+                 figsize=(10, 20),
+                 xlabel='samples',
+                 ylabel='amplitude',
+                 vline=None,
+                 vlinelabel='response',
+                 ):
+    """
+    Set up common plotting properties for SRM component plots to avoid code
+    duplication.
+    :param k: int, number of components.
+    :param suptitle: str, title of the figure
+    :param name: str, name under which the figure will be saved
+    :param figdir: str, path to location to save figure under
+    :param palette: str, name of a seaborn color map
+    :param npalette: int, number of colors in the colormap
+    :param figsize: tuple, specifies figure size
+    :param xlabel: str, xlabel for the plot
+    :param ylabel: str, ylabel for the plot
+    :param vline: None or int, whether and where one vertical line will be drawn
+    :param vlinelabel: str, label for a vline
+    :return:
+    """
+    if npalette is None:
+        npalette = k
+    palette = sns.color_palette(palette, npalette)
+    fig, ax = plt.subplots(k,
+                           sharex=True,
+                           sharey=True,
+                           figsize=figsize)
+    for a in ax:
+        a.set(ylabel=ylabel)
+        if vline is not None:
+            a.axvline(vline,
+                      color='black',
+                      linestyle='dotted',
+                      label=vlinelabel)
+    ax[-1].set(xlabel=xlabel)
+    fig.suptitle("\n".join(wrap(suptitle, 50)),
+                 verticalalignment='top',
+                 fontsize=10)
+    fname = _construct_path(
+        [
+            Path(figdir),
+            f"group",
+            "meg",
+            name,
+        ]
+    )
+    return palette, fig, ax, fname
+
+
+def _get_trial_indicators(transformed, data, type='choice'):
+    """Query the metadata of the transformed data and report indices of trials
+     corresponding to different properties"""
+
+    if type == 'choice':
+        # Get indices for trials with left and right choice
+        i = 0
+        left = []
+        right = []
+        for sub in transformed.keys():
+            for epoch in data[sub]:
+                if epoch['choice'] == 2:
+                    right.append(i)
+                elif epoch['choice'] == 1:
+                    left.append(i)
+                i += 1
+        return left, right
+
+    elif type == 'feedback':
+        # Get trials with positive or negative feedback
+        i = 0
+        negative = []
+        positive = []
+        for sub in transformed.keys():
+            for epoch in data[sub]:
+                if np.isnan(epoch['pointdiff']):
+                    negative.append(i)
+                else:
+                    positive.append(i)
+                i += 1
+        return negative, positive
+
+    elif type == 'difficulty':
+        # split between brainer and no-brainer trials
+        i = 0
+        brainer = []
+        nobrainer = []
+        for sub in transformed.keys():
+            for epoch in data[sub]:
+                if epoch['trial_type'] == 'brainer':
+                    brainer.append(i)
+                elif epoch['trial_type'] in (
+                'nobrainer_right', 'nobrainer_left'):
+                    nobrainer.append(i)
+                i += 1
+        return brainer, nobrainer
+
+
 def _plot_transformed_components(transformed,
                                  k,
                                  data,
