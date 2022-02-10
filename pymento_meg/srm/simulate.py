@@ -55,6 +55,13 @@ def simulate_raw(signal,
         weights[~zeroindices] / np.sum(weights[~zeroindices])
     # add signal to noise.
     data += (weights * signal[:, None]).T
+    fig, ax = plt.subplots()
+    ax.plot(data.T, linewidth=1)
+    ax.set(xlabel='samples',
+           ylabel='amplitude',
+           title=f'Artificial signal embedded in noise')
+    plt.tight_layout()
+    #plt.close()
     return data, weights, [signal]
 
 
