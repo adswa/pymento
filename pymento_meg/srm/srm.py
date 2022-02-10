@@ -140,20 +140,30 @@ def get_transformations(model, test_series, comp):
     return transformations
 
 
-def _get_mean_and_std_from_transformed(transformed, i):
-    """Helper to get mean and std vectors for a given component i from the
+def _get_mean_and_std_from_transformed(transformed, i, stderror=False):
+    """Helper to get mean and std/sem vectors for a given component i from the
     transformed dict
 
     :param transformed: dict, contains transformed data
     :param i: component index
+    :param stderror: bool, if True, return SEM instead of STD
     """
     mean = np.mean(np.asarray(
         [ts for sub in transformed.keys() for ts in transformed[sub][i]]),
         axis=0)
     # potentially change to standard error by dividing by np.sqrt(nepochs)
-    std = np.std(np.asarray(
+
+    if stderror:
+        data = np.asarray(
+            [ts for sub in transformed.keys() for ts in transformed[sub][i]]
+        )
+        std = np.std(data, axis=0, ddof=1) / np.sqrt(data.shape[0])
+    else:
+        # use standard deviation
+        std = np.std(np.asarray(
         [ts for sub in transformed.keys() for ts in transformed[sub][i]]),
         axis=0)
+
     return mean, std
 
 
