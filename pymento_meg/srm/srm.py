@@ -202,14 +202,24 @@ def _plot_helper(k,
                            sharex=True,
                            sharey=True,
                            figsize=figsize)
-    for a in ax:
-        a.set(ylabel=ylabel)
+    if k > 1:
+        # multiple plots
+        for a in ax:
+            a.set(ylabel=ylabel)
+            if vline is not None:
+                a.axvline(vline,
+                          color='black',
+                          linestyle='dotted',
+                          label=vlinelabel)
+        ax[-1].set(xlabel=xlabel)
+    else:
+        ax.set(ylabel=ylabel)
         if vline is not None:
-            a.axvline(vline,
+            ax.axvline(vline,
                       color='black',
                       linestyle='dotted',
                       label=vlinelabel)
-    ax[-1].set(xlabel=xlabel)
+        ax.set(xlabel=xlabel)
     fig.suptitle("\n".join(wrap(suptitle, 50)),
                  verticalalignment='top',
                  fontsize=10)
