@@ -642,7 +642,7 @@ def _plot_transformed_components_centered(transformed,
     palette, fig, ax, fname = \
         _plot_helper(k,
                      suptitle='Average signal in shared space, response-locked, pos vs neg feedback, component-wise',
-                     name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked_brainervsnobrainer.png",
+                     name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp_response-locked_feedback.png",
                      figdir=figdir,
                      npalette=k * 2,
                      vline=win/2
