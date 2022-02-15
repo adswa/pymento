@@ -736,6 +736,38 @@ def train_test_set(fullsample, data, ntrain=140, ntest=100):
     return trainset, testset
 
 
+def plot_model_basis_topographies(datadir, model, figdir):
+    """
+    Take the subject-specific basis for each component of a trained SRM model
+    and plot their topography.
+    :return:
+    """
+    # use real data to create a fake evoked structure
+    fname = Path(datadir) / f'sub-001/meg' / \
+            f'sub-001_task-memento_proc-sss_meg-1.fif'
+    raw = mne.io.read_raw_fif(fname)
+    # drop all non-meg sensors from the info object
+    picks = raw.info['ch_names'][3:309]
+    raw.info.pick_channels(picks)
+
+    for subject in range(len(model.w_)):
+        basis = model.w_[subject]
+        k = basis.shape[1]
+        fig, ax = plt.subplots(1, k)
+        for c in range(k):
+            # plot transformation matrix
+            data = basis[:, c].reshape(-1, 1)
+            fake_evoked = mne.EvokedArray(data, raw.info, axes=ax[c], size=2)
+            fig = fake_evoked.plot_topomap(times=0,
+                                           title=f'Subject {subject+1}',
+                                           colorbar=False)
+        fname = _construct_path([
+            Path(figdir),
+            "group",
+            "meg",
+            f"viz-model-{k}_comp-{c}_sub-{subject+1}.png"])
+        fig.savefig(fname)
+
 
 def get_general_data_structure(subject,
                                datadir,
