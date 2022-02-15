@@ -282,6 +282,137 @@ def _get_trial_indicators(transformed, data, type='choice'):
         return brainer, nobrainer
 
 
+def _plot_raw_comparison(data, dataset, adderror=False, stderror=False, freq=1000,
+                         window=0.5, figdir='/tmp'):
+    """
+    Do comparison plots with raw data
+    :param data: dict, either train_series or test_series
+    :param dataset: dict, either trainset or testset
+    :return:
+    """
+    # first, not centered, averaged over all subjects, per sensor:
+    d = np.asarray([np.mean(np.asarray(i), axis=0) for i in data.values()])
+    mean = np.mean(d, axis=0)
+    palette, fig, ax, fname = \
+        _plot_helper(1,
+                     suptitle='Averaged raw signal, over all subjects, per sensor',
+                     name=f"avg-signal_raw-sensors.png",
+                     figdir=figdir,
+                     npalette=1,
+                     figsize=(10, 5)
+                     )
+    ax.plot(mean.T, label='averaged raw data, per sensor')
+    fig.savefig(fname)
+    # then averaged across sensors:
+    moremean = np.mean(mean, axis=0)
+    if stderror:
+        std = np.std(mean, axis=0, ddof=1) / np.sqrt(mean.shape[0])
+    else:
+        std = np.std(mean, axis=0)
+    palette, fig, ax, fname = \
+        _plot_helper(1,
+                     suptitle='Averaged raw signal, over all subjects and sensors',
+                     name=f"avg-signal_raw-avg.png",
+                     figdir=figdir,
+                     npalette=1,
+                     figsize=(10, 5)
+                     )
+    ax.plot(moremean.T, label='averaged raw data', color=palette[0])
+    if adderror:
+        ax.fill_between(range(len(moremean)), moremean - std, moremean + std, alpha=0.4,
+                           color=palette[0])
+    fig.savefig(fname)
+    # now response centered
+    RT = [np.round(epoch['RT']*freq)
+          for subject in data for epoch in dataset[subject]]
+    # time window centered around the reaction
+    win = window*freq
+    d = []
+    [d.extend(data[i]) for i in data.keys()]
+    assert len(d) == len(RT)
+
+    palette, fig, ax, fname = \
+        _plot_helper(1,
+                     suptitle='Averaged raw signal, over all subjects, per sensor, response-locked',
+                     name=f"avg-signal_raw-sensors_response-locked.png",
+                     figdir=figdir,
+                     npalette=1,
+                     vline=win / 2,
+                     figsize=(10, 5)
+                     )
+    # first, averaged over all subjects, per sensor
+    # get all epochs
+    centered_epochs = [d[idx][:, int(rt - win/2):int(rt + win/2)]
+                      for idx, rt in enumerate(RT) if not np.isnan(rt)]
+    # if an epoch does not have enough data (too short), don't use it
+    d_long_enough = np.asarray([e for e in centered_epochs if e.shape[1] == win])
+    # average over epochs
+    avg_epochs = np.mean(d_long_enough, axis=0)
+    # plot
+    ax.plot(avg_epochs.T, label='averaged raw data (306 sensors)')
+    fig.savefig(fname)
+
+    # average over sensors
+    palette, fig, ax, fname = \
+        _plot_helper(1,
+                     suptitle='Averaged raw signal, over all subjects and sensors, response-locked',
+                     name=f"avg-signal_raw-avg_response-locked.png",
+                     figdir=figdir,
+                     npalette=1,
+                     vline=win / 2,
+                     figsize=(10, 5),
+                     )
+    avg = np.mean(avg_epochs, axis=0)
+    ax.plot(avg, label='averaged raw data (across subjects and sensors',
+            color=palette[0])
+    if stderror:
+        std = np.std(avg_epochs, axis=0, ddof=1) / np.sqrt(avg_epochs.shape[0])
+    else:
+        std = np.std(avg_epochs, axis=0)
+    if adderror:
+        ax.fill_between(range(len(avg)), avg - std, avg + std, alpha=0.4,
+                           color=palette[0])
+    fig.savefig(fname)
+    # and now for left and right
+    # now response-locked for left and right
+    left, right = _get_trial_indicators(dataset, dataset, type='choice')
+    palette, fig, ax, fname = \
+        _plot_helper(1,
+                     suptitle='Average raw signal, response-locked, left vs. right',
+                     name=f"avg-signal_raw-avg_response-locked_leftvsright.png",
+                     figdir=figdir,
+                     npalette=2,
+                     vline=win/2,
+                     figsize=(10, 5)
+                     )
+    b = 0
+    for choice, ids in [('left', left), ('right', right)]:
+        color_idx = b
+        centered_epochs = [d[idx][:, int(rt - win / 2):int(rt + win / 2)]
+                           for idx, rt in enumerate(RT) if idx in ids and
+                           not np.isnan(rt)]
+        # if an epoch does not have enough data (too short), don't use it
+        d_long_enough = np.asarray(
+            [e for e in centered_epochs if e.shape[1] == win])
+        # average twice:
+        avg_epochs = np.mean(d_long_enough, axis=0)
+        avg = np.mean(avg_epochs, axis=0)
+        ax.plot(avg, label=f'{choice} choice', color=palette[b])
+        if adderror:
+            if stderror:
+                std = np.std(avg_epochs, axis=0, ddof=1) / \
+                      np.sqrt(avg_epochs.shape[0])
+            else:
+                std = np.std(avg_epochs, axis=0)
+            ax.fill_between(range(len(std)), avg - std, avg + std,
+                               alpha=0.3,
+                               color=palette[color_idx])
+        b += 1
+    plt.legend(loc="upper right", prop={'size': 6})
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.savefig(fname)
+
+
 def _plot_transformed_components(transformed,
                                  k,
                                  data,
@@ -322,13 +453,6 @@ def _plot_transformed_components(transformed,
                  prop={'size': 6})
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fig.savefig(fname)
-
-        # but there is also no congruency in the raw data (similar high stds):
-        # mean = np.mean(np.asarray([np.mean(np.asarray(i), axis=0) for i in train_series]), axis=0)
-        # std = np.std(np.asarray([np.mean(np.asarray(i), axis=0) for i in train_series]), axis=0)
-        # fig, ax = plt.subplots(figsize=(20, 5))
-        # ax.plot(mean)
-        # ax.fill_between(range(len(mean), mean-std, mean+std)
 
     # Plot transformed data component-wise, but for left and right epochs
     # separately.
