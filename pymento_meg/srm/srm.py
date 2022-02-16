@@ -757,16 +757,19 @@ def plot_model_basis_topographies(datadir, model, figdir):
         for c in range(k):
             # plot transformation matrix
             data = basis[:, c].reshape(-1, 1)
-            fake_evoked = mne.EvokedArray(data, raw.info, axes=ax[c], size=2)
+            fake_evoked = mne.EvokedArray(data, raw.info)
             fig = fake_evoked.plot_topomap(times=0,
                                            title=f'Subject {subject+1}',
-                                           colorbar=False)
+                                           colorbar=False,
+                                           axes=ax[c], size=2
+                                           )
         fname = _construct_path([
             Path(figdir),
             "group",
             "meg",
             f"viz-model-{k}_comp-{c}_sub-{subject+1}.png"])
         fig.savefig(fname)
+
 
 
 def get_general_data_structure(subject,
