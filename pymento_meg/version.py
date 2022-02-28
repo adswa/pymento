@@ -1,7 +1,7 @@
 import sys
 from os.path import lexists, dirname, join as opj, curdir
 
-__version__ = "0.0.12"
+__version__ = "0.0.13"
 __hardcoded_version__ = __version__
 __full_version__ = __version__
 
