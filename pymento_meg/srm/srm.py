@@ -562,7 +562,7 @@ def _plot_transformed_components_by_trialtype(transformed,
                 # to add standard deviations around the mean. We didn't find expected
                 # congruency/reduced variability in those plots.
                 ax[i].fill_between(range(len(mean)), mean - std, mean + std,
-                                   alpha=0.4,
+                                   alpha=0.1,
                                    color=palette[colorid])
         for a in ax:
             a.legend(loc='upper right',
