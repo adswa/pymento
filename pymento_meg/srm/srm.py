@@ -512,6 +512,65 @@ def _plot_transformed_components(transformed,
     fig.savefig(fname)
 
 
+def _plot_transformed_components_by_trialtype(transformed,
+                                              k,
+                                              data,
+                                              adderror=False,
+                                              stderror=False,
+                                              figdir='/tmp',
+                                              ):
+    """
+
+    :param transformed:
+    :param k:
+    :param data:
+    :param adderror:
+    :param stderror:
+    :param figdir:
+    :return:
+    """
+    trialorder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+
+    palette, fig, ax, fname = \
+        _plot_helper(k,
+                     suptitle='Averaged signal in shared space, component-wise', #TODO fix this
+                     name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+                     figdir=figdir,
+                     npalette=len(trialorder),
+                     )
+    for colorid, trial in enumerate(trialorder):
+        # make one plot per trialtype
+        # grep the data for the trial. There is a different number of trials per
+        # trialtype and subject. We need
+        tmp_transformed = {}
+        i = 0
+        for sub in transformed.keys():
+            tmp_transformed[sub] = {}
+            # get indices of trial types
+            idx = (i, len(data[sub][trial]))
+            for c in range(k):
+                tmp_transformed[sub][c] = transformed[sub][c][idx[0]:idx[1]]
+            # make i the new first index
+            i += len(data[sub][trial])
+
+        for i in range(k):
+            mean, std = _get_mean_and_std_from_transformed(tmp_transformed, i,
+                                                           stderror=stderror)
+            ax[i].plot(mean, color=palette[colorid], label=f'trial type {trial},'
+                                                     f'component {i + 1}')
+            if adderror:
+                # to add standard deviations around the mean. We didn't find expected
+                # congruency/reduced variability in those plots.
+                ax[i].fill_between(range(len(mean)), mean - std, mean + std,
+                                   alpha=0.4,
+                                   color=palette[i])
+        for a in ax:
+            a.legend(loc='upper right',
+                     prop={'size': 6})
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+        fig.savefig(fname)
+
+
 def _plot_transformed_components_centered(transformed,
                                           k,
                                           data,
