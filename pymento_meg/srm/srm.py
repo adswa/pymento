@@ -64,7 +64,8 @@ def srm_with_spectral_transformation(subject,
                                      k=10,
                                      ntrain=140,
                                      ntest=100,
-                                     modelfit='epochwise'):
+                                     modelfit='epochwise',
+                                     ):
     """
     Fit a shared response model on data transformed into frequency space.
     This is the practical implementation of the work simulated in
@@ -76,9 +77,9 @@ def srm_with_spectral_transformation(subject,
     :param datadir: str, path to directory with epoched data
     :param bidsdir: str, path to directory with bids data
     :param k: int, number of components used in SRM fitting
-    :param modelfit: str, either 'epochwise' or 'subjectwise'. Determines
-     whether SRM is fit on all epochs as if they were subjects, or subjectwise
-     on concatenated epochs
+    :param modelfit: str, either 'epochwise', 'subjectwise', or 'trialorder'. Determines
+     whether SRM is fit on all epochs as if they were subjects, subjectwise
+     on averaged epochs, or subjectwise on articifial timeseries
     :return:
     """
     logging.warning("CAVE: I expect to operate on epochs starting with the 2nd "
@@ -93,11 +94,12 @@ def srm_with_spectral_transformation(subject,
                                                   condition='nobrain-brain',
                                                   timespan=[0, 300])
 
-    # create a train and a test set
+    # TODO: turn this into some sort of cross-validation?
     trainset, testset = train_test_set(fullsample,
                                        data,
                                        ntrain=ntrain,
-                                       ntest=ntest)
+                                       ntest=ntest,
+                                       modelfit=modelfit)
     if modelfit == 'epochs':
         # transform  epochs to a time resolved and a spectral space. In order to
         # get components reflecting processes within 3 second epochs, loosen the
@@ -110,6 +112,14 @@ def srm_with_spectral_transformation(subject,
             epochs_to_spectral_space(trainset, subjectwise=True)
         test_spectral, test_series = \
             epochs_to_spectral_space(testset, subjectwise=True)
+    elif modelfit == 'trialtype':
+        # the test and train data should be in a different format in this
+        # condition, and require some downstream processing (concatenation)
+        train_spectral, train_series = \
+            concat_epochs_to_spectral_space(trainset, subjectwise=True)
+        test_spectral, test_series = \
+            concat_epochs_to_spectral_space(testset, subjectwise=True)
+
     else:
         logging.info(f"Unknown parameter {modelfit} for modelfit.")
         return
@@ -418,7 +428,8 @@ def _plot_transformed_components(transformed,
                                  data,
                                  adderror=False,
                                  figdir='/tmp',
-                                 stderror=False
+                                 stderror=False,
+                                 modelfit=None
                                  ):
     """
     For transformed data containing the motor response/decision, create a range
@@ -453,6 +464,15 @@ def _plot_transformed_components(transformed,
                  prop={'size': 6})
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fig.savefig(fname)
+
+    if modelfit == 'trialtype':
+        # the testset of this data is differently structured and the code below
+        # would error
+
+        _plot_transformed_components_by_trialtype(transformed, k, data,
+                                                  adderror=True,
+                                                  stderror=True)
+        return
 
     # Plot transformed data component-wise, but for left and right epochs
     # separately.
@@ -682,6 +702,48 @@ def _plot_transformed_components_centered(transformed,
     return
 
 
+def concat_epochs_to_spectral_space(data, subjectwise=False, shorten=False):
+    """
+    Transform epoch data organized by trial features into spectral space.
+    Average within subject and feature, and concatenate within subject over
+    features. Takes a nested dictionary with n subjects as keys and features as
+    subkeys, transforms each subjects epochs into spectral space, returns each
+    epoch as if it was its own subject
+    :param data: nested dict, top level keys are subjects, lower level dicts are
+     trial data of one epoch
+    :param shorten: None or tuple, if given, the data will be subset in th
+     range of the tuple. The tuple needs to have a start and end index in Hz.
+    :return:
+    series: list of lists
+    """
+    subjects = data.keys()
+    series_spectral = {}
+    series_time = {}
+    for sub in subjects:
+        subject_spectral = []
+        subject_time = []
+        for condition in data[sub]:
+            epochs = [info['normalized_data'] for info in data[sub][condition]]
+            if shorten:
+                # subset the data to the range given by 'shorten'
+                epochs = [epo[:, shorten[0]:shorten[1]] for epo in epochs]
+            spectral_series = [transform_to_power(e) for e in epochs]
+            assert spectral_series[0].shape[0] == epochs[0].shape[0] == 306
+            # average over epochs.
+            spectral_series = np.mean(np.asarray(spectral_series), axis=0)
+            assert spectral_series.shape[0] == epochs[0].shape[0] == 306
+            # append the condition to concatenate all trialtypes per subject
+            # TODO check if the dimensionality matches. Its is a list with 24300
+            # arrays of dim 306 so far
+            subject_spectral.extend(spectral_series.T)
+            # TODO, does not yet make sense
+            subject_time.extend(epochs)
+        series_spectral[sub] = np.asarray(subject_spectral).T
+        series_time[sub] = subject_time
+    assert len(series_spectral) == len(series_time) == len(subjects)
+    return series_spectral, series_time
+
+
 def epochs_to_spectral_space(data, subjectwise=False):
     """
     Transform epoch data into spectral space. Takes a dictionary with n subjects
@@ -709,30 +771,67 @@ def epochs_to_spectral_space(data, subjectwise=False):
     return series_spectral, series_time
 
 
-def train_test_set(fullsample, data, ntrain=140, ntest=100):
-    logging.info(f"Splitting the data into {ntrain} training epochs and "
-                 f"{ntest} testing epochs.")
+def train_test_set(fullsample, data, ntrain=140, ntest=100, modelfit=None):
+    """
+    Split data into ntrain trainings data and ntest test data, and return them
+    as a dictionary. If a particular modelfit is specified, ntrain and ntest are
+    ignored, and instead, data are returned as a nested dictionary according to
+    the specified experiment featured, with half of all available data in the
+    training set and the other half in the testset.
+    :param fullsample:
+    :param data:
+    :param ntrain:
+    :param ntest:
+    :param modelfit:
+    :return:
+    """
     testset = {}
     trainset = {}
     subjects = fullsample.keys()
-    for subject in subjects:
-        train = []
-        test = []
-        trials = [i for i in data if i['subject'] == subject]
-        # we need to have at least as many trials per condition as the
-        # sum of training data and testing data
-        assert len(trials) >= ntrain + ntest
-        # for each trialtype, pick n random trials for training,
-        # shuffle the list with a random seed to randomize trial order
-        shuffled = random.sample(trials, len(trials))
-        train.extend(shuffled[:ntrain])
-        # pick test trials from the other side of the shuffled list
-        test.extend(shuffled[-ntest:])
-        assert all([i not in test for i in train])
-        testset[subject] = test
-        trainset[subject] = train
-        assert len(testset[subject]) == ntest
-        assert len(trainset[subject]) == ntrain
+    if modelfit == 'trialtype':
+        logging.info(f"Splitting the data into training and testing epochs "
+                     f"based on trial type.")
+        # because we want to concatenate artificial time series, we let go of
+        # ntrain and ntest specification and instead take all data we have
+        trialorder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+        for sub in subjects:
+            testset[sub] = {}
+            trainset[sub] = {}
+            for trialtype in trialorder:
+                testset[sub][trialtype] = []
+                trainset[sub][trialtype] = []
+                trials = [i for i in data if (i['subject'] == sub and
+                                              i['Lchar'] == trialtype)]
+                # take half of the trials for training, half of them for testing
+                ntest = ntrain = int(len(trials) / 2)
+                shuffled = random.sample(trials, len(trials))
+                trainset[sub][trialtype].extend(shuffled[:ntrain])
+                testset[sub][trialtype].extend(shuffled[-ntest:])
+        # return a nested dictionary. Later functions will need to disect it
+        return trainset, testset
+
+    else:
+        logging.info(f"Splitting the data into {ntrain} training epochs and "
+                     f"{ntest} testing epochs.")
+        # just take the trials "as is"
+        for subject in subjects:
+            train = []
+            test = []
+            trials = [i for i in data if i['subject'] == subject]
+            # we need to have at least as many trials per condition as the
+            # sum of training data and testing data
+            assert len(trials) >= ntrain + ntest
+            # for each trialtype, pick n random trials for training,
+            # shuffle the list with a random seed to randomize trial order
+            shuffled = random.sample(trials, len(trials))
+            train.extend(shuffled[:ntrain])
+            # pick test trials from the other side of the shuffled list
+            test.extend(shuffled[-ntest:])
+            assert all([i not in test for i in train])
+            testset[subject] = test
+            trainset[subject] = train
+            assert len(testset[subject]) == ntest
+            assert len(trainset[subject]) == ntrain
     return trainset, testset
 
 
