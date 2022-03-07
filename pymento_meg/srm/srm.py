@@ -563,7 +563,7 @@ def _plot_transformed_components_by_trialtype(transformed,
                 # congruency/reduced variability in those plots.
                 ax[i].fill_between(range(len(mean)), mean - std, mean + std,
                                    alpha=0.4,
-                                   color=palette[i])
+                                   color=palette[colorid])
         for a in ax:
             a.legend(loc='upper right',
                      prop={'size': 6})
