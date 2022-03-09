@@ -471,7 +471,9 @@ def _plot_transformed_components(transformed,
 
         _plot_transformed_components_by_trialtype(transformed, k, data,
                                                   adderror=True,
-                                                  stderror=True)
+                                                  stderror=True,
+                                                  plotting='all'
+                                                  )
         return
 
     # Plot transformed data component-wise, but for left and right epochs
@@ -512,12 +514,143 @@ def _plot_transformed_components(transformed,
     fig.savefig(fname)
 
 
+def _plot_fake_transformed(order,
+                           data,
+                           title,
+                           name,
+                           transformed,
+                           figdir,
+                           k,
+                           stderror,
+                           adderror,
+                           bychoice=False):
+    """Aggregate data with trial structure into a temporary structure"""
+    # get ids for each subject and trialtype - the number of trialtypes differs
+    # between subjects, and we need the ids to subset the consecutive list of
+    # them in 'transformed'
+    ids = {}
+    for sub in transformed.keys():
+        ids[sub] = {}
+        i = 0
+        # the trialtypes are consecutive in this order
+        for trial in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
+            ids[sub][trial] = (i, i+len(data[sub][trial]))
+            i += len(data[sub][trial])
+    if not bychoice:
+        palette, fig, ax, fname = \
+            _plot_helper(k,
+                         suptitle=title,
+                         name=name,
+                         figdir=figdir,
+                         npalette=len(order),
+                         )
+        # don't group trials according to if they were eventually selected
+        for colorid, trials in enumerate(order):
+            # we group several trialtypes together
+            tmp_transformed = {}
+            for sub in transformed.keys():
+                tmp_transformed[sub] = {}
+                for trial in trials:
+                    # get indices of specific trial type
+                    idx = ids[sub][trial]
+                    assert idx[0] < idx[1]
+                    print(f'Trialtype {trial} has indices {idx}')
+                    for c in range(k):
+                        tmp_transformed[sub].setdefault(c, []).extend(
+                            transformed[sub][c][idx[0]:idx[1]])
+            # plot the component
+            for i in range(k):
+                mean, std = _get_mean_and_std_from_transformed(tmp_transformed,
+                                                               i,
+                                                               stderror=stderror
+                                                               )
+                ax[i].plot(mean,
+                           color=palette[colorid],
+                           label=f'trial type {trials}, component {i + 1}')
+                if adderror:
+                    ax[i].fill_between(range(len(mean)), mean - std, mean + std,
+                                       alpha=0.1,
+                                       color=palette[colorid])
+            # Finally, add the legend.
+            for a in ax:
+                a.legend(loc='upper right',
+                         prop={'size': 6})
+            fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+            fig.savefig(fname)
+
+    else:
+        # group trials by whether they were eventually chosen
+        right = {}
+        left = {}
+        for sub in transformed.keys():
+            right[sub] = []
+            left[sub] = []
+            i = 0
+            for trial in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
+                for epoch in data[sub][trial]:
+                    if epoch['choice'] == 2:
+                        right[sub].append(i)
+                    elif epoch['choice'] == 1:
+                        left[sub].append(i)
+                    i += 1
+
+        palette, fig, ax, fname = \
+            _plot_helper(k,
+                         suptitle=title,
+                         name=name,
+                         figdir=figdir,
+                         npalette=len(order),
+                         palette='rocket'
+                         )
+
+        palette2 = sns.color_palette('mako', len(order))
+        palettes = [palette, palette2]
+        for colorid, choiceids in enumerate([left, right]):
+            cid = 0
+            for trial in order:
+                tmp_transformed = {}
+                for sub in transformed.keys():
+                    tmp_transformed[sub] = {}
+                    for t in trial:
+                        id = ids[sub][t]
+                        assert id[0] < id[1]
+                        print(f'Trialtype {trial} has indices {id}')
+                        for c in range(k):
+                            data = [d for idx, d in enumerate(transformed[sub][c])
+                                    if idx in choiceids[sub] and (id[1] <= idx >= id[0])]
+                            tmp_transformed[sub].setdefault(c, []).extend(data)
+
+                for comp in range(k):
+                    mean, std = _get_mean_and_std_from_transformed(tmp_transformed,
+                                                                   comp,
+                                                                   stderror=stderror
+                                                                   )
+                    ax[comp].plot(mean,
+                               color=palettes[colorid][cid],
+                               label=f'trial choice {colorid}, trial {trial}, component {comp + 1}')
+                    if adderror:
+                        ax[comp].fill_between(range(len(mean)), mean - std, mean + std,
+                                           alpha=0.1,
+                                           color=palette[colorid])
+                cid += 1
+                print('cid is ', cid, 'colorid is', colorid)
+                # Finally, add the legend.
+            for a in ax:
+                a.legend(loc='upper right',
+                         prop={'size': 6})
+            fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+            fig.savefig(fname)
+
+    return fig, ax, fname
+
+
 def _plot_transformed_components_by_trialtype(transformed,
                                               k,
                                               data,
                                               adderror=False,
                                               stderror=False,
                                               figdir='/tmp',
+                                              plotting='all'
                                               ):
     """
 
@@ -527,48 +660,167 @@ def _plot_transformed_components_by_trialtype(transformed,
     :param adderror:
     :param stderror:
     :param figdir:
+    :param plotting:
     :return:
     """
-    trialorder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+    # define general order types
+    magnitude_order = [('A', 'B'), ('C', 'D'), ('E', 'F', 'G'), ('H', 'I')]
+    trialorder = [('A'), ('B'), ('C'), ('D'), ('E'), ('F'), ('G'), ('H'), ('I')]
+    probability_order = [('E', 'H'), ('C', 'F', 'I'), ('A', 'G'), ('B', 'D')]
+    exceptedvalue_order = [('A', 'C', 'E'), ('B', 'F', 'H'), ('D', 'G', 'I')]
+    if plotting in ('puretrialtype', 'all'):
+        fig, ax, fname = _plot_fake_transformed(
+            order=trialorder,
+            data=data,
+            title="Transformed components, per trial type",
+            name=f"trialtype-wise_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+            transformed=transformed,
+            k=k,
+            figdir=figdir,
+            adderror=adderror,
+            stderror=stderror
+            )
+
+    if plotting in ('magnitude', 'all'):
+        # plot according to magnitude bins
+        fig, ax, fname = _plot_fake_transformed(
+            order=magnitude_order,
+            data=data,
+            title="Transformed components, with trials grouped into magnitude bins",
+            name=f"trialtype-magnitude_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+            transformed=transformed,
+            k=k,
+            figdir=figdir,
+            adderror=adderror,
+            stderror=stderror
+            )
+
+    if plotting in ('probability', 'all'):
+        # plot according to probability bins
+        fig, ax, fname = _plot_fake_transformed(
+            order=probability_order,
+            data=data,
+            title="Transformed components, with trials grouped into probability bins",
+            name=f"trialtype-probability_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+            transformed=transformed,
+            k=k,
+            figdir=figdir,
+            adderror=adderror,
+            stderror=stderror
+            )
+
+    if plotting in ('expectedvalue', 'all'):
+        # plot according to expected value
+        fig, ax, fname = _plot_fake_transformed(
+            order=exceptedvalue_order,
+            data=data,
+            title="Transformed components, with trials grouped into expected value bins",
+            name=f"trialtype-exp-value_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+            transformed=transformed,
+            k=k,
+            figdir=figdir,
+            adderror=adderror,
+            stderror=stderror
+        )
+    if plotting in ('eventualchoice', 'all'):
+        # plot trials that were eventually chosen versus trials that weren't
+        # now response-locked for left and right
+        right = {}
+        left = {}
+        for sub in transformed.keys():
+            right[sub] = []
+            left[sub] = []
+            i = 0
+            for trial in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
+                for epoch in data[sub][trial]:
+                    if epoch['choice'] == 2:
+                        right[sub].append(i)
+                    elif epoch['choice'] == 1:
+                        left[sub].append(i)
+                    i += 1
 
     palette, fig, ax, fname = \
         _plot_helper(k,
-                     suptitle='Averaged signal in shared space, component-wise', #TODO fix this
-                     name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+                     suptitle='Transformed components, with trials grouped by eventual response',
+                     name=f'event-choice_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png',
                      figdir=figdir,
-                     npalette=len(trialorder),
+                     npalette=2,
                      )
-    for colorid, trial in enumerate(trialorder):
-        # make one plot per trialtype
-        # grep the data for the trial. There is a different number of trials per
-        # trialtype and subject. We need
+
+    for colorid, ids in enumerate([left, right]):
         tmp_transformed = {}
-        i = 0
         for sub in transformed.keys():
             tmp_transformed[sub] = {}
-            # get indices of trial types
-            idx = (i, len(data[sub][trial]))
             for c in range(k):
-                tmp_transformed[sub][c] = transformed[sub][c][idx[0]:idx[1]]
-            # make i the new first index
-            i += len(data[sub][trial])
-
+                tmp_transformed[sub][c] = \
+                    [d for idx, d in enumerate(transformed[sub][c])
+                     if idx in ids[sub]]
+        # plot the component
         for i in range(k):
-            mean, std = _get_mean_and_std_from_transformed(tmp_transformed, i,
-                                                           stderror=stderror)
-            ax[i].plot(mean, color=palette[colorid], label=f'trial type {trial},'
-                                                     f'component {i + 1}')
+            mean, std = _get_mean_and_std_from_transformed(tmp_transformed,
+                                                           i,
+                                                           stderror=stderror
+                                                           )
+            ax[i].plot(mean,
+                       color=palette[colorid],
+                       label=f'trial choice {colorid}, component {i + 1}')
             if adderror:
-                # to add standard deviations around the mean. We didn't find expected
-                # congruency/reduced variability in those plots.
                 ax[i].fill_between(range(len(mean)), mean - std, mean + std,
                                    alpha=0.1,
                                    color=palette[colorid])
+        # Finally, add the legend.
         for a in ax:
             a.legend(loc='upper right',
                      prop={'size': 6})
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         fig.savefig(fname)
+
+    if plotting in ('magnitude-by-choice', 'all'):
+        # plot according to magnitude bins
+        fig, ax, fname = _plot_fake_transformed(
+            order=magnitude_order,
+            data=data,
+            title="Transformed components, with trials grouped into magnitude bins by eventual choice",
+            name=f"trialtype-magnitude-bychoice_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+            transformed=transformed,
+            k=k,
+            figdir=figdir,
+            adderror=adderror,
+            stderror=stderror,
+            bychoice=True
+        )
+
+    if plotting in ('probability-by-choice', 'all'):
+        # plot according to magnitude bins
+        fig, ax, fname = _plot_fake_transformed(
+            order=probability_order,
+            data=data,
+            title="Transformed components, with trials grouped into probability bins by eventual choice",
+            name=f"trialtype-probability-bychoice_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+            transformed=transformed,
+            k=k,
+            figdir=figdir,
+            adderror=adderror,
+            stderror=stderror,
+            bychoice=True
+        )
+
+    if plotting in ('expected-value-by-choice', 'all'):
+        # plot according to magnitude bins
+        fig, ax, fname = _plot_fake_transformed(
+            order=probability_order,
+            data=data,
+            title="Transformed components, with trials grouped into expected value bins by eventual choice",
+            name=f"trialtype-expectedvalue-bychoice_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+            transformed=transformed,
+            k=k,
+            figdir=figdir,
+            adderror=adderror,
+            stderror=stderror,
+            bychoice=True
+        )
+
+
 
 
 def _plot_transformed_components_centered(transformed,
