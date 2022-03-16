@@ -2165,9 +2165,9 @@ def add_trial_types(subject,
         all_trial_info[info]['prevRoptMag'] = prev_RMag
         all_trial_info[info]['prevRoptProb'] = prev_RPrb
         all_trial_info[info]['prevLchar'] = trial_characteristics[
-            (prev_LMag, prev_LPrb)]
+            (prev_LMag, prev_LPrb)] if prev_LMag else None
         all_trial_info[info]['prevRchar'] = trial_characteristics[
-            (prev_RMag, prev_RPrb)]
+            (prev_RMag, prev_RPrb)] if prev_RMag else None
         all_trial_info[info]['prevRT'] = prev_RT
         all_trial_info[info]['prevchoice'] = prev_choice
         all_trial_info[info]['LoptMag'] = LMag
