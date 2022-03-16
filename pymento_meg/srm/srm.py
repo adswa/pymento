@@ -2159,7 +2159,7 @@ def add_trial_types(subject,
             prev_RPrb = stim_char[stim_char['trial_no'] == info - 1]['RoptProb'].item()
         else:
             # this should be ok because None is a singleton
-            prev_choice, prev_RT, prev_RPrb, prev_RMag, prev_LPrb, prev_LMag = None
+            prev_choice = prev_RT = prev_RPrb = prev_RMag = prev_LPrb = prev_LMag = None
         all_trial_info[info]['prevLoptMag'] = prev_LMag
         all_trial_info[info]['prevLoptProb'] = prev_LPrb
         all_trial_info[info]['prevRoptMag'] = prev_RMag
