@@ -2157,22 +2157,24 @@ def add_trial_types(subject,
             prev_LPrb = stim_char[stim_char['trial_no'] == info - 1]['LoptProb'].item()
             prev_RMag = stim_char[stim_char['trial_no'] == info - 1]['RoptMag'].item()
             prev_RPrb = stim_char[stim_char['trial_no'] == info - 1]['RoptProb'].item()
+            all_trial_info[info]['prevLoptMag'] = prev_LMag
+            all_trial_info[info]['prevLoptProb'] = prev_LPrb
+            all_trial_info[info]['prevRoptMag'] = prev_RMag
+            all_trial_info[info]['prevRoptProb'] = prev_RPrb
+            all_trial_info[info]['prevLchar'] = trial_characteristics[
+                (prev_LMag, prev_LPrb)]
+            all_trial_info[info]['prevRchar'] = trial_characteristics[
+                (prev_RMag, prev_RPrb)]
+            all_trial_info[info]['prevRT'] = prev_RT
+            all_trial_info[info]['prevchoice'] = prev_choice
         all_trial_info[info]['LoptMag'] = LMag
         all_trial_info[info]['LoptProb'] = LPrb
         all_trial_info[info]['RoptMag'] = RMag
         all_trial_info[info]['RoptProb'] = RPrb
-        all_trial_info[info]['prevLoptMag'] = prev_LMag
-        all_trial_info[info]['prevLoptProb'] = prev_LPrb
-        all_trial_info[info]['prevRoptMag'] = prev_RMag
-        all_trial_info[info]['prevRoptProb'] = prev_RPrb
         all_trial_info[info]['Lchar'] = trial_characteristics[(LMag, LPrb)]
         all_trial_info[info]['Rchar'] = trial_characteristics[(RMag, RPrb)]
-        all_trial_info[info]['prevLchar'] = trial_characteristics[(prev_LMag, prev_LPrb)]
-        all_trial_info[info]['prevRchar'] = trial_characteristics[(prev_RMag, prev_RPrb)]
         all_trial_info[info]['RT'] = RT
         all_trial_info[info]['choice'] = choice
-        all_trial_info[info]['prevRT'] = prev_RT
-        all_trial_info[info]['prevchoice'] = prev_choice
         all_trial_info[info]['pointdiff'] = pointdiff
 
     # get a count of trials per characteristic
