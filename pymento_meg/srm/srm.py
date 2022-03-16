@@ -2149,8 +2149,8 @@ def add_trial_types(subject,
         RT = stim_char[stim_char['trial_no'] == info]['RT'].item()
         choice = stim_char[stim_char['trial_no'] == info]['choice'].item()
         pointdiff = stim_char[stim_char['trial_no'] == info]['pointdiff'].item()
-        # also add information what the previous choice was
-        if info > 0:
+        # also add information what the previous trial was, if we have info
+        if info > 1:
             prev_choice = stim_char[stim_char['trial_no'] == info - 1]['choice'].item()
             prev_RT = stim_char[stim_char['trial_no'] == info - 1]['RT'].item()
             prev_LMag = stim_char[stim_char['trial_no'] == info - 1]['LoptMag'].item()
