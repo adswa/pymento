@@ -2157,16 +2157,16 @@ def add_trial_types(subject,
             prev_LPrb = stim_char[stim_char['trial_no'] == info - 1]['LoptProb'].item()
             prev_RMag = stim_char[stim_char['trial_no'] == info - 1]['RoptMag'].item()
             prev_RPrb = stim_char[stim_char['trial_no'] == info - 1]['RoptProb'].item()
-            all_trial_info[info]['prevLoptMag'] = prev_LMag
-            all_trial_info[info]['prevLoptProb'] = prev_LPrb
-            all_trial_info[info]['prevRoptMag'] = prev_RMag
-            all_trial_info[info]['prevRoptProb'] = prev_RPrb
-            all_trial_info[info]['prevLchar'] = trial_characteristics[
-                (prev_LMag, prev_LPrb)]
-            all_trial_info[info]['prevRchar'] = trial_characteristics[
-                (prev_RMag, prev_RPrb)]
-            all_trial_info[info]['prevRT'] = prev_RT
-            all_trial_info[info]['prevchoice'] = prev_choice
+        all_trial_info[info]['prevLoptMag'] = prev_LMag if prev_LMag else None
+        all_trial_info[info]['prevLoptProb'] = prev_LPrb if prev_LPrb else None
+        all_trial_info[info]['prevRoptMag'] = prev_RMag if prev_RMag else None
+        all_trial_info[info]['prevRoptProb'] = prev_RPrb if prev_RPrb else None
+        all_trial_info[info]['prevLchar'] = trial_characteristics[
+            (prev_LMag, prev_LPrb)] if prev_LPrb else None
+        all_trial_info[info]['prevRchar'] = trial_characteristics[
+            (prev_RMag, prev_RPrb)] if prev_RPrb else None
+        all_trial_info[info]['prevRT'] = prev_RT if prev_RT else None
+        all_trial_info[info]['prevchoice'] = prev_choice if prev_choice else None
         all_trial_info[info]['LoptMag'] = LMag
         all_trial_info[info]['LoptProb'] = LPrb
         all_trial_info[info]['RoptMag'] = RMag
