@@ -554,7 +554,6 @@ def _plot_fake_transformed(order,
                     # get indices of specific trial type
                     idx = ids[sub][trial]
                     assert idx[0] < idx[1]
-                    print(f'Trialtype {trial} has indices {idx}')
                     for c in range(k):
                         tmp_transformed[sub].setdefault(c, []).extend(
                             transformed[sub][c][idx[0]:idx[1]])
@@ -564,9 +563,10 @@ def _plot_fake_transformed(order,
                                                                i,
                                                                stderror=stderror
                                                                )
+                lab = f'{label[colorid] if label else trials}, k={i+1}'
                 ax[i].plot(mean,
                            color=palette[colorid],
-                           label=f'trial type {trials}, component {i + 1}')
+                           label=lab)
                 if adderror:
                     ax[i].fill_between(range(len(mean)), mean - std, mean + std,
                                        alpha=0.1,
@@ -614,7 +614,6 @@ def _plot_fake_transformed(order,
                     for t in trial:
                         id = ids[sub][t]
                         assert id[0] < id[1]
-                        print(f'Trialtype {trial} has indices {id}')
                         for c in range(k):
                             data = [d for idx, d in enumerate(transformed[sub][c])
                                     if idx in choiceids[sub] and (id[1] <= idx >= id[0])]
@@ -625,15 +624,19 @@ def _plot_fake_transformed(order,
                                                                    comp,
                                                                    stderror=stderror
                                                                    )
+                    if label:
+                        tid = order.index(trial)
+                        lab = f'{colorid} choice, {label[tid]}, k={comp + 1}'
+                    else:
+                        lab = f'{colorid} choice,  trial {trial}, k={comp + 1}'
                     ax[comp].plot(mean,
-                               color=palettes[colorid][cid],
-                               label=f'trial choice {colorid}, trial {trial}, component {comp + 1}')
+                                 color=palettes[colorid][cid],
+                                 label=lab)
                     if adderror:
                         ax[comp].fill_between(range(len(mean)), mean - std, mean + std,
                                            alpha=0.1,
-                                           color=palette[colorid])
+                                           color=palettes[colorid][cid])
                 cid += 1
-                print('cid is ', cid, 'colorid is', colorid)
                 # Finally, add the legend.
             for a in ax:
                 a.legend(loc='upper right',
@@ -665,9 +668,12 @@ def _plot_transformed_components_by_trialtype(transformed,
     """
     # define general order types
     magnitude_order = [('A', 'B'), ('C', 'D'), ('E', 'F', 'G'), ('H', 'I')]
+    magnitude_labels = [('0.5 reward'), ('1 reward'), ('2 rewards'), ('4 reward')]
     trialorder = [('A'), ('B'), ('C'), ('D'), ('E'), ('F'), ('G'), ('H'), ('I')]
     probability_order = [('E', 'H'), ('C', 'F', 'I'), ('A', 'G'), ('B', 'D')]
+    probability_labels = [('10% chance'), ('20% change'), ('40% chance'), ('80% chance')]
     exceptedvalue_order = [('A', 'C', 'E'), ('B', 'F', 'H'), ('D', 'G', 'I')]
+    expectedvalue_labels = [('0.2 EV'), ('0.4 EV'), ('0.8 EV')]
     if plotting in ('puretrialtype', 'all'):
         fig, ax, fname = _plot_fake_transformed(
             order=trialorder,
@@ -686,6 +692,7 @@ def _plot_transformed_components_by_trialtype(transformed,
         fig, ax, fname = _plot_fake_transformed(
             order=magnitude_order,
             data=data,
+            label=magnitude_labels,
             title="Transformed components, with trials grouped into magnitude bins",
             name=f"trialtype-magnitude_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
             transformed=transformed,
@@ -700,6 +707,7 @@ def _plot_transformed_components_by_trialtype(transformed,
         fig, ax, fname = _plot_fake_transformed(
             order=probability_order,
             data=data,
+            label=probability_labels,
             title="Transformed components, with trials grouped into probability bins",
             name=f"trialtype-probability_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
             transformed=transformed,
@@ -714,6 +722,7 @@ def _plot_transformed_components_by_trialtype(transformed,
         fig, ax, fname = _plot_fake_transformed(
             order=exceptedvalue_order,
             data=data,
+            label=expectedvalue_labels,
             title="Transformed components, with trials grouped into expected value bins",
             name=f"trialtype-exp-value_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
             transformed=transformed,
@@ -780,6 +789,7 @@ def _plot_transformed_components_by_trialtype(transformed,
         fig, ax, fname = _plot_fake_transformed(
             order=magnitude_order,
             data=data,
+            label=magnitude_labels,
             title="Transformed components, with trials grouped into magnitude bins by eventual choice",
             name=f"trialtype-magnitude-bychoice_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
             transformed=transformed,
@@ -795,6 +805,7 @@ def _plot_transformed_components_by_trialtype(transformed,
         fig, ax, fname = _plot_fake_transformed(
             order=probability_order,
             data=data,
+            label=probability_labels,
             title="Transformed components, with trials grouped into probability bins by eventual choice",
             name=f"trialtype-probability-bychoice_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
             transformed=transformed,
@@ -802,14 +813,15 @@ def _plot_transformed_components_by_trialtype(transformed,
             figdir=figdir,
             adderror=adderror,
             stderror=stderror,
-            bychoice=True
+            group='choice'
         )
 
     if plotting in ('expected-value-by-choice', 'all'):
-        # plot according to magnitude bins
+        # plot according to expected value bins
         fig, ax, fname = _plot_fake_transformed(
-            order=probability_order,
+            order=exceptedvalue_order,
             data=data,
+            label=expectedvalue_labels,
             title="Transformed components, with trials grouped into expected value bins by eventual choice",
             name=f"trialtype-expectedvalue-bychoice_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
             transformed=transformed,
