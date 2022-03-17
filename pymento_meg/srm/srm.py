@@ -523,7 +523,8 @@ def _plot_fake_transformed(order,
                            k,
                            stderror,
                            adderror,
-                           bychoice=False):
+                           group=None,
+                           label=None):
     """Aggregate data with trial structure into a temporary structure"""
     # get ids for each subject and trialtype - the number of trialtypes differs
     # between subjects, and we need the ids to subset the consecutive list of
@@ -536,7 +537,7 @@ def _plot_fake_transformed(order,
         for trial in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
             ids[sub][trial] = (i, i+len(data[sub][trial]))
             i += len(data[sub][trial])
-    if not bychoice:
+    if not group:
         palette, fig, ax, fname = \
             _plot_helper(k,
                          suptitle=title,
@@ -577,7 +578,6 @@ def _plot_fake_transformed(order,
                          prop={'size': 6})
             fig.tight_layout(rect=[0, 0.03, 1, 0.95])
             fig.savefig(fname)
-
     else:
         # group trials by whether they were eventually chosen
         right = {}
@@ -594,6 +594,7 @@ def _plot_fake_transformed(order,
                         left[sub].append(i)
                     i += 1
 
+    if group == 'choice':
         palette, fig, ax, fname = \
             _plot_helper(k,
                          suptitle=title,
@@ -643,6 +644,139 @@ def _plot_fake_transformed(order,
                          prop={'size': 6})
             fig.tight_layout(rect=[0, 0.03, 1, 0.95])
             fig.savefig(fname)
+
+    if group == 'prev_choice':
+        # Choice of the previous trial
+        prev_right = {}
+        prev_left = {}
+        for sub in transformed.keys():
+            prev_right[sub] = []
+            prev_left[sub] = []
+            i = 0
+            for trial in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
+                for epoch in data[sub][trial]:
+                    if epoch['prevchoice'] == 2:
+                        prev_right[sub].append(i)
+                    elif epoch['prevchoice'] == 1:
+                        prev_left[sub].append(i)
+                    i += 1
+
+        # special case: we group by current and previous trial choice
+        if order == 'choice':
+            # don't plot trialtypes or characteristics, just choice behavior
+            palette, fig, ax, fname = \
+                _plot_helper(k,
+                             suptitle=title,
+                             name=name,
+                             figdir=figdir,
+                             npalette=2,
+                             palette='rocket'
+                             )
+            palette2 = sns.color_palette('mako', 2)
+            palettes = [palette, palette2]
+            for colorid, (prevchoiceids, choiceids) in \
+                enumerate([(prev_left, left), (prev_right, right)]):
+                cid = 0
+                tmp_transformed = {}
+                for plotting in ['same', 'different']:
+                    for sub in transformed.keys():
+                        tmp_transformed[sub] = {}
+                        for c in range(k):
+                            if plotting == 'same':
+                                choice = \
+                                    [d for idx, d in enumerate(transformed[sub][c])
+                                     if idx in choiceids[sub]
+                                     and idx in prevchoiceids[sub]]
+                            elif plotting == 'different':
+                                # the logic below is slightly flawed, when a left or
+                                # right choice id is not among the same previous choice
+                                # id we say its a different choice - this latter
+                                # category will thus include the first trial
+                                choice = \
+                                    [d for idx, d in enumerate(transformed[sub][c])
+                                     if idx in choiceids[sub]
+                                     and idx not in prevchoiceids[sub]]
+                            tmp_transformed[sub].setdefault(c, []).extend(
+                                choice)
+
+                    for comp in range(k):
+                        mean, std = _get_mean_and_std_from_transformed(
+                            tmp_transformed,
+                            comp,
+                            stderror=stderror
+                            )
+                        ax[comp].plot(mean,
+                                      color=palettes[colorid][cid],
+                                      label=f'choice={colorid} ({plotting} choice as previous trial), k={comp + 1}')
+                        if adderror:
+                            ax[comp].fill_between(range(len(mean)), mean - std,
+                                                  mean + std,
+                                                  alpha=0.1,
+                                                  color=palettes[colorid][cid])
+                    cid += 1
+                    # Finally, add the legend.
+                for a in ax:
+                    a.legend(loc='upper right',
+                             prop={'size': 6})
+                fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+                fig.savefig(fname)
+        # else: trial characteristics by prev. choice
+        else:
+            palette, fig, ax, fname = \
+                _plot_helper(k,
+                             suptitle=title,
+                             name=name,
+                             figdir=figdir,
+                             npalette=len(order),
+                             palette='rocket'
+                             )
+
+            palette2 = sns.color_palette('mako', len(order))
+            palettes = [palette, palette2]
+            for colorid, choiceids in enumerate([prev_left, prev_right]):
+                cid = 0
+                for trial in order:
+                    print('Trial is', trial)
+                    tmp_transformed = {}
+                    for sub in transformed.keys():
+                        tmp_transformed[sub] = {}
+                        for t in trial:
+                            id = ids[sub][t]
+                            assert id[0] < id[1]
+                            for c in range(k):
+                                data = [d for idx, d in
+                                        enumerate(transformed[sub][c])
+                                        if idx in choiceids[sub] and (
+                                                    id[1] <= idx >= id[0])]
+                                tmp_transformed[sub].setdefault(c, []).extend(
+                                    data)
+
+                    for comp in range(k):
+                        mean, std = _get_mean_and_std_from_transformed(
+                            tmp_transformed,
+                            comp,
+                            stderror=stderror
+                            )
+                        if label:
+                            tid = order.index(trial)
+                            lab = f'previous choice={colorid}, {label[tid]}, k={comp + 1}'
+                        else:
+                            lab = f'previous choice={colorid}, trial {trial}, k={comp + 1}'
+                        ax[comp].plot(mean,
+                                      color=palettes[colorid][cid],
+                                      label=lab)
+                        if adderror:
+                            ax[comp].fill_between(range(len(mean)), mean - std,
+                                                  mean + std,
+                                                  alpha=0.1,
+                                                  color=palettes[colorid][cid])
+                    cid += 1
+                    # Finally, add the legend.
+                for a in ax:
+                    a.legend(loc='upper right',
+                             prop={'size': 6})
+                fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+                fig.savefig(fname)
 
     return fig, ax, fname
 
@@ -797,7 +931,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             figdir=figdir,
             adderror=adderror,
             stderror=stderror,
-            bychoice=True
+            group='choice'
         )
 
     if plotting in ('probability-by-choice', 'all'):
@@ -829,9 +963,71 @@ def _plot_transformed_components_by_trialtype(transformed,
             figdir=figdir,
             adderror=adderror,
             stderror=stderror,
-            bychoice=True
+            group='choice'
         )
 
+    if plotting in ('choice-by-previous-choice', 'all'):
+        # plot according to magnitude bins
+        fig, ax, fname = _plot_fake_transformed(
+            order='choice',
+            data=data,
+            title="Transformed components, with trials grouped into eventual choice by previous choice",
+            name=f"trialtype-choice-byprevchoice_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+            transformed=transformed,
+            k=k,
+            figdir=figdir,
+            adderror=adderror,
+            stderror=stderror,
+            group='prev_choice'
+        )
+
+    if plotting in ('magnitude-by-previous-choice', 'all'):
+        # plot according to expected value bins
+        fig, ax, fname = _plot_fake_transformed(
+            order=magnitude_order,
+            data=data,
+            label=magnitude_labels,
+            title="Transformed components, with trials grouped into magnitude bins by previous choice",
+            name=f"trialtype-magnitude-byprevchoice_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+            transformed=transformed,
+            k=k,
+            figdir=figdir,
+            adderror=adderror,
+            stderror=stderror,
+            group='prev_choice'
+        )
+
+    if plotting in ('probability-by-previous-choice', 'all'):
+        # plot according to expected value bins
+        fig, ax, fname = _plot_fake_transformed(
+            order=probability_order,
+            data=data,
+            label=probability_labels,
+            title="Transformed components, with trials grouped into probability bins by previous choice",
+            name=f"trialtype-probability-byprevchoice_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+            transformed=transformed,
+            k=k,
+            figdir=figdir,
+            adderror=adderror,
+            stderror=stderror,
+            group='prev_choice'
+        )
+
+    if plotting in ('expected-value-by-previous-choice', 'all'):
+        # plot according to expected value bins
+        fig, ax, fname = _plot_fake_transformed(
+            order=exceptedvalue_order,
+            data=data,
+            label=expectedvalue_labels,
+            title="Transformed components, with trials grouped into excepted value bins by previous choice",
+            name=f"trialtype-expectedvalue-byprevchoice_avg-signal_shared-shape_spectral-srm_{k}-feat_per-comp.png",
+            transformed=transformed,
+            k=k,
+            figdir=figdir,
+            adderror=adderror,
+            stderror=stderror,
+            group='prev_choice'
+        )
 
 
 
