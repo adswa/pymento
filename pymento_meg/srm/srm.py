@@ -469,7 +469,10 @@ def _plot_transformed_components(transformed,
         # the testset of this data is differently structured and the code below
         # would error
 
-        _plot_transformed_components_by_trialtype(transformed, k, data,
+        _plot_transformed_components_by_trialtype(transformed,
+                                                  k,
+                                                  data,
+                                                  figdir=figdir,
                                                   adderror=True,
                                                   stderror=True,
                                                   plotting='all'
