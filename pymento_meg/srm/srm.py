@@ -116,9 +116,9 @@ def srm_with_spectral_transformation(subject,
         # the test and train data should be in a different format in this
         # condition, and require some downstream processing (concatenation)
         train_spectral, train_series = \
-            concat_epochs_to_spectral_space(trainset, subjectwise=True)
+            concat_epochs_to_spectral_space(trainset)
         test_spectral, test_series = \
-            concat_epochs_to_spectral_space(testset, subjectwise=True)
+            concat_epochs_to_spectral_space(testset)
 
     else:
         logging.info(f"Unknown parameter {modelfit} for modelfit.")
@@ -1318,13 +1318,12 @@ def _plot_transformed_components_centered(transformed,
     return
 
 
-def concat_epochs_to_spectral_space(data, subjectwise=False, shorten=False):
+def concat_epochs_to_spectral_space(data, shorten=False):
     """
     Transform epoch data organized by trial features into spectral space.
     Average within subject and feature, and concatenate within subject over
     features. Takes a nested dictionary with n subjects as keys and features as
-    subkeys, transforms each subjects epochs into spectral space, returns each
-    epoch as if it was its own subject
+    subkeys.
     :param data: nested dict, top level keys are subjects, lower level dicts are
      trial data of one epoch
     :param shorten: None or tuple, if given, the data will be subset in th
