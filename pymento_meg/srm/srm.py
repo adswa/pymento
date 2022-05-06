@@ -37,9 +37,10 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 random.seed(423)
 
 
-def srm_with_spectral_transformation(subject,
-                                     datadir,
-                                     bidsdir,
+def srm_with_spectral_transformation(subject=None,
+                                     datadir=None,
+                                     bidsdir=None,
+                                     timespan=None,
                                      k=10,
                                      ntrain=140,
                                      ntest=100,
@@ -55,6 +56,7 @@ def srm_with_spectral_transformation(subject,
     :param ntest: int, number of epochs to use in testing
     :param datadir: str, path to directory with epoched data
     :param bidsdir: str, path to directory with bids data
+    :param timespan: list or None, the time span to extract
     :param k: int, number of components used in SRM fitting
     :param modelfit: str, either 'epochwise', 'subjectwise', or 'trialorder'.
      Determines
@@ -62,17 +64,27 @@ def srm_with_spectral_transformation(subject,
      on averaged epochs, or subject-wise on artificial time series
     :return:
     """
-    logging.warning("CAVE: I expect to operate on epochs starting with the 2nd "
-                    "stimulation. Abort if it runs on the full 7s trial epochs")
-    # read in epochs from all subjects. We don't need a special subset of the
-    # data, and take the full timespan of each 3s epoch.
 
+    win = 40
+    # set a few defaults if unset
+    if subject is None:
+        subject = ['001', '002', '003', '004', '005', '006', '007', '008',
+                   '009', '010', '011', '012', '013', '014', '015', '016',
+                   '017', '018', '019', '020', '021', '022']
+    if datadir is None:
+        datadir = '/data/project/brainpeach/memento-sss'
+    if bidsdir is None:
+        bidsdir = '/data/project/brainpeach/memento-bids'
+    if modelfit is None:
+        modelfit = 'trailtype'
+    if timespan is None:
+        timespan = [0, 2700]
     # TODO: distinguish trials with positive and negative feedback
     fullsample, data = get_general_data_structure(subject=subject,
                                                   datadir=datadir,
                                                   bidsdir=bidsdir,
                                                   condition='nobrain-brain',
-                                                  timespan=[0, 300])
+                                                  timespan=timespan)
 
     # TODO: turn this into some sort of cross-validation?
     trainset, testset = train_test_set(fullsample,
