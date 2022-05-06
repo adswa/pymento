@@ -1030,6 +1030,100 @@ def _plot_transformed_components_by_trialtype(transformed,
         )
 
 
+def plot_tf_components(transformed,
+                       k,
+                       datadir,
+                       figdir='/tmp',
+                       sub='001',
+                       freqs=None,
+                       n_cycles=None):
+    """
+    Plot a time-frequency plot of transformed components.
+    Use mne.time_frequency.tfr_morlet with output 'avg_power' for this, which
+    expects an array of shape (n_epochs, n_channels, n_times), and outputs an
+    array of shape (n_epochs, n_freqs, n_times)
+    """
+    from mne.baseline import rescale
+    from mne.time_frequency import tfr_array_morlet
+    from mne.viz import centers_to_edges
+
+    if freqs is None:
+        # frequencies of interest:
+        freqs = np.arange(7, 100, 3)
+    if n_cycles is None:
+        # n_cycles to go with it
+        n_cycles = 7
+    # get one set of epochs to use kidnap a few constants...
+    fname = Path(datadir) / f'sub-{sub}/meg' / \
+                            f'sub-{sub}_task-memento_cleaned_epo.fif'
+    epochs = mne.read_epochs(fname)
+    epochtimes = epochs.times
+    sfreq = epochs.info['sfreq']
+    # store the avg powers of all subjects
+    powers = {}
+    # TODO: only look at gradiometers? will be hard to do...
+    # TODO: make a plot for each frequency band following https://mne.tools/stable/auto_examples/time_frequency/time_frequency_global_field_power.html#sphx-glr-auto-examples-time-frequency-time-frequency-global-field-power-py
+    # mhh, also hard to do...
+    for subject in transformed.keys():
+        powers[subject] = {}
+        fig, axes = plt.subplots(ncols=k,
+                                 figsize=(k*k, k),
+                                 sharex=True,
+                                 sharey=True)
+        for comp in range(k):
+            # get the transformed epochs, one component at a time
+            data = transformed[subject][comp]
+            # we don't have channels anymore, but we need to create the dimension
+            data = np.expand_dims(data, axis=1)
+            # following https://mne.tools/stable/auto_examples/time_frequency/time_frequency_simulated.html#operating-on-arrays
+            power = tfr_array_morlet(data, sfreq=sfreq, freqs=freqs,
+                                     n_cycles=n_cycles,
+                                     output='avg_power') # TODO: correct? its now averaged over all trials, could also be trialwise...
+            # TODO: Check Baseline correction (scaling)
+            rescale(power, epochtimes, (0, 0.7), mode='zscore', copy=False)
+            powers[subject][comp] = power
+            # plot the spectra
+            x, y = centers_to_edges((epochtimes*1000)[:-2], freqs[:-1])
+            mesh = axes[comp].pcolormesh(x, y, power[0])
+            axes[comp].set(ylim=freqs[[0, -1]], xlabel='Time (ms)')
+            axes[comp].set_title(f'k={comp + 1}')
+        fig.colorbar(mesh)
+        fig.suptitle(f'Component TFR plots for subject {subject}')
+        fig.tight_layout()
+        name = f'tfr_components_subject-{subject}_transformed-srm-{k}.png'
+        fname = _construct_path([Path(figdir), f"group", "meg", name])
+        fig.savefig(fname)
+
+    fig, axes = plt.subplots(ncols=k,
+                             figsize=(k * k, k),
+                             sharex=True,
+                             sharey=True)
+    for comp in range(k):
+        # Average over trials within subject, average across subjects, transform
+        mean_across_subs = np.mean([np.mean(transformed[sub][comp], axis=0)
+                                    for sub in transformed.keys()],
+                                   axis=0)
+        # transform to power
+        mean_across_subs = np.expand_dims(mean_across_subs, axis=0)
+        mean_across_subs = np.expand_dims(mean_across_subs, axis=0)
+        allsubpower = tfr_array_morlet(mean_across_subs, sfreq=sfreq, freqs=freqs,
+                                 n_cycles=n_cycles,
+                                 output='avg_power')
+        rescale(allsubpower, epochtimes, (None, 0), mode='zscore', copy=False)
+        x, y = centers_to_edges((epochtimes * 1000)[:-2], freqs[:-1])
+        mesh = axes[comp].pcolormesh(x, y, allsubpower[0])
+        axes[comp].set(ylim=freqs[[0, -1]], xlabel='Time (ms)')
+        axes[comp].set_title(f'k={comp + 1}')
+    fig.colorbar(mesh)
+    fig.suptitle(f'Component TFR plots across subjects')
+    fig.tight_layout()
+    name = f'tfr_components_subject-avg_transformed-srm-{k}.png'
+    fname = _construct_path([Path(figdir), f"group", "meg", name, ])
+    fig.savefig(fname)
+
+    return powers
+
+from pymento_meg.config import iter_freqs
 
 def _plot_transformed_components_centered(transformed,
                                           k,
