@@ -122,7 +122,8 @@ def srm_with_spectral_transformation(subject=None,
     # transform the test data with it
     transformed = get_transformations(model, test_series, k)
     # plot the transformed test data by trial features
-    _plot_transformed_components(transformed, k, testset, adderror=False)
+    _plot_transformed_components(transformed, k, testset, adderror=False,
+                                 stderror=True, modelfit=modelfit)
 
     return \
         transformed, model, train_spectral, train_series, test_spectral,\
