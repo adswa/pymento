@@ -41,18 +41,6 @@ def remove_eyeblinks_and_heartbeat(raw,
     filt_raw = raw.copy()
     filt_raw.load_data().filter(l_freq=1., h_freq=None)
     # evoked eyeblinks and heartbeats for diagnostic plots
-    logging.info("Searching for eyeblink and heartbeat artifacts in the data")
-    # get ICA components for the given subject
-    if subject == '008':
-        eog_indices = [9]
-        ecg_indices = [34]
-        #eog_indices = ica_comps[subject]['eog']
-        #ecg_indices = ica_comps[subject]['ecg']
-    # An initially manual component detection did not reproduce after a software
-    # update - for now, we have to do the automatic detection for all but sub 8
-    else:
-        eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
-        ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw)
 
     eog_evoked = create_eog_epochs(filt_raw).average()
     eog_evoked.apply_baseline(baseline=(None, -0.2))
@@ -120,6 +108,18 @@ def remove_eyeblinks_and_heartbeat(raw,
     logging.info('Fitting the ICA')
     ica = ICA(max_iter='auto', n_components=45, random_state=42)
     ica.fit(epochs[~reject_log.bad_epochs])
+    logging.info("Searching for eyeblink and heartbeat artifacts in the data")
+    # get ICA components for the given subject
+    if subject == '008':
+        eog_indices = [9]
+        ecg_indices = [34]
+        #eog_indices = ica_comps[subject]['eog']
+        #ecg_indices = ica_comps[subject]['ecg']
+    # An initially manual component detection did not reproduce after a software
+    # update - for now, we have to do the automatic detection for all but sub 8
+    else:
+        eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
+        ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw)
 
     # visualize the components
     components = ica.plot_components()
