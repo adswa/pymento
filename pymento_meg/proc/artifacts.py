@@ -44,8 +44,8 @@ def remove_eyeblinks_and_heartbeat(raw,
     logging.info("Searching for eyeblink and heartbeat artifacts in the data")
     # get ICA components for the given subject
     if subject == '008':
-        eog_indices = [9, ]
-        ecg_indices = []
+        eog_indices = [9]
+        ecg_indices = [34]
         #eog_indices = ica_comps[subject]['eog']
         #ecg_indices = ica_comps[subject]['ecg']
     # An initially manual component detection did not reproduce after a software
