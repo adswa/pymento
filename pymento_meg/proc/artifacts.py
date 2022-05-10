@@ -33,10 +33,6 @@ def remove_eyeblinks_and_heartbeat(raw,
     :param subject: str, subject identifier, e.g., '001'
     :param figdir:
     """
-    # get ICA components for the given subject
-    eog_indices = ica_comps[subject]['eog']
-    ecg_indices = ica_comps[subject]['ecg']
-
     # prior to an ICA, it is recommended to high-pass filter the data
     # as low frequency artifacts can alter the ICA solution. We fit the ICA
     # to high-pass filtered (1Hz) data, and apply it to non-highpass-filtered
@@ -46,6 +42,18 @@ def remove_eyeblinks_and_heartbeat(raw,
     filt_raw.load_data().filter(l_freq=1., h_freq=None)
     # evoked eyeblinks and heartbeats for diagnostic plots
     logging.info("Searching for eyeblink and heartbeat artifacts in the data")
+    # get ICA components for the given subject
+    if subject == '008':
+        eog_indices = [9, ]
+        ecg_indices = []
+        #eog_indices = ica_comps[subject]['eog']
+        #ecg_indices = ica_comps[subject]['ecg']
+    # An initially manual component detection did not reproduce after a software
+    # update - for now, we have to do the automatic detection for all but sub 8
+    else:
+        eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
+        ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw)
+
     eog_evoked = create_eog_epochs(filt_raw).average()
     eog_evoked.apply_baseline(baseline=(None, -0.2))
     if subject == '008':
