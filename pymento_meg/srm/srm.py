@@ -709,14 +709,12 @@ def _get_timewindows_from_spec(timespan):
 
 
 def get_decision_timespan_on_and_offsets(subject,
-                                         bidsdir,
-                                         freq=100):
+                                         bidsdir):
     """
     For each trial, get a time frame around the point in time that a decision
     was made.
     :param subject; str, subject identifier
     :param bidsdir: str, path to BIDS dir with log files
-    :param freq: int, frequency
     :return: trials_to_rts: dict, and association of trial numbers to 800ms time
     slices around the time of decision in the given trial
     """
@@ -735,23 +733,18 @@ def get_decision_timespan_on_and_offsets(subject,
     # initialize a dict to hold all information
     trials_to_rts = {}
     for trial, rt in trials_and_rts:
-        # get the right time frame. First, transform decision time into the
-        # timing within the trial. this REQUIRES a sampling rate of 100Hz!
-        rt = rt * freq
         # Now, add RT to the start of the second visual stimulus to get the
         # approximate decision time from trial onset
         # (0.7s + 2.0s = 2.7s)
-        decision_time = rt + 2.7 * freq
+        decision_time = rt + 2.7
         # plausibility check, no decision is made before a decision is possible
-        assert decision_time > 2.7 * freq
+        assert decision_time > 2.7
         # calculate the slice needed for indexing the data for the specific
         # trial. We round down so that the specific upper or lower time point
         # can be used as an index to subset the data frame
-        slices = [int(np.floor(decision_time - (0.4 * freq))),
-                  int(np.floor(decision_time + (0.4 * freq)))]
-        assert slices[1] - slices[0] == 0.8 * freq
+        window = [decision_time - 0.4, decision_time + 0.4]
         if trial not in trials_to_remove:
-            trials_to_rts[trial] = slices
+            trials_to_rts[trial] = window
 
     return trials_to_rts
 
