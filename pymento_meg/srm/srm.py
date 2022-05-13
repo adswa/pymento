@@ -340,9 +340,9 @@ def get_general_data_structure(subject,
                                       bidsdir=bidsdir,
                                       timespan=timespan)
         # add trial order information to the data structure
-        all_trial_info = add_trial_types(subject=sub,
-                                         bidsdir=bidsdir,
-                                         all_trial_info=all_trial_info)
+        all_trial_info = add_more_stuff(subject=sub,
+                                        bidsdir=bidsdir,
+                                        all_trial_info=all_trial_info)
 
         # append single subject data to the data dict of the sample
         fullsample[sub] = all_trial_info
@@ -494,9 +494,9 @@ def plot_trial_components_from_srm(subject,
     return models, data
 
 
-def add_trial_types(subject,
-                    bidsdir,
-                    all_trial_info):
+def add_more_stuff(subject,
+                   bidsdir,
+                   all_trial_info):
     """
     Bring trials in a standardized sequence across participants according to
     their characteristics
