@@ -331,10 +331,9 @@ def get_general_data_structure(subject,
                                  bidsdir=bidsdir,
                                  condition=condition)
 
-        all_trial_info = combine_data(df=df,
+        all_trial_info = combine_data(epochs=epochs,
                                       sub=sub,
                                       trials_to_trialtypes=trials_to_trialtypes,
-                                      epochs_to_trials=epochs_to_trials,
                                       bidsdir=bidsdir,
                                       timespan=timespan)
         # add trial order information to the data structure
