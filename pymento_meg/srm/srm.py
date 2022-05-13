@@ -326,12 +326,10 @@ def get_general_data_structure(subject,
 
         # use experiment logdata to build a data structure with experiment
         # information on every trial
-        trials_to_trialtypes, epochs_to_trials = \
-            _find_data_of_choice(epochs=epochs,
-                                 subject=sub,
+        trials_to_trialtypes = \
+            _find_data_of_choice(subject=sub,
                                  bidsdir=bidsdir,
-                                 condition=condition,
-                                 df=df)
+                                 condition=condition)
 
         all_trial_info = combine_data(df=df,
                                       sub=sub,

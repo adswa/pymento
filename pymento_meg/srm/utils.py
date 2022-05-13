@@ -12,23 +12,18 @@ from pymento_meg.orig.behavior import read_bids_logfile
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
-def _find_data_of_choice(df,
-                         epochs,
-                         subject,
+def _find_data_of_choice(subject,
                          bidsdir,
                          condition):
     """
     Based on a condition that can be queried from the log files (e.g., right or
     left choice of stimulus), return the trial names, trial types, and epoch IDs
-    :param epochs: epochs object
-    :param df: pandas dataframe of epochs
     :param subject: str, subject identifier '011'
     :param bidsdir: str, path to bids data with logfiles
     :param condition: str, a condition description. Must be one of 'left-right'
     (for trials with right or left choice), 'nobrain-brain' (for trials with
     no-brainer decisions versus actual decisions)
     :return: trials_to_trialtypes; dictionary with trial - condition
-    :return: epochs_to_trials; dict; epoch ID to trial number associations
     """
     # get an association of trial types with trial numbers
     if condition == 'left-right':
@@ -42,39 +37,11 @@ def _find_data_of_choice(df,
         choices = get_nobrainer_trials(subject=subject,
                                        bidsdir=bidsdir)
 
-    # Create a mapping between epoch labels and trial numbers based on metadata.
-    assert len(df['epoch'].unique()) == len(epochs.metadata.trial_no.values)
-    # generate a mapping between trial numbers and epoch names in the dataframe
-    # TODO: take this straight from metadata, epochs are indices
-    epochs_to_trials = {key: value for (key, value) in
-                        zip(df['epoch'].unique(),
-                            epochs.metadata.trial_no.values)}
-    # make sure we caught all epochs
-    assert all([i in df['epoch'].unique() for i in epochs_to_trials.keys()])
-    assert len(df['epoch'].unique()) == len(epochs_to_trials.keys())
+    trials_to_trialtypes = {
+        trial: cond for cond, trials in choices.items() for trial in trials
+    }
 
-    # transform the "trial_no"-"trial_type" association in choices into an
-    # association of "trial_no that exist in the data" (e.g., survived
-    # cleaning) - "trial_types". The epochs_to_trials mapping is used as an
-    # indication with trial numbers are actually still existing in the epochs
-    trials_to_trialtypes = {}
-    for cond, trials in choices.items():
-        # trials is a list of all trial numbers in a given condition
-        counter = 0
-        for trial in trials:
-            # we need extra conditions because during the generation of each of
-            # the dicts below, some trials may have been excluded
-            if trial in epochs_to_trials.values():
-                trials_to_trialtypes[trial] = cond
-                counter += 1
-            else:
-                logging.info(f'Trial number {trial} is not '
-                             f'included in the data.')
-
-        logging.info(f"Here's my count of matching events in the SRM data for"
-                     f" condition {cond}: {counter}")
-
-    return trials_to_trialtypes, epochs_to_trials
+    return trials_to_trialtypes
 
 
 def get_nobrainer_trials(subject, bidsdir):
