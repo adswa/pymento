@@ -614,20 +614,17 @@ def create_full_dataframe(model,
     return finaldf, data
 
 
-def combine_data(df,
+def combine_data(epochs,
                  sub,
                  trials_to_trialtypes,
-                 epochs_to_trials,
                  bidsdir,
-                 timespan,
-                 freq=100):
+                 timespan):
     """
     Generate a dictionary that contains all relevant information of a given
     trial, including the data, correctly slices, to train the model on.
-    :param df: pandas dataframe, contains the MEG data
+    :param epochs: contains the MEG data
     :param sub: str; subject identifier
     :param trials_to_trialtypes: Dict; a mapping of trial numbers to trial type
-    :param epochs_to_trials: Dict; a mapping of epochs to trial numbers
     :param bidsdir; str, Path to BIDS dir with log files
     :param timespan: str, an identifier of the time span of data to be used for
     model fitting. Must be one of 'decision' (time locked around the decision
@@ -635,13 +632,9 @@ def combine_data(df,
     stimulus duration), or 'fulltrial' (entire 7second epoch), 'secondstim',
     'delay', or a time frame within the experiment in samples (beware of the
     sampling rate!)
-    :param freq: int, frequency of the data. Earlier versions of this code
-    required 100Hz sampling rate, this parameter tries to make this more
-    flexible
     :return: all_trial_infos; dict; with trial-wise information
     """
     all_trial_infos = {}
-    unique_epochs = df['epoch'].unique()
 
     if timespan == 'decision':
         # extract the information on decision time for all trials at once.
@@ -654,56 +647,65 @@ def combine_data(df,
     else:
         logging.info(f"Selecting data for the event description {timespan}.")
 
-    for epoch in unique_epochs:
+    # ugly, because epochs.__iter__ does give an ndarray, not an Epoch object
+    for i in range(len(epochs)):
+        epoch = epochs[i]
         # get the trial number as a key
-        trial_no = epochs_to_trials[epoch]
+        trial_no = epoch.metadata['trial_no'].item()
         # get the trial type, if it hasn't been excluded already
         trial_type = trials_to_trialtypes.get(trial_no, None)
         if trial_type is None:
             continue
-        # get the data of the epoch. Transpose it, to get a sensors X time array
-        data = df.loc[df['epoch'] == epoch, 'MEG0111':'MEG2643'].values.T
-        if timespan == 'fulltrial':
-            # the data does not need to be shortened. just make sure it has the
-            # expected dimensions
-            assert data.shape == (306, 7 * freq)
-        elif timespan == 'firststim':
-            # we only need the first 700 milliseconds from the trial,
-            # corresponding to the first 70 entries since we timelocked to the
-            # onset of the first stimulation
-            data = data[:, :0.7 * freq]
-            assert data.shape == (306, 0.7 * freq)
-        elif timespan == 'delay':
-            # take the 2 seconds after the first stimulus
-            data = data[:, (0.7 * freq):(2.7 * freq)]
-            assert data.shape == (306, 2 * freq)
-        elif timespan == 'secondstim':
-            # take 700 ms after the first stimulus + delay phase
-            data = data[:, (2.7 * freq):(3.4 * freq)]
-            assert data.shape == (306, 0.7 * freq)
-        elif timespan == 'decision':
-            # we need an adaptive slice of data (centered around the exact time
-            # point at which a decision was made in a given trial.
-            if trial_no not in trials_to_rts.keys():
-                # if the trial number has been sorted out before, don't append
-                # the data
-                continue
-            onset, offset = trials_to_rts[trial_no]
-            data = data[:, onset:offset]
-            assert data.shape == (306, 0.8 * freq)
-        else:
-            if isinstance(timespan, list):
-                data = data[:, timespan[0]:timespan[1]]
-            else:
-                raise NotImplementedError(f"The timespan {timespan} is not "
-                                          f"implemented.")
+
+        tmin, tmax = _get_timewindows_from_spec(
+            trials_to_rts[trial_no] if timespan == 'decision' else timespan
+        )
+
+        # get the data of the epoch. sensors X time array
+        data = epoch.get_data(
+            picks='meg',
+            tmin=tmin,
+            tmax=tmax,
+        # we only have a single epoch, throw away len-1 dimension
+        )[0]
         # normalize (z-score) the data within sensors
         normalized_data = stats.zscore(data, axis=1, ddof=0)
-        all_trial_infos[trial_no] = {'epoch': epoch,
-                                     'trial_type': trial_type,
-                                     'data': data,
-                                     'normalized_data': normalized_data}
+        all_trial_infos[trial_no] = {
+            # the original MNE epoch ID
+            'epoch': epoch.metadata.index.item(),
+            'trial_type': trial_type,
+            'data': data,
+            'normalized_data': normalized_data,
+        }
     return all_trial_infos
+
+
+def _get_timewindows_from_spec(timespan):
+    # will be the desired time windows (min, max) in seconds
+    if isinstance(timespan, (list, tuple)):
+        return timespan[:2]
+
+    # otherwise decode the label
+    t = None
+    if timespan == 'fulltrial':
+        # the data does not need to be shortened.
+        t = (None, None)
+    elif timespan == 'firststim':
+        # we only need the first 700 milliseconds from the trial,
+        # corresponding to the first 70 entries since we timelocked to the
+        # onset of the first stimulation
+        t = (0.0, 0.7)
+    elif timespan == 'delay':
+        # take the 2 seconds after the first stimulus
+        t = (0.7, 2.7)
+    elif timespan == 'secondstim':
+        # take 700 ms after the first stimulus + delay phase
+        t = (2.7, 3.4)
+    else:
+        raise NotImplementedError(
+            f"The timespan {timespan} is not implemented.")
+    return t
+
 
 
 def get_decision_timespan_on_and_offsets(subject,
