@@ -347,12 +347,11 @@ def get_general_data_structure(subject,
         # append single subject data to the data dict of the sample
         fullsample[sub] = all_trial_info
     # aggregate the data into a list of dictionaries
-    data = []
-    for subject, trialinfo in fullsample.items():
-        for trial_no, info in trialinfo.items():
-            info['subject'] = subject
-            info['trial_no'] = trial_no
-            data.append(info)
+    data = [
+        dict(info, subject=subject, trial_no=trial_no)
+        for subject, trialinfo in fullsample.items()
+        for trial_no, info in trialinfo.items()
+    ]
 
     return fullsample, data
 
