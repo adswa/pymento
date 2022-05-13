@@ -320,10 +320,9 @@ def get_general_data_structure(subject,
                      f'from path {fname}.')
 
         epochs = mne.read_epochs(fname)
-        freq = int(epochs.info['sfreq'])
-        logging.info(f'The data has a frequency of {freq}Hz')
-        # read the epoch data into a dataframe
-        df = epochs.to_data_frame()
+        logging.info(
+            f'The data has a frequency of {int(epochs.info["sfreq"])}Hz'
+        )
 
         # use experiment logdata to build a data structure with experiment
         # information on every trial
