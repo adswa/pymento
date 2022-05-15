@@ -1,5 +1,6 @@
 import mne
 import logging
+import numpy as np
 from pathlib import Path
 from pymento_meg.utils import (
     _construct_path,
