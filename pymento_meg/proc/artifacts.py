@@ -84,7 +84,7 @@ def remove_eyeblinks_and_heartbeat(raw,
 
     ## First, estimate rejection criteria for high-amplitude artifacts. This is
     ## done via autoreject
-    rng = np.random.RandomState(11)
+    rng = np.random.RandomState(28)
     #logging.info('Estimating bad epochs quick-and-dirty, to improve ICA')
     #ar = AutoReject(random_state=rng)
     # fit on first 200 epochs to save (a bit of) time
