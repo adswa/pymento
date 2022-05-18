@@ -201,8 +201,8 @@ def epoch_and_clean_trials(subject,
     #logging.info('Resampling epoched data down to 200 Hz')
     #epochs.resample(sfreq=200, verbose=True)
     # use autoreject to repair bad epochs
-    rng = np.random.RandomState(11)
-    ar = AutoReject(random_state=rng)
+    ar = AutoReject(random_state=rng,
+                    n_interpolate=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15])
     epochs_clean, reject_log = ar.fit_transform(epochs, return_log=True)
     # save the cleaned, epoched data to disk.
     outpath = _construct_path(
