@@ -12,7 +12,6 @@ import logging
 from pymento_meg.utils import _construct_path
 from pathlib import Path
 import matplotlib.pyplot as plt
-import numpy as np
 plt.tight_layout()
 
 
@@ -21,7 +20,8 @@ def remove_eyeblinks_and_heartbeat(raw,
                                    subject,
                                    figdir,
                                    events,
-                                   eventid
+                                   eventid,
+                                   rng
                                    ):
     """
     Find and repair eyeblink and heartbeat artifacts in the data.
@@ -33,6 +33,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     :param raw: Raw data
     :param subject: str, subject identifier, e.g., '001'
     :param figdir:
+    :param rng: random state instance
     """
     # prior to an ICA, it is recommended to high-pass filter the data
     # as low frequency artifacts can alter the ICA solution. We fit the ICA
@@ -84,7 +85,6 @@ def remove_eyeblinks_and_heartbeat(raw,
 
     ## First, estimate rejection criteria for high-amplitude artifacts. This is
     ## done via autoreject
-    rng = np.random.RandomState(28)
     #logging.info('Estimating bad epochs quick-and-dirty, to improve ICA')
     #ar = AutoReject(random_state=rng)
     # fit on first 200 epochs to save (a bit of) time
