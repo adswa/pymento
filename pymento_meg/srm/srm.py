@@ -147,7 +147,7 @@ def get_transformations(model, test_series, comp):
     return transformations
 
 
-def concat_epochs_to_spectral_space(data, shorten=False):
+def concat_epochs_to_spectral_space(data, shorten=False, separate=False):
     """
     Transform epoch data organized by trial features into spectral space.
     Average within subject and feature, and concatenate within subject over
@@ -157,15 +157,22 @@ def concat_epochs_to_spectral_space(data, shorten=False):
      trial data of one epoch
     :param shorten: None or tuple, if given, the data will be subset in th
      range of the tuple. The tuple needs to have a start and end index in Hz.
+    :param separate: bool, if true, returns one spectral and time-resolved data
+     slice per trial type. E.g., a subject with 9 trial types will get a dict
+     with 9 sets of spectral and time series data
     :return:
-    series: list of lists
+    series: list of lists, or dict with list of lists when separate=True
     """
+    from collections import defaultdict
     subjects = data.keys()
     series_spectral = {}
     series_time = {}
+    conditionwise_spectraldata = defaultdict(dict)
+    conditionwise_seriesdata = defaultdict(dict)
     for sub in subjects:
         subject_spectral = []
         subject_time = []
+        # conditions are trial types (A, B, C, ...)
         for condition in data[sub]:
             epochs = [info['normalized_data'] for info in data[sub][condition]]
             if shorten:
@@ -177,16 +184,25 @@ def concat_epochs_to_spectral_space(data, shorten=False):
             # noinspection PyUnresolvedReferences
             spectral_series = np.mean(np.asarray(spectral_series), axis=0)
             assert spectral_series.shape[0] == epochs[0].shape[0] == 306
-            # append the condition to concatenate all trialtypes per subject
-            # TODO check if the dimensionality matches. Its is a list with 24300
-            # arrays of dim 306 so far
-            subject_spectral.extend(spectral_series.T)
-            # TODO, does not yet make sense
-            subject_time.extend(epochs)
+            if separate:
+                # keep data separate per condition
+                conditionwise_spectraldata[sub][condition] = spectral_series
+                conditionwise_seriesdata[sub][condition] = epochs
+            else:
+                # append the condition to concatenate all trialtypes per subject
+                # TODO check if the dimensionality matches. Its is a list with 24300
+                # arrays of dim 306 so far
+                subject_spectral.extend(spectral_series.T)
+                # TODO, does not yet make sense
+                subject_time.extend(epochs)
         series_spectral[sub] = np.asarray(subject_spectral).T
         series_time[sub] = subject_time
-    assert len(series_spectral) == len(series_time) == len(subjects)
-    return series_spectral, series_time
+    if separate:
+        assert len(conditionwise_spectraldata) == len(conditionwise_seriesdata) == len(subjects)
+        return conditionwise_spectraldata, conditionwise_seriesdata
+    else:
+        assert len(series_spectral) == len(series_time) == len(subjects)
+        return series_spectral, series_time
 
 
 def epochs_to_spectral_space(data, subjectwise=False):
