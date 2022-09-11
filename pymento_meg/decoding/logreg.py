@@ -70,7 +70,7 @@ def temporal_decoding(sub,
 
     # plot decoding accuracy over all classes
     acrossclasses = np.asarray(
-        [np.mean(get_metrics(c, metric=summary_metric))
+        [np.nanmean(get_metrics(c, metric=summary_metric))
          for score in scores
          for c in np.rollaxis(score, -1, 0)]).reshape(len(scores),
                                                       scores.shape[-1])
