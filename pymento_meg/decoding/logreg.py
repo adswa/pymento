@@ -293,7 +293,7 @@ def plot_decoding_over_all_classes(scores,
     ax = sns.relplot(x="time",
                      y=metric,
                      kind='line',
-                     estimator='se',
+                     errorbar='se',
                      data=df_melted,
                      height=9,
                      aspect=16/9)
