@@ -192,7 +192,7 @@ def sum_confusion_matrices(confms, slices=None):
     return sums
 
 
-def get_metrics(confm, metric='balanced_accuracy'):
+def get_metrics(confm, metric='balanced accuracy'):
     """
     Return recall, precision, f1 score, balanced accuracy or accuracy
     """
@@ -205,7 +205,7 @@ def get_metrics(confm, metric='balanced_accuracy'):
     res['precision'] = precision = true_pos / (true_pos + false_pos)
     res['recall'] = recall = true_pos / (true_pos + false_neg)
     # https://scikit-learn.org/stable/modules/model_evaluation.html#balanced-accuracy-score
-    res['balanced_accuracy'] = 0.5 * (precision + recall)
+    res['balanced accuracy'] = 0.5 * (precision + recall)
     res['f1'] = 2 * (precision*recall)/(precision+recall)
     if metric == 'all':
         return res
