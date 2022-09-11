@@ -61,7 +61,8 @@ def temporal_decoding(sub,
     if average_trials is not None:
         X, y = average_n_trials(X, y, foldsize=average_trials)
 
-    scores = decode(X, y, metric=known_targets[target]['metric'], n_jobs=n_jobs)
+    scores = decode(X, y, metric=known_targets[target]['metric'],
+                    n_jobs=n_jobs, n_splits=5)
 
     # save the decoding scores for future use
     fpath =_construct_path([workdir, f'sub-{sub}/'])
