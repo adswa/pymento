@@ -251,7 +251,7 @@ def plot_confusion_matrix(confm, labels, normalize=True, fname='/tmp/confm.png')
     if normalize:
         confm = confm.astype('float') / confm.sum(axis=1)[:, np.newaxis]
     cm = sns.heatmap(confm, xticklabels=labels, yticklabels=labels,
-                     cmap='YlGnBu', ymin=0.2, ymax=0.6)
+                     cmap='YlGnBu', vmin=0.2, vmax=0.6)
     plt.ylabel('Ground truth')
     plt.xlabel('Predicted')
     cm.figure.savefig(fname)
