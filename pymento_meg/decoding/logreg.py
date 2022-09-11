@@ -290,14 +290,13 @@ def plot_decoding_over_all_classes(scores,
                         id_vars=['time'],
                         value_vars=np.arange(0, len(scores)),
                         value_name=metric)
-    ax = sns.lineplot(x="time",
+    ax = sns.relplot(x="time",
                      y=metric,
-                     #kind='line',
-                     errorbar='se',
+                     kind='line',
+                     errorbar='sd',
                      data=df_melted,
-                     #height=9,
-                     #aspect=16/9
-                     )
+                     height=9,
+                     aspect=16/9)
     ax.set(title=f'temporal decoding of {label} (subject {subject})')
     if ylim is not None:
         ax.set(ylim=ylim)
