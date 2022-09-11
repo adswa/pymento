@@ -27,6 +27,24 @@ def temporal_decoding(sub,
                       datadir='/data/project/brainpeach/memento-sss',
                       bidsdir='/data/project/brainpeach/memento-bids',
                       workdir='/data/project/brainpeach/decoding'):
+    """
+    Perform temporal decoding on a memento subject's time series data in sensor
+    space.
+    :param sub: str; which subject to decode
+    :param target: str; which trial feature to decode (magnitude, probability,
+    expectedvalue)
+    :param average_trials: int or None; average this many trials of a type for
+    higher signal to noise ratio
+    :param n_jobs: int or None; determines amount of parallel jobs. -1 will use
+    all available CPUs
+    :param dec_factor: int; by which factor to decimate the time series.
+    :param summary_metric: str; which metric to evaluate confusion patterns on.
+    e.g., 'balanced accuracy', 'f1', 'precision', 'recall'
+    :param datadir: str; where is epoched data
+    :param bidsdir: str; where is BIDS data
+    :param workdir: str; where to save decoding results
+    :return:
+    """
 
     # set and check target infos
     known_targets = {'probability': {'prefix': 'P',
