@@ -290,7 +290,7 @@ def plot_decoding_over_all_classes(scores,
                         id_vars=['time'],
                         value_vars=np.arange(0, len(scores)),
                         value_name=metric)
-    ax = sns.relplot(x="time",
+    ax = sns.lineplot(x="time",
                      y=metric,
                      kind='line',
                      errorbar='se',
