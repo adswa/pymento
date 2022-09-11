@@ -51,17 +51,20 @@ def temporal_decoding(sub,
                                      'tname':'LoptProb',
                                      'metric': confusion_probability,
                                      'label': ['10%', '20%', '40%', '80%'],
-                                     'chance': 0.25},
+                                     'chance': 0.25,
+                                     'ylims': (0.1, 0.6)},
                      'magnitude': {'prefix': 'M',
                                    'tname': 'LoptMag',
                                    'metric': confusion_magnitude,
                                    'label': ['0.5', '1', '2', '4'],
-                                   'chance': 0.25},
+                                   'chance': 0.25,
+                                   'ylims': (0.1, 0.6)},
                      'expectedvalue': {'prefix': 'EV',
                                        'tname': 'ev',
                                        'metric': confusion_expectedvalue,
                                        'label': ['0.2', '0.4', '0.8'],
-                                       'chance': 0.33}
+                                       'chance': 0.33,
+                                       'ylims': (0.2, 0.7)}
                      }
     if target not in known_targets.keys():
         raise NotImplementedError(f"Can't handle target {target} yet."
@@ -105,7 +108,8 @@ def temporal_decoding(sub,
                                        * dec_factor),
                                    label=target, subject=sub,
                                    metric=summary_metric, figdir=fpath,
-                                   chance=known_targets[target]['chance'])
+                                   chance=known_targets[target]['chance'],
+                                   ylim=known_targets[target]['ylims'])
 
     # plot average confusion matrix over 100ms time slots
     i = 0
@@ -246,7 +250,8 @@ def plot_decoding_per_class(scores, times):
 def plot_confusion_matrix(confm, labels, normalize=True, fname='/tmp/confm.png'):
     if normalize:
         confm = confm.astype('float') / confm.sum(axis=1)[:, np.newaxis]
-    cm = sns.heatmap(confm, xticklabels=labels, yticklabels=labels, cmap='YlGnBu')
+    cm = sns.heatmap(confm, xticklabels=labels, yticklabels=labels,
+                     cmap='YlGnBu', ymin=0.2, ymax=0.6)
     plt.ylabel('Ground truth')
     plt.xlabel('Predicted')
     cm.figure.savefig(fname)
