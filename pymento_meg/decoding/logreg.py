@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+from scipy.signal import decimate
+
 from pymento_meg.srm.srm import (
 get_general_data_structure,
 )
@@ -19,6 +22,7 @@ def temporal_decoding(sub,
                       target,
                       average_trials=None,
                       n_jobs=-1,
+                      dec_factor=1,
                       summary_metric='balanced accuracy',
                       datadir='/data/project/brainpeach/memento-sss',
                       bidsdir='/data/project/brainpeach/memento-bids',
@@ -53,7 +57,7 @@ def temporal_decoding(sub,
                                                   condition='nobrain-brain',
                                                   timespan=[0, 4500])
 
-    X = np.array([epoch['normalized_data']
+    X = np.array([decimate(epoch['normalized_data'], dec_factor)
                   for id, epoch in fullsample[sub].items()])
 
     y = extract_targets(fullsample,
@@ -78,21 +82,24 @@ def temporal_decoding(sub,
          for c in np.rollaxis(score, -1, 0)]).reshape(len(scores),
                                                       scores.shape[-1])
 
-    plot_decoding_over_all_classes(acrossclasses, times=np.arange(0, 4501),
+    plot_decoding_over_all_classes(acrossclasses,
+                                   times=np.asarray(
+                                       np.arange(0, 4501/dec_factor)
+                                       * dec_factor),
                                    label=target, subject=sub,
                                    metric=summary_metric, figdir=fpath,
                                    chance=known_targets[target]['chance'])
 
     # plot average confusion matrix over 100ms time slots
     i = 0
-    while i < scores.shape[-1]-100:
-        confm = sum_confusion_matrices(scores, slices=(i, i+100))
+    while i < scores.shape[-1]-(100/dec_factor):
+        confm = sum_confusion_matrices(scores, slices=(i, int(i+100/dec_factor)))
         fname = Path(fpath) / \
-                f'sub-{sub}_conf-matrix_{target}_{i}-{i+100}ms.png'
+                f'sub-{sub}_conf-matrix_{target}_{i*dec_factor}-{int((i+100/dec_factor)*dec_factor)}ms.png'
         plot_confusion_matrix(confm,
                               labels=known_targets[target]['label'],
                               fname=fname)
-        i += 100
+        i += int(100/dec_factor)
 
 
 def extract_targets(fullsample, sub, target, target_prefix):
