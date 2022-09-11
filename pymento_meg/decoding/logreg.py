@@ -29,15 +29,18 @@ def temporal_decoding(sub,
     known_targets = {'probability': {'prefix': 'P',
                                      'tname':'LoptProb',
                                      'metric': confusion_probability,
-                                     'label': ['10%', '20%', '40%', '80%']},
+                                     'label': ['10%', '20%', '40%', '80%'],
+                                     'chance': 0.25},
                      'magnitude': {'prefix': 'M',
                                    'tname': 'LoptMag',
                                    'metric': confusion_magnitude,
-                                   'label': ['0.5', '1', '2', '4']},
+                                   'label': ['0.5', '1', '2', '4'],
+                                   'chance': 0.25},
                      'expectedvalue': {'prefix': 'EV',
                                        'tname': 'ev',
                                        'metric': confusion_expectedvalue,
-                                       'label': ['0.2', '0.4', '0.8']}
+                                       'label': ['0.2', '0.4', '0.8'],
+                                       'chance': 0.33}
                      }
     if target not in known_targets.keys():
         raise NotImplementedError(f"Can't handle target {target} yet."
@@ -77,7 +80,8 @@ def temporal_decoding(sub,
 
     plot_decoding_over_all_classes(acrossclasses, times=np.arange(0, 4501),
                                    label=target, subject=sub,
-                                   metric=summary_metric, figdir=fpath)
+                                   metric=summary_metric, figdir=fpath,
+                                   chance=known_targets[target]['chance'])
 
     # plot average confusion matrix over 100ms time slots
     i = 0
