@@ -75,7 +75,7 @@ def temporal_decoding(sub,
          for c in np.rollaxis(score, -1, 0)]).reshape(len(scores),
                                                       scores.shape[-1])
 
-    plot_decoding_over_all_classes(acrossclasses, times=np.arange(0, 4500),
+    plot_decoding_over_all_classes(acrossclasses, times=np.arange(0, 4501),
                                    label=target, subject=sub,
                                    metric=summary_metric, figdir=fpath)
 
