@@ -26,7 +26,6 @@ def temporal_decoding(sub,
                       summary_metric='balanced accuracy',
                       datadir='/data/project/brainpeach/memento-sss',
                       bidsdir='/data/project/brainpeach/memento-bids',
-                      figdir='/home/adina/scratch/memento-bids-figs',
                       workdir='/data/project/brainpeach/decoding'):
 
     # set and check target infos
