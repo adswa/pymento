@@ -295,8 +295,9 @@ def plot_decoding_over_all_classes(scores,
                      #kind='line',
                      errorbar='se',
                      data=df_melted,
-                     height=9,
-                     aspect=16/9)
+                     #height=9,
+                     #aspect=16/9
+                     )
     ax.set(title=f'temporal decoding of {label} (subject {subject})')
     if ylim is not None:
         ax.set(ylim=ylim)
