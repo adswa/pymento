@@ -292,7 +292,7 @@ def plot_decoding_over_all_classes(scores,
                         value_name=metric)
     ax = sns.lineplot(x="time",
                      y=metric,
-                     kind='line',
+                     #kind='line',
                      errorbar='se',
                      data=df_melted,
                      height=9,
