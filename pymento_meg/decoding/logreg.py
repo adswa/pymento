@@ -220,7 +220,7 @@ def _average_n_trials(trials, foldsize=4):
         # end can be averaged in two different average trials, the last and the
         # second to last.
         if i + foldsize > len(trials):
-            i = len(trials[:-4])
+            i = len(trials[:-foldsize])
             stop = True
         mean = np.mean(trials[i:i+foldsize], axis=0)
         res.append(mean)
