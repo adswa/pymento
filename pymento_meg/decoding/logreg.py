@@ -23,6 +23,7 @@ def temporal_decoding(sub,
                       average_trials=None,
                       n_jobs=-1,
                       dec_factor=1,
+                      win_size=1,
                       summary_metric='balanced accuracy',
                       datadir='/data/project/brainpeach/memento-sss',
                       bidsdir='/data/project/brainpeach/memento-bids',
@@ -88,8 +89,12 @@ def temporal_decoding(sub,
     if average_trials is not None:
         X, y = average_n_trials(X, y, foldsize=average_trials)
 
-    scores = decode(X, y, metric=known_targets[target]['metric'],
-                    n_jobs=n_jobs, n_splits=5)
+    scores = decode_with_sliding_window(X,
+                                        y,
+                                        metric=known_targets[target]['metric'],
+                                        n_jobs=n_jobs,
+                                        n_splits=5,
+                                        window_size=win_size)
 
     # save the decoding scores for future use
     fpath =_construct_path([workdir, f'sub-{sub}/'])
@@ -104,8 +109,8 @@ def temporal_decoding(sub,
 
     plot_decoding_over_all_classes(acrossclasses,
                                    times=np.asarray(
-                                       np.arange(0, 4501/dec_factor)
-                                       * dec_factor),
+                                       np.arange(0, 4501/dec_factor/win_size)
+                                       * dec_factor * win_size),
                                    label=target, subject=sub,
                                    metric=summary_metric, figdir=fpath,
                                    chance=known_targets[target]['chance'],
@@ -113,14 +118,33 @@ def temporal_decoding(sub,
 
     # plot average confusion matrix over 100ms time slots
     i = 0
-    while i < scores.shape[-1]-(100/dec_factor):
-        confm = sum_confusion_matrices(scores, slices=(i, int(i+100/dec_factor)))
+    while i < scores.shape[-1]-(100/dec_factor/win_size):
+        confm = sum_confusion_matrices(scores, slices=(i, int(i+100/dec_factor/win_size)))
         fname = Path(fpath) / \
-                f'sub-{sub}_conf-matrix_{target}_{i*dec_factor}-{int((i+100/dec_factor)*dec_factor)}ms.png'
+                f'sub-{sub}_conf-matrix_{target}_{i*dec_factor*win_size}-{int((i+100/dec_factor/win_size)*dec_factor*win_size)}ms.png'
         plot_confusion_matrix(confm,
                               labels=known_targets[target]['label'],
                               fname=fname)
-        i += int(100/dec_factor)
+        i += int(100/dec_factor/win_size)
+
+
+def decode_with_sliding_window(X, y, metric, n_jobs, n_splits, window_size):
+    if window_size == 1:
+        # no need for splitting, let mne python parallelize
+        return decode(X, y, metric=metric, n_jobs=n_jobs, n_splits=5,)
+    i = 0
+    means = []
+    stop = False
+    while not stop:
+        if i+window_size > X.shape[-1]:
+            i = X.shape[-1]-window_size
+            stop = True
+        _X = X[:, :, i:i+window_size]
+        _scores = decode(_X, y, metric=metric, n_jobs=n_jobs, n_splits=n_splits)
+        means.append(np.mean(_scores, axis=-1))
+        i += window_size
+    __scores = np.stack(means, axis=-1)
+    return __scores
 
 
 def extract_targets(fullsample, sub, target, target_prefix):
