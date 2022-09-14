@@ -19,8 +19,7 @@ def confusion_magnitude(est, X, y_true, **kwargs):
     from sklearn.metrics import confusion_matrix
     y_pred = est.predict(X)
     # compute and return confusion matrices for each time point.
-    return np.apply_along_axis(confusion_matrix, 0, y_pred, y_true,
-                               labels=['M0.5', 'M1.0', 'M2.0', 'M4.0'])
+    return np.apply_along_axis(lambda p, t: confusion_matrix(t, p, labels=['M0.5', 'M1.0', 'M2.0', 'M4.0']), 0, y_pred, y_true)
 
 
 def confusion_probability(est, X, y_true, **kwargs):
@@ -29,8 +28,7 @@ def confusion_probability(est, X, y_true, **kwargs):
     from sklearn.metrics import confusion_matrix
     y_pred = est.predict(X)
     # compute and return confusion matrices for each time point.
-    return np.apply_along_axis(confusion_matrix, 0, y_pred, y_true,
-                               labels=['P0.1', 'P0.2', 'P0.4', 'P0.8'])
+    return np.apply_along_axis(lambda p, t: confusion_matrix(t, p, labels=['P0.1', 'P0.2', 'P0.4', 'P0.8']), 0, y_pred, y_true)
 
 
 def confusion_expectedvalue(est, X, y_true, **kwargs):
@@ -39,8 +37,7 @@ def confusion_expectedvalue(est, X, y_true, **kwargs):
     from sklearn.metrics import confusion_matrix
     y_pred = est.predict(X)
     # compute and return confusion matrices for each time point.
-    return np.apply_along_axis(confusion_matrix, 0, y_pred, y_true,
-                               labels=['EV0.2', 'EV0.4', 'EV0.8'])
+    return np.apply_along_axis(lambda p, t: confusion_matrix(t, p, labels=['EV0.2', 'EV0.4', 'EV0.8']), 0, y_pred, y_true)
 
 
 def decode(X,
