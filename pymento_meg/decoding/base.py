@@ -91,6 +91,19 @@ def decode(X,
                                   n_jobs=n_jobs)
     return scores
 
+class Reshaper:
+    """Helper class to reshape to and from 3D/2D data"""
+    def __int__(self):
+        self._sampleshape = None
+
+    def flatten(self, X):
+        self._sampleshape = X.shape[1:]
+        return np.reshape(X, (X.shape[0], -1))
+
+    def thicken(self, X):
+        print(f"thickening X from {X.shape} to {(X.shape[0],)+self._sampleshape}")
+        return np.reshape(X, (X.shape[0],)+self._sampleshape)
+
 
 def trialaveraging(X, y, ntrials=4, nsamples=100):
     """Average N=ntrials trials together, and repeat this until we
