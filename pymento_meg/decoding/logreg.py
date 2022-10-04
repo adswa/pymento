@@ -58,19 +58,19 @@ def temporal_decoding(sub,
                                      'metric': confusion_probability,
                                      'label': ['10%', '20%', '40%', '80%'],
                                      'chance': 0.25,
-                                     'ylims': (0.1, 0.6)},
+                                     'ylims': (0.1, 0.5)},
                      'magnitude': {'prefix': 'M',
                                    'tname': 'LoptMag',
                                    'metric': confusion_magnitude,
                                    'label': ['0.5', '1', '2', '4'],
                                    'chance': 0.25,
-                                   'ylims': (0.1, 0.6)},
+                                   'ylims': (0.1, 0.5)},
                      'expectedvalue': {'prefix': 'EV',
                                        'tname': 'ev',
                                        'metric': confusion_expectedvalue,
                                        'label': ['0.2', '0.4', '0.8'],
                                        'chance': 0.33,
-                                       'ylims': (0.2, 0.7)}
+                                       'ylims': (0.2, 0.6)}
                      }
     if target not in known_targets.keys():
         raise NotImplementedError(f"Can't handle target {target} yet."
