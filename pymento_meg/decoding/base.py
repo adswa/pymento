@@ -8,6 +8,12 @@ from imblearn.pipeline import make_pipeline
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.base import (
+    BaseEstimator,
+    TransformerMixin
+)
+from sklearn.utils.validation import check_is_fitted
+
 from sklearn.model_selection import StratifiedKFold
 # noinspection PyUnresolvedReferences
 from mne.decoding import (
@@ -16,6 +22,7 @@ from mne.decoding import (
     Vectorizer,
 )
 
+from pymento_meg.srm.srm import shared_response
 
 
 class MyOwnSlidingEstimator(SlidingEstimator):
@@ -142,7 +149,7 @@ def decode(X,
 
 class Reshaper:
     """Helper class to reshape to and from 3D/2D data"""
-    def __int__(self):
+    def __init__(self, k=None):
         self._sampleshape = None
 
     def flatten(self, X):
@@ -152,6 +159,10 @@ class Reshaper:
     def thicken(self, X):
         print(f"thickening X from {X.shape} to {(X.shape[0],)+self._sampleshape}")
         return np.reshape(X, (X.shape[0],)+self._sampleshape)
+
+    def thickenSRM(self, X):
+        print(f"thickening X from {X.shape} to {(X.shape[0], self._k, -1)}")
+        return np.reshape(X, (X.shape[0], self._k, -1))
 
 
 def trialaveraging(X, y, ntrials=4, nsamples=100):
@@ -176,3 +187,45 @@ def trialaveraging(X, y, ntrials=4, nsamples=100):
     y_ = np.array(y_)
     assert len(X_) == len(y_)
     return X_, y_
+
+
+
+class SRMTransformer(BaseEstimator, TransformerMixin):
+
+    def __init__(self, k, nsamples=10):
+        self.k = k
+        self.nsamples = nsamples
+
+    def fit(self, X, y):
+        """
+
+        :param X:
+        :param y:
+        :return:
+        """
+        X_ = np.reshape(X, (X.shape[0], 306, -1))
+        # TODO: Where to subselect time points?
+        targets = np.unique(y)
+        # generate nsamples samples for the shared response model
+        samples = []
+        for i in range(self.nsamples):
+            # generate virtual subjects from concatenating data from each target
+            sample_ids = [np.random.choice(np.where(y==target)[0], 1)
+                          for target in targets]
+            samples.append(np.concatenate([np.squeeze(X_[i,:,0:700]) for i in sample_ids], axis=1))
+        # fit an SRM model on the samples
+        srm = shared_response(samples,
+                              features=self.k)
+        # average "subject" basis
+        avg_basis = np.mean(srm.w_, axis=0)
+        self.basis = avg_basis
+        print(self.basis.shape)
+        return self
+
+    def transform(self, X, y=None):
+        X_ = np.reshape(X, (X.shape[0], 306, -1))
+        print('X_ shape is: ', X_.shape)
+        check_is_fitted(self, 'basis')
+        transformed = np.stack([np.dot(self.basis.T, x) for x in X_])
+        print('within SRM transform: from ', transformed.shape)
+        return np.reshape(transformed, (transformed.shape[0], -1))
