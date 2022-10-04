@@ -14,28 +14,29 @@ from pymento_meg.decoding.base import (
     confusion_magnitude,
     confusion_probability,
     confusion_expectedvalue,
-    decode
+    decode,
 )
 
 
 def temporal_decoding(sub,
                       target,
-                      average_trials=None,
                       n_jobs=-1,
                       dec_factor=1,
-                      win_size=1,
                       summary_metric='balanced accuracy',
                       datadir='/data/project/brainpeach/memento-sss',
                       bidsdir='/data/project/brainpeach/memento-bids',
-                      workdir='/data/project/brainpeach/decoding'):
+                      workdir='/data/project/brainpeach/decoding',
+                      dimreduction=None,
+                      k=None,
+                      ntrials=4,
+                      nsamples=100
+                      ):
     """
     Perform temporal decoding on a memento subject's time series data in sensor
     space.
     :param sub: str; which subject to decode
     :param target: str; which trial feature to decode (magnitude, probability,
     expectedvalue)
-    :param average_trials: int or None; average this many trials of a type for
-    higher signal to noise ratio
     :param n_jobs: int or None; determines amount of parallel jobs. -1 will use
     all available CPUs
     :param dec_factor: int; by which factor to decimate the time series.
@@ -44,6 +45,10 @@ def temporal_decoding(sub,
     :param datadir: str; where is epoched data
     :param bidsdir: str; where is BIDS data
     :param workdir: str; where to save decoding results
+    :param dimreduction: None or sklearn transformer
+    :param k: None or int; dimensions to reduce to/features to select
+    :param ntrials: int; how many trials of the same type to average together
+    :param nsamples: int; how many bootstrapping draws during trial averaging
     :return:
     """
 

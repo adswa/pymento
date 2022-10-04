@@ -104,7 +104,11 @@ def decode(X,
            n_splits=10,
            estimator=LogisticRegression(solver='liblinear'),
            metric='accuracy',
-           n_jobs=None
+           n_jobs=None,
+           dimreduction=None,
+           k=None,
+           ntrials=4,
+           nsamples=100
            ):
     """
     Fit an estimator of a given type to every time point in a
@@ -125,31 +129,76 @@ def decode(X,
     :param metric: callable, either from sklearn or one of three custom
      implementations confusion_{magnitude,probability,expectedvalue}
     :param n_jobs: int or None; determines parallelization
+    :param dimreduction: None or string identifying a transformer;
+     currently supports 'srm' and in the future 'pca'. Will be added
+     to pipeline for dimensionality reduction. Requires parameter k
+    :param k: None or int; dimensions to reduce to/features to select
+    :param ntrials: int; how many trials of the same type to average together
+    :param nsamples: int; how many bootstrapping draws during trial averaging
     :return:
     """
-    logging.info(f'Fitting {estimator} in a stratified cross-validation with'
-                 f' {n_splits} splits using {str(metric)} as the final scoring.'
-                 )
-    # TODO: pass random states?
-    clf = make_pipeline(
-        StandardScaler(),
-        estimator
+    logging.info(f'Initializing TrialAverager with {ntrials} trials per '
+                 f'average and N={nsamples} bootstrapping draws.')
+    trialaverager = FunctionSampler(
+        func=trialaveraging,
+        kw_args=dict(ntrials=ntrials, nsamples=nsamples),
     )
-    time_decod = SlidingEstimator(
-        clf, n_jobs=n_jobs, scoring='accuracy', verbose=True)
+    logging.info(f'Setting up a Stratified KFold Crossvalidation with '
+                 f'{n_splits} splits')
     cv = StratifiedKFold(n_splits=n_splits)
-    scores = cross_val_multiscore(time_decod,
-                                  X,
+    if dimreduction is not None:
+        if not k:
+            logging.warning('Parameter k is not set, defaulting to k=10')
+            k = 10
+        logging.info(
+            f'Fitting a {estimator} using {str(metric)} as the final scoring '
+            f'and {dimreduction} for dimensionality reduction.')
+        reshaper = Reshaper(k=k)
+        if dimreduction == 'srm':
+            slidingestimator = MyOwnSlidingEstimator(
+                reshaper.thickenSRM,
+                estimator,
+                n_jobs=n_jobs,
+                scoring='accuracy',
+                verbose=True)
+            outer_pipeline = make_pipeline(
+                trialaverager,
+                SRMTransformer(k),
+                StandardScaler(),
+                slidingestimator,
+            )
+    else:
+        logging.info(
+            f'Fitting {estimator} in a stratified cross-validation with'
+            f' {n_splits} splits using {str(metric)} as the final scoring.'
+            )
+        reshaper = Reshaper()
+        slidingestimator = MyOwnSlidingEstimator(
+            reshaper.thicken,
+            estimator,
+            n_jobs=n_jobs,
+            scoring='accuracy',
+            verbose=True)
+
+        outer_pipeline = make_pipeline(
+            trialaverager,
+            StandardScaler(),
+            slidingestimator,
+        )
+    scores = cross_val_multiscore(outer_pipeline,
+                                  reshaper.flatten(X),
                                   y,
                                   cv=cv,
                                   scoring=metric,
-                                  n_jobs=n_jobs)
+                                  n_jobs=n_jobs
+                                  )
     return scores
 
 class Reshaper:
     """Helper class to reshape to and from 3D/2D data"""
     def __init__(self, k=None):
         self._sampleshape = None
+        self._k = k
 
     def flatten(self, X):
         self._sampleshape = X.shape[1:]
