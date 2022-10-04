@@ -86,9 +86,6 @@ def temporal_decoding(sub,
                         target=known_targets[target]['tname'],
                         target_prefix=known_targets[target]['prefix'])
 
-    if average_trials is not None:
-        X, y = average_n_trials(X, y, foldsize=average_trials)
-
     scores = decode_with_sliding_window(X,
                                         y,
                                         metric=known_targets[target]['metric'],
@@ -174,58 +171,6 @@ def extract_targets(fullsample, sub, target, target_prefix):
         res = \
             np.asarray([f'{target_prefix}' + str(fullsample[sub][d][f'{target}'])
                         for d in fullsample[sub]])
-    return res
-
-
-def average_n_trials(X, y, foldsize=4):
-    """
-    Increase the signal to noise ratio by averaging n=foldsize trials per target
-    together. This creates averages pseudotrials.
-
-    :param X:
-    :param y:
-    :return:
-    """
-    X_ = []
-    y_ = []
-    for unique_target in np.unique(y):
-        # average trials in batches of the specified foldsize per unique target
-        trials = X[np.where(y == unique_target)]
-        # average the trials
-        avg = _average_n_trials(trials, foldsize)
-        X_.append(avg)
-        # create the appropriate amount of targets
-        y_.append(np.repeat(unique_target, len(avg)))
-    X_ = np.concatenate(X_)
-    y_ = np.concatenate(y_)
-    assert len(X_) == len(y_)
-    return X_, y_
-
-
-def _average_n_trials(trials, foldsize=4):
-    """
-    Average a specified amount of trials together to reduce noise. A set of
-    32 trials would be reduced to 8 averaged trials when averaging with a
-    foldsize of 4. Make sure that the supplied trials all have the same target!
-
-    :param trials: array-like; list of trial arrays
-    :param foldsize: int; number of trials to average over
-    """
-    res = []
-    i = 1
-    stop = False
-
-    while not stop:
-        # prevent an index error. Beware that this might lead to trials at the
-        # end can be averaged in two different average trials, the last and the
-        # second to last.
-        if i + foldsize > len(trials):
-            i = len(trials[:-foldsize])
-            stop = True
-        mean = np.mean(trials[i:i+foldsize], axis=0)
-        res.append(mean)
-        i += 4
-
     return res
 
 

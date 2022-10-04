@@ -91,3 +91,26 @@ def decode(X,
                                   n_jobs=n_jobs)
     return scores
 
+
+def trialaveraging(X, y, ntrials=4, nsamples=100):
+    """Average N=ntrials trials together, and repeat this until we
+    have generated N=nsamples average trials. This function will
+    become an imblearn FunctionSampler."""
+    X_ = np.empty((nsamples * len(np.unique(y)),)+X.shape[1:])
+    y_ = []
+    sample = 0
+    for unique_target in np.unique(y):
+        # average trials in batches of the specified foldsize per unique target
+        trial_ids = np.where(y == unique_target)[0]
+        # draw n = ntrials random trials and average the trials
+        for b in range(nsamples):
+            X_[sample] = np.mean(
+                X[np.random.choice(trial_ids, ntrials)],
+                axis=0,
+            )
+            sample += 1
+            # create the appropriate amount of targets
+            y_.append(unique_target)
+    y_ = np.array(y_)
+    assert len(X_) == len(y_)
+    return X_, y_
