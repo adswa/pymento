@@ -17,6 +17,55 @@ from mne.decoding import (
 )
 
 
+
+class MyOwnSlidingEstimator(SlidingEstimator):
+    """
+    Partial custom override of mne's SlidingEstimator. Reimplemented in order to
+    forgo dimensionality checks.
+    reshape is Reshaper.thicken
+    """
+    def __init__(self,
+                 reshape,
+                 base_estimator,
+                 scoring=None,
+                 n_jobs=None,
+                 *,
+                 verbose=None):
+        super().__init__(
+            base_estimator,
+            scoring=scoring,
+            n_jobs=n_jobs,
+            verbose=verbose,
+        )
+        self._reshape = reshape
+
+    def fit_transform(self, X, y, **fit_params):
+        return super().fit_transform(
+            self._reshape(X),
+            y,
+            **fit_params,
+        )
+
+    def fit(self, X, y, **fit_params):
+        return super().fit(
+            self._reshape(X),
+            y,
+            **fit_params,
+        )
+
+    def _transform(self, X, method):
+        return super()._transform(
+            self._reshape(X),
+            method,
+        )
+
+
+    def get_params(self, deep=True):
+        params = super().get_params(deep=deep)
+        params['reshape'] = self._reshape
+        return params
+
+
 def confusion_magnitude(est, X, y_true, **kwargs):
     """Custom scorer to be able to compute confusion matrix on predictions
     during cross_val_multiscore. Uses the Magnitude value labels"""
