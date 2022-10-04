@@ -1,5 +1,9 @@
 import logging
 import numpy as np
+# we need the imbalanced learn pipeline to apply preprocessing steps
+# to both X *and* y.
+from imblearn import FunctionSampler
+from imblearn.pipeline import make_pipeline
 
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
