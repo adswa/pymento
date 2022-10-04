@@ -102,7 +102,10 @@ def temporal_decoding(sub,
                     )
 
     # save the decoding scores for future use
-    fpath =_construct_path([workdir, f'sub-{sub}/'])
+    if dimreduction is not None:
+        fpath =_construct_path([workdir, f'sub-{sub}/{dimreduction}/'])
+    else:
+        fpath =_construct_path([workdir, f'sub-{sub}/'])
     np.save(Path(fpath) / f'sub-{sub}_decoding-scores_{target}.npy', scores)
 
     # plot decoding accuracy over all classes
