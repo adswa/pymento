@@ -58,19 +58,19 @@ def temporal_decoding(sub,
                                      'metric': confusion_probability,
                                      'label': ['10%', '20%', '40%', '80%'],
                                      'chance': 0.25,
-                                     'ylims': (0.1, 0.5)},
+                                     'ylims': (0.15, 0.45)},
                      'magnitude': {'prefix': 'M',
                                    'tname': 'LoptMag',
                                    'metric': confusion_magnitude,
                                    'label': ['0.5', '1', '2', '4'],
                                    'chance': 0.25,
-                                   'ylims': (0.1, 0.5)},
+                                   'ylims': (0.15, 0.45)},
                      'expectedvalue': {'prefix': 'EV',
                                        'tname': 'ev',
                                        'metric': confusion_expectedvalue,
                                        'label': ['0.2', '0.4', '0.8'],
                                        'chance': 0.33,
-                                       'ylims': (0.2, 0.6)}
+                                       'ylims': (0.25, 0.5)}
                      }
     if target not in known_targets.keys():
         raise NotImplementedError(f"Can't handle target {target} yet."
@@ -211,7 +211,7 @@ def plot_confusion_matrix(confm, labels, normalize=True, fname='/tmp/confm.png')
     if normalize:
         confm = confm.astype('float') / confm.sum(axis=1)[:, np.newaxis]
     cm = sns.heatmap(confm, xticklabels=labels, yticklabels=labels,
-                     cmap='YlGnBu', vmin=0.2, vmax=0.6)
+                     cmap='YlGnBu', vmin=0.25, vmax=0.5, annot=True)
     plt.ylabel('Ground truth')
     plt.xlabel('Predicted')
     cm.figure.savefig(fname)
