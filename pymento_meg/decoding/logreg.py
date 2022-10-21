@@ -29,7 +29,8 @@ def temporal_decoding(sub,
                       dimreduction=None,
                       k=None,
                       ntrials=4,
-                      nsamples=100
+                      nsamples=100,
+                      n_splits=5,
                       ):
     """
     Perform temporal decoding on a memento subject's time series data in sensor
@@ -49,6 +50,7 @@ def temporal_decoding(sub,
     :param k: None or int; dimensions to reduce to/features to select
     :param ntrials: int; how many trials of the same type to average together
     :param nsamples: int; how many bootstrapping draws during trial averaging
+    :param n_splits: int, number of cross-validation folds
     :return:
     """
 
@@ -94,7 +96,7 @@ def temporal_decoding(sub,
                     y,
                     metric=known_targets[target]['metric'],
                     n_jobs=n_jobs,
-                    n_splits=5,
+                    n_splits=n_splits,
                     dimreduction=dimreduction,
                     k=k,
                     nsamples=nsamples,
