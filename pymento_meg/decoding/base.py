@@ -176,6 +176,19 @@ def decode(X,
                 StandardScaler(),
                 slidingestimator,
             )
+        elif dimreduction == 'pca':
+            slidingestimator = MyOwnSlidingEstimator(
+                reshaper.thickentok,
+                estimator,
+                n_jobs=n_jobs,
+                scoring='accuracy',
+                verbose=True)
+            outer_pipeline = make_pipeline(
+                trialaverager,
+                StandardScaler(),
+                SpatialPCATransformer(k=k, reshaper=reshaper),
+                slidingestimator,
+            )
     else:
         logging.info(
             f'Fitting {estimator} in a stratified cross-validation with'
@@ -245,6 +258,41 @@ def trialaveraging(X, y, ntrials=4, nsamples=100):
     assert len(X_) == len(y_)
     return X_, y_
 
+
+class SpatialPCATransformer(BaseEstimator, TransformerMixin):
+
+    def __init__(self, k, reshaper):
+        from sklearn.decomposition import PCA
+        self.k = k
+        self.pca = PCA(n_components=k)
+        self.reshaper = reshaper
+
+    def _dimensionalityvodoo(self, X):
+        # restore to trials x sensors x time
+        X_ = self.reshaper.thicken(X)
+        # now bend dimensions: aim is spatial PCA, thus the time dimension is at
+        # the wrong place. We need to unwind the time dimension along the trial
+        # dimension. **vodoooo**
+        X_ = np.rollaxis(X_, 2, 1)
+        # trial*time x sensors
+        X_ = X_.reshape(np.prod(X_.shape[:2]), -1)
+        return X_
+
+    def fit(self, X, y):
+        self.pca.fit(self._dimensionalityvodoo(X))
+        return self
+
+    def transform(self, X):
+        # X is trials x sensors*time
+
+        # the input of the PCA X_ is trial*time x components
+        X_ = self.pca.transform(self._dimensionalityvodoo(X))
+        # restore time axis: trials x times x components
+        X_ = X_.reshape(X.shape[0], -1, self.k)
+        # restore correct position of time axis: trials x components x times
+        X_ = np.rollaxis(X_, 1, 3)
+        # let it goooo
+        return X_
 
 
 class SRMTransformer(BaseEstimator, TransformerMixin):
