@@ -100,6 +100,7 @@ def temporal_decoding(sub,
                         sub=sub,
                         target=known_targets[target]['tname'],
                         target_prefix=known_targets[target]['prefix'])
+    del fullsample, data
     scores = decode(X,
                     y,
                     metric=known_targets[target]['metric'],
