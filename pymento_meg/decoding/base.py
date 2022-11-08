@@ -165,7 +165,7 @@ def decode(X,
         reshaper = Reshaper(k=k)
         if dimreduction == 'srm':
             slidingestimator = MyOwnSlidingEstimator(
-                reshaper.thickenSRM,
+                reshaper.thickentok,
                 estimator,
                 n_jobs=n_jobs,
                 scoring='accuracy',
@@ -217,7 +217,7 @@ class Reshaper:
         print(f"thickening X from {X.shape} to {(X.shape[0],)+self._sampleshape}")
         return np.reshape(X, (X.shape[0],)+self._sampleshape)
 
-    def thickenSRM(self, X):
+    def thickentok(self, X):
         print(f"thickening X from {X.shape} to {(X.shape[0], self._k, -1)}")
         return np.reshape(X, (X.shape[0], self._k, -1))
 
