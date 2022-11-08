@@ -14,6 +14,7 @@ from pymento_meg.decoding.base import (
     confusion_magnitude,
     confusion_probability,
     confusion_expectedvalue,
+    confusion_choice,
     decode,
 )
 
@@ -72,7 +73,14 @@ def temporal_decoding(sub,
                                        'metric': confusion_expectedvalue,
                                        'label': ['0.2', '0.4', '0.8'],
                                        'chance': 0.33,
-                                       'ylims': (0.25, 0.5)}
+                                       'ylims': (0.25, 0.5)},
+                     'choice': {'prefix': 'choice',
+                                'tname': 'choice',
+                                'metric': confusion_choice,
+                                'label': ['1', '2'], # TODO: recode
+                                'chance': 0.5,
+                                'ylims': (0.2, 0.8),
+                                }
                      }
     if target not in known_targets.keys():
         raise NotImplementedError(f"Can't handle target {target} yet."
@@ -140,7 +148,7 @@ def temporal_decoding(sub,
 def extract_targets(fullsample, sub, target, target_prefix):
     """
     Extract an array of target values from the fullsample data structure. Likely
-    targets are 'LoptMag', 'LoptProb', or 'ev' (expected value)
+    targets are 'LoptMag', 'LoptProb', or 'ev' (expected value); or 'choice'
 
     Example:
     >>> expected_value = extract_targets(fullsample, '004', 'ev', 'EV')

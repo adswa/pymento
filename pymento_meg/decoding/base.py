@@ -99,6 +99,15 @@ def confusion_expectedvalue(est, X, y_true, **kwargs):
     return np.apply_along_axis(lambda p, t: confusion_matrix(t, p, labels=['EV0.2', 'EV0.4', 'EV0.8']), 0, y_pred, y_true)
 
 
+def confusion_choice(est, X, y_true, **kwargs):
+    """Custom scorer to be able to compute confusion matrix on predictions
+    during cross_val_multiscore. Uses the Choice value labels"""
+    from sklearn.metrics import confusion_matrix
+    y_pred = est.predict(X)
+    # compute and return confusion matrices for each time point.
+    return np.apply_along_axis(lambda p, t: confusion_matrix(t, p, labels=['choice1.0', 'choice2.0']), 0, y_pred, y_true)
+
+
 def decode(X,
            y,
            n_splits=10,
