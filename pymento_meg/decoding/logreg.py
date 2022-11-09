@@ -112,9 +112,11 @@ def temporal_decoding(sub,
             # determine the time range for training data
             trainrange = [int(i/dec_factor) for i in srmtrainrange] \
                 if srmtrainrange is not None else None
+        else:
+            trainrange = None
     else:
         fpath =_construct_path([workdir, f'sub-{sub}/'])
-        trainrange=None
+        trainrange = None
 
     scores = decode(X,
                     y,
