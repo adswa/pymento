@@ -29,6 +29,8 @@ def temporal_decoding(sub,
                       workdir='/data/project/brainpeach/decoding',
                       dimreduction=None,
                       k=None,
+                      srmtrainrange=None,
+                      srmsamples=None,
                       ntrials=4,
                       nsamples=100,
                       n_splits=5,
@@ -49,6 +51,9 @@ def temporal_decoding(sub,
     :param workdir: str; where to save decoding results
     :param dimreduction: None or sklearn transformer
     :param k: None or int; dimensions to reduce to/features to select
+    :param srmtrainrange: None or list of int; if not None needs to be a start
+    and end range to subselect training data. *Must* be in 1000Hz samples, e.g.
+    [0, 700] for first visual stimulation!
     :param ntrials: int; how many trials of the same type to average together
     :param nsamples: int; how many bootstrapping draws during trial averaging
     :param n_splits: int, number of cross-validation folds
@@ -101,6 +106,15 @@ def temporal_decoding(sub,
                         target=known_targets[target]['tname'],
                         target_prefix=known_targets[target]['prefix'])
     del fullsample, data
+    if dimreduction is not None:
+        fpath =_construct_path([workdir, f'sub-{sub}/{dimreduction}/'])
+        if dimreduction == 'srm':
+            # determine the time range for training data
+            trainrange = [int(i/dec_factor) for i in srmtrainrange] \
+                if srmtrainrange is not None else None
+    else:
+        fpath =_construct_path([workdir, f'sub-{sub}/'])
+
     scores = decode(X,
                     y,
                     metric=known_targets[target]['metric'],
@@ -108,15 +122,14 @@ def temporal_decoding(sub,
                     n_splits=n_splits,
                     dimreduction=dimreduction,
                     k=k,
+                    # train on first visual stim
+                    srmtrainrange=trainrange,
+                    srmsamples=srmsamples,
                     nsamples=nsamples,
                     ntrials=ntrials
                     )
 
     # save the decoding scores for future use
-    if dimreduction is not None:
-        fpath =_construct_path([workdir, f'sub-{sub}/{dimreduction}/'])
-    else:
-        fpath =_construct_path([workdir, f'sub-{sub}/'])
     np.save(Path(fpath) / f'sub-{sub}_decoding-scores_{target}.npy', scores)
 
     # plot decoding accuracy over all classes

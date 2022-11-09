@@ -115,6 +115,8 @@ def decode(X,
            metric='accuracy',
            n_jobs=None,
            dimreduction=None,
+           srmtrainrange=None,
+           srmsamples=None,
            k=None,
            ntrials=4,
            nsamples=100,
@@ -142,6 +144,11 @@ def decode(X,
      currently supports 'srm' and in the future 'pca'. Will be added
      to pipeline for dimensionality reduction. Requires parameter k
     :param k: None or int; dimensions to reduce to/features to select
+    :param srmtrainrange: None or list of int; if not None its a range of
+     samples to subset srm training data to (e.g., [0, 70])
+    :param srmsamples: None or int; how many virtual subjects shall be created
+    within the shared response modelling. If None, as many subjects as
+    bootstrapped trials will be used.
     :param ntrials: int; how many trials of the same type to average together
     :param nsamples: int; how many bootstrapping draws during trial averaging
     :return:
@@ -164,6 +171,8 @@ def decode(X,
             f'and {dimreduction} for dimensionality reduction.')
         reshaper = Reshaper(k=k)
         if dimreduction == 'srm':
+            # determine how many virtual subjects are generated internally
+            srmsamples = nsamples if srmsamples is None else srmsamples
             slidingestimator = MyOwnSlidingEstimator(
                 reshaper.thickentok,
                 estimator,
@@ -172,7 +181,9 @@ def decode(X,
                 verbose=True)
             outer_pipeline = make_pipeline(
                 trialaverager,
-                SRMTransformer(k),
+                SRMTransformer(k=k,
+                               nsamples=srmsamples,
+                               trainrange=srmtrainrange),
                 StandardScaler(),
                 slidingestimator,
             )
@@ -297,9 +308,15 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
 
 class SRMTransformer(BaseEstimator, TransformerMixin):
 
-    def __init__(self, k, nsamples=10):
+    def __init__(self, k, nsamples=10, trainrange=None):
         self.k = k
         self.nsamples = nsamples
+        if trainrange is not None:
+            # trainrange needs to be a set or list with a start and end value
+            assert len(trainrange) == 2, 'the trainrange needs to have 2 values'
+            assert trainrange[0] < trainrange[1], \
+                'start value must be smaller than end value'
+        self.trainrange = trainrange
 
     def fit(self, X, y):
         """
@@ -311,13 +328,38 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
         X_ = np.reshape(X, (X.shape[0], 306, -1))
         # TODO: Where to subselect time points?
         targets = np.unique(y)
+        # set up the time subselection for the training data
+        if self.trainrange is not None:
+            # check that the selected range isn't larger than the available time
+            assert self.trainrange[1] < X_.shape[-1], \
+                'train range is larger than available data range!'
         # generate nsamples samples for the shared response model
         samples = []
         for i in range(self.nsamples):
             # generate virtual subjects from concatenating data from each target
-            sample_ids = [np.random.choice(np.where(y==target)[0], 1)
+            # first, get trial ids of one trial per unique target value
+            sample_ids = [np.random.choice(np.where(y == target)[0], 1)
                           for target in targets]
-            samples.append(np.concatenate([np.squeeze(X_[i,:,0:700]) for i in sample_ids], axis=1))
+            # then, select each of those trials, potentially subselecting the
+            # number of time points to a specified range
+            if self.trainrange is not None:
+                # subset the time series (train only on specific part of trial)
+                start = self.trainrange[0]
+                end = self.trainrange[1]
+                samples.append(
+                    np.concatenate(
+                        [np.squeeze(X_[i, :, start:end]) for i in sample_ids],
+                        axis=1
+                    )
+                )
+            else:
+                # take all samples as training data
+                samples.append(
+                    np.concatenate(
+                        [np.squeeze(X_[i, :, :]) for i in sample_ids],
+                        axis=1
+                    )
+                )
         # fit an SRM model on the samples
         srm = shared_response(samples,
                               features=self.k)
