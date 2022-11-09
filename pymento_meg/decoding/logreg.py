@@ -114,6 +114,7 @@ def temporal_decoding(sub,
                 if srmtrainrange is not None else None
     else:
         fpath =_construct_path([workdir, f'sub-{sub}/'])
+        trainrange=None
 
     scores = decode(X,
                     y,
