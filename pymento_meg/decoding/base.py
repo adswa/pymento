@@ -117,7 +117,7 @@ def decode(X,
            dimreduction=None,
            k=None,
            ntrials=4,
-           nsamples=100
+           nsamples=100,
            ):
     """
     Fit an estimator of a given type to every time point in a
