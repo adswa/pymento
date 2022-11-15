@@ -246,14 +246,25 @@ class Reshaper:
         return np.reshape(X, (X.shape[0], self._k, -1))
 
 
-def trialaveraging(X, y, ntrials=4, nsamples=100):
+def trialaveraging(X, y, ntrials=4, nsamples='max'):
     """Average N=ntrials trials together, and repeat this until we
     have generated N=nsamples average trials. This function will
-    become an imblearn FunctionSampler."""
+    become an imblearn FunctionSampler.
+    :param nsamples: int or str; switch to determine bootstrapping behavior.
+    Can be 'min' (will bootstrap the minimum samples per target), 'max' (will
+    bootstrap the maximum samples per target) or any integer.
+    TODO: maybe make also 'stratified' option
+    """
+    unique, counts = np.unique(y, return_counts=True)
+    logging.info(f'nsamples is set to {nsamples}, ')
+    nsamples = np.max(counts) if nsamples == 'max' \
+        else np.min(counts) if nsamples == 'min' \
+        else nsamples
+    logging.info(f'using {nsamples} for bootstrapping in this split')
     X_ = np.empty((nsamples * len(np.unique(y)),)+X.shape[1:])
     y_ = []
     sample = 0
-    for unique_target in np.unique(y):
+    for unique_target in unique:
         # average trials in batches of the specified foldsize per unique target
         trial_ids = np.where(y == unique_target)[0]
         # draw n = ntrials random trials and average the trials
@@ -326,8 +337,12 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
         :return:
         """
         X_ = np.reshape(X, (X.shape[0], 306, -1))
-        # TODO: Where to subselect time points?
-        targets = np.unique(y)
+        targets, counts = np.unique(y, return_counts=True)
+        # TODO also account for potential future 'stratified' option
+        nsamples = np.max(counts) if self.nsamples == 'max' \
+            else np.min(counts) if self.nsamples == 'min' \
+            else self.nsamples
+        logging.info(f'Preparing to draw {nsamples} virtual subjects...')
         # set up the time subselection for the training data
         if self.trainrange is not None:
             # check that the selected range isn't larger than the available time
@@ -335,7 +350,7 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
                 'train range is larger than available data range!'
         # generate nsamples samples for the shared response model
         samples = []
-        for i in range(self.nsamples):
+        for i in range(nsamples):
             # generate virtual subjects from concatenating data from each target
             # first, get trial ids of one trial per unique target value
             sample_ids = [np.random.choice(np.where(y == target)[0], 1)
