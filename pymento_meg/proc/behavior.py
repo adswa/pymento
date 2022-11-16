@@ -10,6 +10,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 from glob import glob
+from scipy.stats import spearmanr
 from mne.decoding import cross_val_multiscore
 from sklearn.model_selection import StratifiedKFold
 from sklearn.pipeline import make_pipeline
@@ -54,30 +55,30 @@ def global_stats(bidsdir):
     # TODO: continue here with more stats
 
 
-def stats_per_subject(subject, bidsdir, results=None):
+def stats_per_subject(subject, bidsdir=None, df=None):
     """
     Compute summary statistics for a subject
     :param subject:
     :param bidsdir:
     :return:
     """
-    df = read_bids_logfile(subject, bidsdir)
-    if results is None:
-        results = {}
+    if df is None:
+        df = read_bids_logfile(subject, bidsdir)
+    results = {}
     # median reaction time over all trials
-    results[subject] = {'median RT global': np.nanmedian(df['RT'])}
-    results[subject] = {'mean RT global': np.nanmean(df['RT'])}
-    results[subject] = {'Std RT global': np.nanstd(df['RT'])}
+    results['median'] = np.nanmedian(df['RT'])
+    results['mean'] = np.nanmean(df['RT'])
+    results['Std'] = np.nanstd(df['RT'])
     # no-brainer trials
     right = df['RT'][(df.RoptMag > df.LoptMag) &
                      (df.RoptProb > df.LoptProb)].values
     left = df['RT'][(df.LoptMag > df.RoptMag) &
                     (df.LoptProb > df.RoptProb)].values
     nobrainer = np.append(right, left)
-    results[subject] = {'median RT nobrainer': np.nanmedian(nobrainer)}
-    results[subject] = {'mean RT nobrainer': np.nanmean(nobrainer)}
-    results[subject] = {'Std RT nobrainer': np.nanstd(nobrainer)}
-    # TODO: continue here with more stats
+    results['median nobrain'] = np.nanmedian(nobrainer)
+    results['mean nobrain'] = np.nanmean(nobrainer)
+    results['Std nobrain'] = np.nanstd(nobrainer)
+    return results
 
 
 def logreg(bidsdir,
@@ -111,7 +112,11 @@ def logreg(bidsdir,
     labels = ['Prob(L)', 'Mag(L)', 'EV(L)', 'Prob(R)', 'Mag(R)', 'EV(R)']
     coefs = {}
     for sub in subject:
+        coefs[sub] = {}
         df = read_bids_logfile(sub, bidsdir)
+        # save the maximum achieved points/gains in the experiment
+        speed = stats_per_subject(sub, df=df)
+        gain = np.max(df['points'])
         # add expected value variables to the data frame, calculated from
         # demeaned left and right stimulation
         df['l_ev'] = (df.LoptProb - df.LoptProb.mean()) * \
@@ -154,7 +159,19 @@ def logreg(bidsdir,
                     acc=avg_acc,
                     figdir=figdir)
         # keep all the coefficients for later
-        coefs[sub] = [avg_acc, avg_coefs]
+        coefs[sub]['acc'] = avg_acc
+        coefs[sub]['coefs'] = avg_coefs
+        coefs[sub]['stats'] = speed
+        coefs[sub]['gain'] = gain
+    # plot the reaction times
+    plot_speed_stats(coefs, figdir)
+    # correlate model accuracy with experiment performance
+    accs = [coefs[k]['acc'] for k in coefs]
+    gains = [coefs[k]['gain'] for k in coefs]
+    corr = spearmanr(accs, gains)
+    logging.info(f"The Spearman rank correlation between experiment "
+                 f"performance (total gain) and model accuracy is "
+                 f"{corr}")
     return coefs
 
 
@@ -195,3 +212,17 @@ def print_coefs(data, means, names, sub, acc, figdir='/tmp'):
     logging.info(f'Saving a boxplot of parameter importance into {fname}.')
     plt.savefig(fname)
     plt.close('all')
+
+
+def plot_speed_stats(coefs, figdir='/tmp'):
+    """Make a boxplot of aggregated reaction time statistics
+     across subjects."""
+    stats = pd.DataFrame([coefs[k]['stats'] for k in coefs])
+    fig = stats.plot(kind='box',
+                     title='Aggregate reaction times across subjects',
+                     ylabel='seconds',
+                     xlabel='Global and no-brainer statistics',
+                     figsize=(12, 6))
+    fname = Path(figdir) / 'memento_aggregate_reaction_times.png'
+    logging.info(f'Saving reaction times plot at {fname}')
+    fig.figure.savefig(fname)
