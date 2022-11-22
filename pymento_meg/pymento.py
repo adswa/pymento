@@ -197,7 +197,7 @@ def epoch_and_clean_trials(subject,
         if trials_without_press:
             logging.info(f"Removing the following trials without button presses:"
                          f"{trials_without_press}")
-            metadata.drop(index=trials_without_press)
+            metadata = metadata.drop(index=trials_without_press)
     else:
         epochs = mne.Epochs(raw, events, event_id=eventid,
                             tmin=0, tmax=epochlength,
