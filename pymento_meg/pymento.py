@@ -25,7 +25,8 @@ from pymento_meg.proc.artifacts import (
 from autoreject import (
     AutoReject,
 )
-
+# prevent qt errors in mne browsers
+mne.viz.set_browser_backend('matplotlib')
 
 def restructure_to_bids(
         rawdir, subject, bidsdir, figdir, crosstalk_file, fine_cal_file,
