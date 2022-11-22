@@ -170,29 +170,40 @@ def epoch_and_clean_trials(subject,
                                    eventid=eventid,
                                    rng=rng,
                                    )
+    # retrieve metadata to later add SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH
+    # THIS WAY WE CAN LATER RECOVER WHICH TRIAL PARAMETERS WE'RE LOOKING AT
+    # BASED ON THE LOGS, AS THE EPOCH REJECTION WILL REMOVE TRIALS
+    logging.info("Retrieving trial metadata.")
+    from pymento_meg.proc.epoch import get_trial_features
+    metadata = get_trial_features(bids_path=bidsdir,
+                                  subject=subject,
+                                  column=['trial_no'])
     # get the actual epochs: chunk the trial into epochs starting from the
     # event ID. Do not baseline correct the data.
     logging.info(f'Creating epochs of length {epochlength}')
     if eventid == {'press/left': 1,
                    'press/right': 4
                    }:
+        # we need to clean up the events, as not all button presses are valid.
+        # Some happen too late, others at the wrong time, and yet others to
+        # restart a block of trials after a break. We only want those that
+        # actually select an option
+        events, trials_without_press = clean_response_events(events)
         # when centered on the response, move back in time
         epochs = mne.Epochs(raw, events, event_id=eventid,
                             tmin=-epochlength, tmax=0,
                             picks='meg', baseline=None)
+        # drop trials without button presses from the metadata
+        if trials_without_press:
+            logging.info(f"Removing the following trials without button presses:"
+                         f"{trials_without_press}")
+            metadata.drop(index=trials_without_press)
     else:
         epochs = mne.Epochs(raw, events, event_id=eventid,
                             tmin=0, tmax=epochlength,
                             picks='meg', baseline=None)
-    # ADD SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH! ONLY THIS WAY WE CAN
-    # LATER RECOVER WHICH TRIAL PARAMETERS WE'RE LOOKING AT BASED ON THE LOGS AS
-    # THE EPOCH REJECTION WILL REMOVE TRIALS
-    logging.info("Retrieving trial metadata.")
-    from pymento_meg.proc.epoch import get_trial_features
-    metadata = get_trial_features(bids_path=bidsdir,
-                                  subject=subject,
-                                  column='trial_no')
-    # transform to integers
+
+    # transform trial numbers to integers
     metadata = metadata.astype(int)
     # this does not work if we start at fixation cross for subject 5, because 1
     # fixation cross trigger is missing from the data, and it becomes impossible
@@ -250,6 +261,51 @@ def epoch_and_clean_trials(subject,
         ]
     )
     psd.savefig(fname)
+
+
+def clean_response_events(events):
+    """Returns only those button press event IDs that are "valid", i.e.,
+    occuring between the second visual stimulus in a trial and the first visual
+    stimulus in the next trial."""
+    select_evs = []
+    ignored_trials = []
+    want_button_press = False
+    for ev in events:
+        # ev is 3-item sequence
+        start, duration, evtype = ev
+        # fish out every 2 visual stimulus - we know there are 510
+        if evtype == 24:
+            want_button_press = True
+            continue
+        if not want_button_press:
+            continue
+        assert want_button_press
+        if evtype in (1, 4):
+            select_evs.append(ev)
+            want_button_press = False
+        # once we reach the first visual stimulation without a button press,
+        # register the trial to be removed
+        elif evtype in (12, 13, 14, 15, 16, 17, 18, 19, 20):
+            want_button_press = False
+            ignored_trials.append(len(select_evs) + len(ignored_trials))
+        # there already was a button press before, we can safely ignore
+        # everything until the next trial
+    return np.array(select_evs), ignored_trials
+
+
+def _test_clean_events():
+    first = np.arange(0, 18)
+    second = np.repeat(0, 18)
+    # three stray presses at the start, one stray press before option 2, one
+    # second button press after option 2, one trial
+    third = np.array([1, 4, 1, 10, 12, 22, 1, 24, 4, 4, 27, 10, 12, 22, 24, 28, 10, 12])
+    events, remove = clean_response_events(np.stack([first, second, third],
+                                                    axis=1))
+    # trial 2 didn't have a button press
+    assert remove == [1]
+    # there is one valid event left
+    assert len(events[events[:, 2] ==  4]) == 1
+    assert len(events[events[:, 2] == 1]) == 0
 
 
 def SRM(subject,
