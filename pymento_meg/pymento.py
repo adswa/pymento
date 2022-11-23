@@ -191,7 +191,7 @@ def epoch_and_clean_trials(subject,
         events, trials_without_press = clean_response_events(events)
         # when centered on the response, move back in time
         epochs = mne.Epochs(raw, events, event_id=eventid,
-                            tmin=-epochlength, tmax=0,
+                            tmin=-epochlength/2, tmax=epochlength/2,
                             picks='meg', baseline=None)
         # drop trials without button presses from the metadata
         if trials_without_press:
