@@ -34,6 +34,7 @@ def temporal_decoding(sub,
                       ntrials=4,
                       nsamples=100,
                       n_splits=5,
+                      responselocked=False,
                       ):
     """
     Perform temporal decoding on a memento subject's time series data in sensor
@@ -57,6 +58,8 @@ def temporal_decoding(sub,
     :param ntrials: int; how many trials of the same type to average together
     :param nsamples: int; how many bootstrapping draws during trial averaging
     :param n_splits: int, number of cross-validation folds
+    :param responselocked: bool, whether the underlying data is responselocked
+    or not (influences parameters in data selection and plotting)
     :return:
     """
 
@@ -91,12 +94,13 @@ def temporal_decoding(sub,
         raise NotImplementedError(f"Can't handle target {target} yet."
                                   f" Know targets: {known_targets.keys()}")
 
-    # get data
+    # get data. If its response locked, the timespan needs to be inverted
+    timespan = [-4500, 0] if responselocked else [0, 4500]
     fullsample, data = get_general_data_structure(subject=sub,
                                                   datadir=datadir,
                                                   bidsdir=bidsdir,
                                                   condition='nobrain-brain',
-                                                  timespan=[0, 4500])
+                                                  timespan=timespan)
 
     X = np.array([decimate(epoch['normalized_data'], dec_factor)
                   for id, epoch in fullsample[sub].items()])
@@ -141,15 +145,20 @@ def temporal_decoding(sub,
          for score in scores
          for c in np.rollaxis(score, -1, 0)]).reshape(len(scores),
                                                       scores.shape[-1])
-
+    # if the data is responselocked, its one sample shorter for some reason
+    times = np.arange(0, 4500 / dec_factor) if responselocked \
+        else np.arange(0, 4501/dec_factor)
+    reflines = [(4500, 'response')] if responselocked \
+        else ((0, 'onset stimulus'), (700, 'offset stimulus'),
+              (2700, 'onset stimulus'), (3400, 'offset stimulus'))
     plot_decoding_over_all_classes(acrossclasses,
-                                   times=np.asarray(
-                                       np.arange(0, 4501/dec_factor)
-                                       * dec_factor),
+                                   times=np.asarray(times * dec_factor),
                                    label=target, subject=sub,
                                    metric=summary_metric, figdir=fpath,
                                    chance=known_targets[target]['chance'],
-                                   ylim=known_targets[target]['ylims'])
+                                   ylim=known_targets[target]['ylims'],
+                                   reflines=reflines,
+                                   )
 
     # plot average confusion matrix over 100ms time slots
     i = 0
@@ -286,10 +295,12 @@ def plot_decoding_over_all_classes(scores,
     ax.set(title=f'temporal decoding of {label} (subject {subject})')
     if ylim is not None:
         ax.set(ylim=ylim)
-    ax.refline(y=chance, color='red', linestyle='dotted')
-    for x, l in reflines:
-        color = 'black' if l.startswith('offset') else 'green'
-        ax.refline(x=x, color=color, label=l)
+    ax.refline(y=chance, color='red', linestyle='dotted',
+               label=f"chance-level: {chance}")
+    if reflines is not None:
+        for x, l in reflines:
+            color = 'black' if l.startswith('offset') else 'green'
+            ax.refline(x=x, color=color, label=l)
     ax.add_legend()
     fname = f'decoding_{metric.replace(" ","_")}_l2logreg_{subject}_{label}.png'
     print(f'saving figure to {figdir}/{fname}...')
