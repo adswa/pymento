@@ -346,7 +346,7 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
         # set up the time subselection for the training data
         if self.trainrange is not None:
             # check that the selected range isn't larger than the available time
-            assert self.trainrange[1] < X_.shape[-1], \
+            assert self.trainrange[1] <= X_.shape[-1], \
                 'train range is larger than available data range!'
         # generate nsamples samples for the shared response model
         samples = []
