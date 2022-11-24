@@ -82,7 +82,6 @@ def remove_eyeblinks_and_heartbeat(raw,
     epochs = mne.Epochs(filt_raw, events, event_id=eventid,
                         tmin=0, tmax=3,
                         picks='meg', baseline=None)
-
     ## First, estimate rejection criteria for high-amplitude artifacts. This is
     ## done via autoreject
     #logging.info('Estimating bad epochs quick-and-dirty, to improve ICA')

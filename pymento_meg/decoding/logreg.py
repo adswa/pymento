@@ -87,7 +87,7 @@ def temporal_decoding(sub,
                                 'metric': confusion_choice,
                                 'label': ['1', '2'], # TODO: recode
                                 'chance': 0.5,
-                                'ylims': (0.2, 0.8),
+                                'ylims': (0.3, 0.99),
                                 }
                      }
     if target not in known_targets.keys():
@@ -95,7 +95,8 @@ def temporal_decoding(sub,
                                   f" Know targets: {known_targets.keys()}")
 
     # get data. If its response locked, the timespan needs to be inverted
-    timespan = [-4500, 0] if responselocked else [0, 4500]
+    # timespan needs to be in seconds, starting from 0
+    timespan = [-1.250, 1.250] if responselocked else [0, 4.500]
     fullsample, data = get_general_data_structure(subject=sub,
                                                   datadir=datadir,
                                                   bidsdir=bidsdir,
@@ -145,14 +146,13 @@ def temporal_decoding(sub,
          for score in scores
          for c in np.rollaxis(score, -1, 0)]).reshape(len(scores),
                                                       scores.shape[-1])
-    # if the data is responselocked, its one sample shorter for some reason
-    times = np.arange(0, 4500 / dec_factor) if responselocked \
-        else np.arange(0, 4501/dec_factor)
-    reflines = [(4500, 'response')] if responselocked \
+    reflines = [(1250, 'response')] if responselocked \
         else ((0, 'onset stimulus'), (700, 'offset stimulus'),
               (2700, 'onset stimulus'), (3400, 'offset stimulus'))
     plot_decoding_over_all_classes(acrossclasses,
-                                   times=np.asarray(times * dec_factor),
+                                   times=np.asarray(
+                                       np.arange(acrossclasses.shape[-1])
+                                        * dec_factor),
                                    label=target, subject=sub,
                                    metric=summary_metric, figdir=fpath,
                                    chance=known_targets[target]['chance'],
