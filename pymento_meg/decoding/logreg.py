@@ -35,6 +35,7 @@ def temporal_decoding(sub,
                       nsamples=100,
                       n_splits=5,
                       responselocked=False,
+                      slidingwindow=None,
                       ):
     """
     Perform temporal decoding on a memento subject's time series data in sensor
@@ -60,6 +61,8 @@ def temporal_decoding(sub,
     :param n_splits: int, number of cross-validation folds
     :param responselocked: bool, whether the underlying data is responselocked
     or not (influences parameters in data selection and plotting)
+    :param slidingwindow: None or int; over how many samples to create a sliding
+     window during decoding
     :return:
     """
 
@@ -134,7 +137,8 @@ def temporal_decoding(sub,
                     srmtrainrange=trainrange,
                     srmsamples=srmsamples,
                     nsamples=nsamples,
-                    ntrials=ntrials
+                    ntrials=ntrials,
+                    slidingwindow=slidingwindow,
                     )
 
     # save the decoding scores for future use

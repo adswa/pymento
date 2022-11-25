@@ -1,5 +1,7 @@
 import logging
 import numpy as np
+
+from functools import partial
 # we need the imbalanced learn pipeline to apply preprocessing steps
 # to both X *and* y.
 from imblearn import FunctionSampler
@@ -46,6 +48,7 @@ class MyOwnSlidingEstimator(SlidingEstimator):
         self._reshape = reshape
 
     def fit_transform(self, X, y, **fit_params):
+        # X is trials x sensors * time. Reshape turns it into trials x sensors x time
         return super().fit_transform(
             self._reshape(X),
             y,
@@ -64,7 +67,6 @@ class MyOwnSlidingEstimator(SlidingEstimator):
             self._reshape(X),
             method,
         )
-
 
     def get_params(self, deep=True):
         params = super().get_params(deep=deep)
@@ -120,6 +122,7 @@ def decode(X,
            k=None,
            ntrials=4,
            nsamples=100,
+           slidingwindow=10,
            ):
     """
     Fit an estimator of a given type to every time point in a
@@ -151,6 +154,7 @@ def decode(X,
     bootstrapped trials will be used.
     :param ntrials: int; how many trials of the same type to average together
     :param nsamples: int; how many bootstrapping draws during trial averaging
+    :param slidingwindow: int or None; size of a sliding window in samples
     :return:
     """
     logging.info(f'Initializing TrialAverager with {ntrials} trials per '
@@ -170,11 +174,15 @@ def decode(X,
             f'Fitting a {estimator} using {str(metric)} as the final scoring '
             f'and {dimreduction} for dimensionality reduction.')
         reshaper = Reshaper(k=k)
+        reshaperfx = reshaper.thickentok if slidingwindow is None \
+            else partial(reshaper.slide,
+                         thickenfx=reshaper.thickentok,
+                         size=slidingwindow)
         if dimreduction == 'srm':
             # determine how many virtual subjects are generated internally
             srmsamples = nsamples if srmsamples is None else srmsamples
             slidingestimator = MyOwnSlidingEstimator(
-                reshaper.thickentok,
+                reshaperfx,
                 estimator,
                 n_jobs=n_jobs,
                 scoring='accuracy',
@@ -189,7 +197,7 @@ def decode(X,
             )
         elif dimreduction == 'pca':
             slidingestimator = MyOwnSlidingEstimator(
-                reshaper.thickentok,
+                reshaperfx,
                 estimator,
                 n_jobs=n_jobs,
                 scoring='accuracy',
@@ -206,8 +214,11 @@ def decode(X,
             f' {n_splits} splits using {str(metric)} as the final scoring.'
             )
         reshaper = Reshaper()
+        reshaperfx = reshaper.thicken if slidingwindow is None else partial(
+            reshaper.slide, thickenfx=reshaper.thicken, size=slidingwindow)
+
         slidingestimator = MyOwnSlidingEstimator(
-            reshaper.thicken,
+            reshaperfx,
             estimator,
             n_jobs=n_jobs,
             scoring='accuracy',
@@ -242,9 +253,23 @@ class Reshaper:
         return np.reshape(X, (X.shape[0],)+self._sampleshape)
 
     def thickentok(self, X):
+        """Thicken X back according to the dimensions the dim reduction reduced
+         to"""
         print(f"thickening X from {X.shape} to {(X.shape[0], self._k, -1)}")
         return np.reshape(X, (X.shape[0], self._k, -1))
 
+    def slide(self, X, thickenfx=None, size=10):
+        """This reshaper blows up X to inlcude a time window
+        """
+        logging.info(f'Setting up a sliding window of {size} samples')
+        # First, reshape to trials x sensors x time
+        X_ = thickenfx(X)
+        ntrials, nsensors, nts = X_.shape
+        # then make an array to populate with data
+        gag = np.empty((ntrials, nsensors*size, nts-size))
+        for t in range(gag.shape[-1]):
+            gag[:,:,t] = X_[:,:,t:t+size].reshape(ntrials, -1)
+        return gag
 
 def trialaveraging(X, y, ntrials=4, nsamples='max'):
     """Average N=ntrials trials together, and repeat this until we
