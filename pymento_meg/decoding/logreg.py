@@ -150,13 +150,16 @@ def temporal_decoding(sub,
          for score in scores
          for c in np.rollaxis(score, -1, 0)]).reshape(len(scores),
                                                       scores.shape[-1])
-    reflines = [(1250, 'response')] if responselocked \
+    # the x axis (times) gets more and more messier to get right. We need to
+    # account for time shifts etc
+    times = np.asarray(np.arange(acrossclasses.shape[-1]) * dec_factor)
+    if responselocked:
+        times = times - 1250
+    reflines = [(0, 'response')] if responselocked \
         else ((0, 'onset stimulus'), (700, 'offset stimulus'),
               (2700, 'onset stimulus'), (3400, 'offset stimulus'))
     plot_decoding_over_all_classes(acrossclasses,
-                                   times=np.asarray(
-                                       np.arange(acrossclasses.shape[-1])
-                                        * dec_factor),
+                                   times=times,
                                    label=target, subject=sub,
                                    metric=summary_metric, figdir=fpath,
                                    chance=known_targets[target]['chance'],
