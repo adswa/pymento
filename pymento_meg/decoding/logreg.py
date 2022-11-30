@@ -170,6 +170,7 @@ def temporal_decoding(sub,
                                    chance=known_targets[target]['chance'],
                                    ylim=known_targets[target]['ylims'],
                                    reflines=reflines,
+                                   slidingwindow=slidingwindow*dec_factor
                                    )
 
     # plot average confusion matrix over 100ms time slots
@@ -277,7 +278,8 @@ def plot_decoding_over_all_classes(scores,
                                    reflines=((0, 'onset stimulus'),
                                              (700, 'offset stimulus'),
                                              (2700, 'onset stimulus'),
-                                             (3400, 'offset stimulus'))
+                                             (3400, 'offset stimulus')),
+                                   slidingwindow=None
                                    ):
     """
     plot the decoded timeseries.
@@ -289,6 +291,8 @@ def plot_decoding_over_all_classes(scores,
     :param chance: int; denotes the chance level as a horizontal line
     :param ylim: tuple; allows to set the y-axis range
     :param reflines: nested tuple; to draw vertical markers of trial events
+    :param slidingwindow: int or None, length of the sliding window in x
+     coordinates to shade
     :return:
     """
 
@@ -313,6 +317,13 @@ def plot_decoding_over_all_classes(scores,
         for x, l in reflines:
             color = 'black' if l.startswith('offset') else 'green'
             ax.refline(x=x, color=color, label=l)
+            if slidingwindow is not None:
+                ax.refline(x=x+slidingwindow, color='gray',
+                           alpha=0.3, linestyle='solid',
+                           label='sliding window')
+                # add a shade the size of the sliding window
+                ax.ax.fill_between([x, x+slidingwindow], 0, 1, color='gray',
+                                   alpha=0.3)
     ax.add_legend()
     fname = f'decoding_{metric.replace(" ","_")}_l2logreg_{subject}_{label}.png'
     print(f'saving figure to {figdir}/{fname}...')
