@@ -65,7 +65,8 @@ def temporal_decoding(sub,
      window during decoding
     :return:
     """
-
+    # define the sampling rate. TODO: read this from the data
+    sr = 1000
     # set and check target infos
     known_targets = {'probability': {'prefix': 'P',
                                      'tname':'LoptProb',
@@ -151,10 +152,14 @@ def temporal_decoding(sub,
          for c in np.rollaxis(score, -1, 0)]).reshape(len(scores),
                                                       scores.shape[-1])
     # the x axis (times) gets more and more messier to get right. We need to
-    # account for time shifts etc
-    times = np.asarray(np.arange(acrossclasses.shape[-1]) * dec_factor)
-    if responselocked:
-        times = times - 1250
+    # account for time shifts if we used a sliding windows.
+    # Timeoffset is in seconds
+    timeoffset = (slidingwindow * dec_factor) / sr if slidingwindow else 0
+    # times get centered on 0 if responselocking was done. We subtract the
+    # length of the sliding window
+    times = np.asarray(np.arange(acrossclasses.shape[-1]) * dec_factor) \
+            + timespan[0] * sr + timeoffset * sr
+
     reflines = [(0, 'response')] if responselocked \
         else ((0, 'onset stimulus'), (700, 'offset stimulus'),
               (2700, 'onset stimulus'), (3400, 'offset stimulus'))
