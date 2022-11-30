@@ -318,11 +318,11 @@ def plot_decoding_over_all_classes(scores,
             color = 'black' if l.startswith('offset') else 'green'
             ax.refline(x=x, color=color, label=l)
             if slidingwindow is not None:
-                ax.refline(x=x+slidingwindow, color='gray',
+                ax.refline(x=x-slidingwindow, color='gray',
                            alpha=0.3, linestyle='solid',
                            label='sliding window')
                 # add a shade the size of the sliding window
-                ax.ax.fill_between([x, x+slidingwindow], 0, 1, color='gray',
+                ax.ax.fill_between([x, x-slidingwindow], 0, 1, color='gray',
                                    alpha=0.3)
     ax.add_legend()
     fname = f'decoding_{metric.replace(" ","_")}_l2logreg_{subject}_{label}.png'
