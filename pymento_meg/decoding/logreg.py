@@ -163,6 +163,7 @@ def temporal_decoding(sub,
     reflines = [(0, 'response')] if responselocked \
         else ((0, 'onset stimulus'), (700, 'offset stimulus'),
               (2700, 'onset stimulus'), (3400, 'offset stimulus'))
+    shading = None if slidingwindow is None else slidingwindow * dec_factor
     plot_decoding_over_all_classes(acrossclasses,
                                    times=times,
                                    label=target, subject=sub,
@@ -170,7 +171,7 @@ def temporal_decoding(sub,
                                    chance=known_targets[target]['chance'],
                                    ylim=known_targets[target]['ylims'],
                                    reflines=reflines,
-                                   slidingwindow=slidingwindow*dec_factor
+                                   slidingwindow=shading,
                                    )
 
     # plot average confusion matrix over 100ms time slots
