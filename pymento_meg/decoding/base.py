@@ -110,6 +110,30 @@ def confusion_choice(est, X, y_true, **kwargs):
     return np.apply_along_axis(lambda p, t: confusion_matrix(t, p, labels=['choice1.0', 'choice2.0']), 0, y_pred, y_true)
 
 
+def sliding_averager(X, size):
+    """Custom sliding window function that averages a given amount of samples"""
+    ntrials, nsensors, nts = X.shape
+    # the output has the same number of trials and sensors, but is shorter by
+    # the length of one sliding window
+    out = np.empty((ntrials, nsensors, nts-size))
+    for t in range(out.shape[-1]):
+        out[:, :, t] = np.mean(X[:, :, t:t + size], axis=2)
+    return out
+
+
+def spatiotemporal_slider(X, size):
+    """Custom sliding window function that does spatio-temporal integration over
+    a given amount of samples"""
+    ntrials, nsensors, nts = X.shape
+    # the output is one sliding window shorter in the sample dimension, and has
+    # a multitude more sensors as we append other samples sensors into a single
+    # sample
+    out = np.empty((ntrials, nsensors * size, nts - size))
+    for t in range(out.shape[-1]):
+        out[:, :, t] = X[:, :, t:t + size].reshape(ntrials, -1)
+    return out
+
+
 def decode(X,
            y,
            n_splits=10,
@@ -177,7 +201,9 @@ def decode(X,
         reshaperfx = reshaper.thickentok if slidingwindow is None \
             else partial(reshaper.slide,
                          thickenfx=reshaper.thickentok,
-                         size=slidingwindow)
+                         size=slidingwindow,
+                         slidefx=spatiotemporal_slider,
+                         )
         if dimreduction == 'srm':
             # determine how many virtual subjects are generated internally
             srmsamples = nsamples if srmsamples is None else srmsamples
@@ -215,7 +241,11 @@ def decode(X,
             )
         reshaper = Reshaper()
         reshaperfx = reshaper.thicken if slidingwindow is None else partial(
-            reshaper.slide, thickenfx=reshaper.thicken, size=slidingwindow)
+            reshaper.slide,
+            thickenfx=reshaper.thicken,
+            size=slidingwindow,
+            slidefx=spatiotemporal_slider,
+        )
 
         slidingestimator = MyOwnSlidingEstimator(
             reshaperfx,
@@ -258,18 +288,20 @@ class Reshaper:
         print(f"thickening X from {X.shape} to {(X.shape[0], self._k, -1)}")
         return np.reshape(X, (X.shape[0], self._k, -1))
 
-    def slide(self, X, thickenfx=None, size=10):
-        """This reshaper blows up X to inlcude a time window
+    def slide(self, X, thickenfx=None, size=10, slidefx=spatiotemporal_slider):
+        """This reshaper implements a sliding window across a range of samples
+        specified by the size parameter. A custom sliding function can be passed
+        to determine the sliding behavior. By default, the sliding results in a
+        spatio-temporal integration: All samples in the sliding window are
+        concatenated such that the one resulting sample per sliding window
+        includes the spatia-temporal configuration of all sensors in the window.
         """
         logging.info(f'Setting up a sliding window of {size} samples')
         # First, reshape to trials x sensors x time
         X_ = thickenfx(X)
-        ntrials, nsensors, nts = X_.shape
-        # then make an array to populate with data
-        gag = np.empty((ntrials, nsensors*size, nts-size))
-        for t in range(gag.shape[-1]):
-            gag[:,:,t] = X_[:,:,t:t+size].reshape(ntrials, -1)
-        return gag
+        out = slidefx(X_, size)
+        return out
+
 
 def trialaveraging(X, y, ntrials=4, nsamples='max'):
     """Average N=ntrials trials together, and repeat this until we
