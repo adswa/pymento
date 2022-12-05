@@ -336,3 +336,137 @@ def plot_decoding_over_all_classes(scores,
     print(f'saving figure to {figdir}/{fname}...')
     ax.fig.savefig(f'{figdir}/{fname}')
     plt.close('all')
+
+
+def eval_decoding(subject,
+                  datadir,
+                  bidsdir,
+                  figdir='/tmp'):
+    """Perform a temporal decoding analysis with a variety of parameters and
+    plot the resulting decoding performance measures. Tested variables are:
+    dec_factor, k, srmsamples, ntrials, nsamples, slidingwindow,
+    slidingwindowtype"""
+    # read in the data once
+    fullsample, data = get_general_data_structure(subject=subject,
+                                                  datadir=datadir,
+                                                  bidsdir=bidsdir,
+                                                  condition='nobrain-brain',
+                                                  timespan=[-1.25, 1.25])
+    # we do not vary parameter with setup with a priory knowledge
+    dec_factor = 5
+    slidingwindow = 10
+    # parameter spaces of interest
+    ntrials = [1, 3, 5]
+    nsamples = ['min', 'max', 300]
+    slidingwindowtypes = [sliding_averager, spatiotemporal_slider]
+    ks = [10, 25, 50, 80]
+    srmsamples = [10, 20, 50]
+    results = {}
+    results_srm = {}
+    run = 0
+    srmrun = 0
+    srmtrainrange = [int(i / dec_factor) for i in [2000, 2500]]
+    # and now loop:
+    for ntrial in ntrials:
+        for nsample in nsamples:
+            for slidingwindowtype in slidingwindowtypes:
+                run += 1
+                X = np.array([decimate(epoch['normalized_data'], dec_factor)
+                              for id, epoch in fullsample[subject].items()])
+
+                y = extract_targets(fullsample,
+                                    sub=subject,
+                                    target='choice',
+                                    target_prefix='choice')
+
+                scores = decode(X,
+                                y,
+                                metric=confusion_choice,
+                                n_jobs=-1,
+                                n_splits=5,
+                                nsamples=nsample,
+                                ntrials=ntrial,
+                                slidingwindow=slidingwindow,
+                                slidingwindowtype=slidingwindowtype
+                                )
+
+                acrossclasses = np.asarray(
+                    [np.nanmean(get_metrics(c, metric='balanced accuracy'))
+                     for score in scores
+                     for c in np.rollaxis(score, -1, 0)]).reshape(
+                    len(scores), scores.shape[-1]
+                )
+                # given the fixed dec_factor=5 and slidingwindow=10, the span
+                # covers 400ms prior to the response
+                areas, peaks = _eval_decoding_perf(acrossclasses, span=[160, 240])
+                results[run] = {'areas': np.median(areas),
+                                'peaks': np.median(peaks), 'ntrial': ntrial,
+                                'nsample': nsample,
+                                'windowtype': slidingwindowtype.__name__}
+                for k in ks:
+                    for srmsample in srmsamples:
+                        srmrun += 1
+                        scores = decode(X,
+                                        y,
+                                        metric=confusion_choice,
+                                        n_jobs=-1,
+                                        n_splits=5,
+                                        dimreduction='srm',
+                                        k=k,
+                                        # train on first visual stim
+                                        srmtrainrange=srmtrainrange,
+                                        srmsamples=srmsample,
+                                        nsamples=nsample,
+                                        ntrials=ntrial,
+                                        slidingwindow=slidingwindow,
+                                        slidingwindowtype=slidingwindowtype,
+                                        )
+                        acrossclasses = np.asarray(
+                            [np.nanmean(
+                                get_metrics(c, metric='balanced accuracy'))
+                             for score in scores
+                             for c in np.rollaxis(score, -1, 0)]).reshape(
+                            len(scores), scores.shape[-1]
+                        )
+                        areas, peaks = _eval_decoding_perf(acrossclasses,
+                                                           span=[180, 240])
+                        results_srm[srmrun] = {'areas': np.median(areas),
+                                               'peaks': np.median(peaks),
+                                               'ntrial': ntrial,
+                                               'nsample': nsample,
+                                               'windowtype': slidingwindowtype.__name__,
+                                               'k': k, 'srmsample': srmsample}
+
+    df_results = pd.DataFrame(results).T
+    fname = Path(figdir) / f'parameter_optimization_sub-{subject}.png'
+    print(f'generating figure {fname}...')
+    fig, ax = plt.subplots(figsize = (9, 5))
+    sns.scatterplot(data=df_results, x='areas', y='peaks', hue='nsample',
+                    style='windowtype', size='ntrial', ax=ax)
+    plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
+    fig.suptitle(f'Parameter search for subject {subject}')
+    plt.tight_layout()
+    fig.figure.savefig(fname)
+
+    df_results_srm = pd.DataFrame(results_srm).T
+    fname = Path(figdir) / f'parameter_optimization_srm_sub-{subject}.png'
+    print(f'generating figure {fname}...')
+    fig = sns.relplot(data=df_results_srm, x='areas', y='peaks', col='windowtype',
+                      row='ntrial', hue='nsample', style='srmsample', size='k')
+    fig.figure.suptitle(f'SRM parameter search for subject {subject}')
+    plt.tight_layout()
+    fig.figure.savefig(fname)
+
+
+
+def _eval_decoding_perf(accuracies, span):
+    """For a given span of accuracies, compute the area under the curve
+     (average accuracy) and peak accuracy"""
+    # calulcate area under the curve, normalized by the range of the integral
+    #https://www.intmath.com/applications-integration/9-average-value-function.php
+    areas = [
+        np.trapz(acc[span[0]:span[1]]) / (span[1] - span[0] - 1)
+        for acc in accuracies
+    ]
+    peaks = [np.max(acc[span[0]:span[1]]) for acc in accuracies]
+    return areas, peaks
