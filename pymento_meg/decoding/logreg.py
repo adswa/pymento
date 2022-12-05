@@ -16,6 +16,8 @@ from pymento_meg.decoding.base import (
     confusion_expectedvalue,
     confusion_choice,
     decode,
+    sliding_averager,
+    spatiotemporal_slider,
 )
 
 
@@ -36,6 +38,7 @@ def temporal_decoding(sub,
                       n_splits=5,
                       responselocked=False,
                       slidingwindow=None,
+                      slidingwindowtype=spatiotemporal_slider,
                       ):
     """
     Perform temporal decoding on a memento subject's time series data in sensor
@@ -63,6 +66,8 @@ def temporal_decoding(sub,
     or not (influences parameters in data selection and plotting)
     :param slidingwindow: None or int; over how many samples to create a sliding
      window during decoding
+    :param slidingwindowtype: which custom function to use in a sliding window.
+    Currently implemented: spatiotemporal_slider and sliding_averager
     :return:
     """
     # define the sampling rate. TODO: read this from the data
@@ -140,6 +145,7 @@ def temporal_decoding(sub,
                     nsamples=nsamples,
                     ntrials=ntrials,
                     slidingwindow=slidingwindow,
+                    slidingwindowtype=slidingwindowtype,
                     )
 
     # save the decoding scores for future use

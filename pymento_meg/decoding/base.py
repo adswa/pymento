@@ -147,6 +147,7 @@ def decode(X,
            ntrials=4,
            nsamples=100,
            slidingwindow=10,
+           slidingwindowtype=spatiotemporal_slider,
            ):
     """
     Fit an estimator of a given type to every time point in a
@@ -202,7 +203,7 @@ def decode(X,
             else partial(reshaper.slide,
                          thickenfx=reshaper.thickentok,
                          size=slidingwindow,
-                         slidefx=spatiotemporal_slider,
+                         slidefx=slidingwindowtype,
                          )
         if dimreduction == 'srm':
             # determine how many virtual subjects are generated internally
@@ -244,7 +245,7 @@ def decode(X,
             reshaper.slide,
             thickenfx=reshaper.thicken,
             size=slidingwindow,
-            slidefx=spatiotemporal_slider,
+            slidefx=slidingwindowtype,
         )
 
         slidingestimator = MyOwnSlidingEstimator(
