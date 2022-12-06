@@ -341,6 +341,7 @@ def plot_decoding_over_all_classes(scores,
 def eval_decoding(subject,
                   datadir,
                   bidsdir,
+                  workdir,
                   figdir='/tmp'):
     """Perform a temporal decoding analysis with a variety of parameters and
     plot the resulting decoding performance measures. Tested variables are:
@@ -352,92 +353,59 @@ def eval_decoding(subject,
                                                   bidsdir=bidsdir,
                                                   condition='nobrain-brain',
                                                   timespan=[-1.25, 1.25])
-    # we do not vary parameter with setup with a priory knowledge
+    results = {}
+    # we do not vary parameter with setup with a priory knowledge.
+    # downsample to 200hz, 10xsample -> 50ms sliding window
     dec_factor = 5
     slidingwindow = 10
-    # parameter spaces of interest
-    ntrials = [1, 3, 5]
-    nsamples = ['min', 'max', 300]
-    slidingwindowtypes = [sliding_averager, spatiotemporal_slider]
-    ks = [10, 25, 50, 80]
-    srmsamples = [10, 20, 50]
-    results = {}
-    results_srm = {}
-    run = 0
-    srmrun = 0
     srmtrainrange = [int(i / dec_factor) for i in [2000, 2500]]
-    # and now loop:
-    for ntrial in ntrials:
-        for nsample in nsamples:
-            for slidingwindowtype in slidingwindowtypes:
-                run += 1
-                X = np.array([decimate(epoch['normalized_data'], dec_factor)
-                              for id, epoch in fullsample[subject].items()])
 
-                y = extract_targets(fullsample,
-                                    sub=subject,
-                                    target='choice',
-                                    target_prefix='choice')
+    # get a parameter combination out of the param generator
+    for idx, (ntrial, nsample, slidingwindowtype, dimreduction, k, srmsample) in \
+            enumerate(parameter_producer()):
+        X = np.array([decimate(epoch['normalized_data'], dec_factor)
+                      for id, epoch in fullsample[subject].items()])
 
-                scores = decode(X,
-                                y,
-                                metric=confusion_choice,
-                                n_jobs=-1,
-                                n_splits=5,
-                                nsamples=nsample,
-                                ntrials=ntrial,
-                                slidingwindow=slidingwindow,
-                                slidingwindowtype=slidingwindowtype
-                                )
-
-                acrossclasses = np.asarray(
-                    [np.nanmean(get_metrics(c, metric='balanced accuracy'))
-                     for score in scores
-                     for c in np.rollaxis(score, -1, 0)]).reshape(
-                    len(scores), scores.shape[-1]
-                )
-                # given the fixed dec_factor=5 and slidingwindow=10, the span
-                # covers 400ms prior to the response
-                areas, peaks = _eval_decoding_perf(acrossclasses, span=[160, 240])
-                results[run] = {'areas': np.median(areas),
-                                'peaks': np.median(peaks), 'ntrial': ntrial,
-                                'nsample': nsample,
-                                'windowtype': slidingwindowtype.__name__}
-                for k in ks:
-                    for srmsample in srmsamples:
-                        srmrun += 1
-                        scores = decode(X,
-                                        y,
-                                        metric=confusion_choice,
-                                        n_jobs=-1,
-                                        n_splits=5,
-                                        dimreduction='srm',
-                                        k=k,
-                                        # train on first visual stim
-                                        srmtrainrange=srmtrainrange,
-                                        srmsamples=srmsample,
-                                        nsamples=nsample,
-                                        ntrials=ntrial,
-                                        slidingwindow=slidingwindow,
-                                        slidingwindowtype=slidingwindowtype,
-                                        )
-                        acrossclasses = np.asarray(
-                            [np.nanmean(
-                                get_metrics(c, metric='balanced accuracy'))
-                             for score in scores
-                             for c in np.rollaxis(score, -1, 0)]).reshape(
-                            len(scores), scores.shape[-1]
+        y = extract_targets(fullsample,
+                            sub=subject,
+                            target='choice',
+                            target_prefix='choice')
+        print(ntrial, nsample, slidingwindowtype, dimreduction, k, srmsample)
+        scores = decode(X,
+                        y,
+                        metric=confusion_choice,
+                        n_jobs=-1,
+                        n_splits=5,
+                        dimreduction=dimreduction,
+                        k=k,
+                        # train on first visual stim
+                        srmtrainrange=srmtrainrange,
+                        srmsamples=srmsample,
+                        nsamples=nsample,
+                        ntrials=ntrial,
+                        slidingwindow=slidingwindow,
+                        slidingwindowtype=slidingwindowtype,
                         )
-                        areas, peaks = _eval_decoding_perf(acrossclasses,
-                                                           span=[180, 240])
-                        results_srm[srmrun] = {'areas': np.median(areas),
-                                               'peaks': np.median(peaks),
-                                               'ntrial': ntrial,
-                                               'nsample': nsample,
-                                               'windowtype': slidingwindowtype.__name__,
-                                               'k': k, 'srmsample': srmsample}
+
+        acrossclasses = np.asarray(
+            [np.nanmean(get_metrics(c, metric='balanced accuracy'))
+             for score in scores
+             for c in np.rollaxis(score, -1, 0)]).reshape(
+            len(scores), scores.shape[-1]
+        )
+        # given the fixed dec_factor=5 and slidingwindow=10, the span
+        # covers 400ms prior to the response
+        areas, peaks = _eval_decoding_perf(acrossclasses, span=[160, 240])
+        results[idx] = {'areas': np.median(areas),
+                        'peaks': np.median(peaks), 'ntrial': ntrial,
+                        'nsample': nsample, 'k': k, 'srmsample': srmsample,
+                        'windowtype': slidingwindowtype.__name__ if
+                        slidingwindowtype is not None else 'None'}
 
     df_results = pd.DataFrame(results).T
+    # save the data frame
+    fname = Path(workdir) / f'parameter_optimazation_{subject}.csv'
+    df_results.to_csv(fname)
     fname = Path(figdir) / f'parameter_optimization_sub-{subject}.png'
     print(f'generating figure {fname}...')
     fig, ax = plt.subplots(figsize = (9, 5))
@@ -448,15 +416,30 @@ def eval_decoding(subject,
     plt.tight_layout()
     fig.figure.savefig(fname)
 
-    df_results_srm = pd.DataFrame(results_srm).T
     fname = Path(figdir) / f'parameter_optimization_srm_sub-{subject}.png'
     print(f'generating figure {fname}...')
-    fig = sns.relplot(data=df_results_srm, x='areas', y='peaks', col='windowtype',
+    fig = sns.relplot(data=df_results, x='areas', y='peaks', col='windowtype',
                       row='ntrial', hue='nsample', style='srmsample', size='k')
     fig.figure.suptitle(f'SRM parameter search for subject {subject}')
     plt.tight_layout()
     fig.figure.savefig(fname)
 
+
+def parameter_producer():
+    # for now, only loop over parameter spaces of interest.
+    # potentially refine hypothesis-driven later
+    for dimreduction in [None, 'srm']:
+        for ntrial in [1, 5, 10]:
+            for nsample in  ['min', 'max', 500]:
+                for slidingwindowtype in [sliding_averager, spatiotemporal_slider, None]:
+                    if dimreduction is None:
+                        yield ntrial, nsample, slidingwindowtype, \
+                              dimreduction, None, None
+                    else:
+                        for k in [2, 5, 10, 25, 80]:
+                            for srmsample in [10, 20, 50]:
+                                yield ntrial, nsample, slidingwindowtype, \
+                                      dimreduction, k, srmsample
 
 
 def _eval_decoding_perf(accuracies, span):
