@@ -199,7 +199,7 @@ def decode(X,
             f'Fitting a {estimator} using {str(metric)} as the final scoring '
             f'and {dimreduction} for dimensionality reduction.')
         reshaper = Reshaper(k=k)
-        reshaperfx = reshaper.thickentok if slidingwindow is None \
+        reshaperfx = reshaper.thickentok if slidingwindowtype is None \
             else partial(reshaper.slide,
                          thickenfx=reshaper.thickentok,
                          size=slidingwindow,
@@ -241,7 +241,7 @@ def decode(X,
             f' {n_splits} splits using {str(metric)} as the final scoring.'
             )
         reshaper = Reshaper()
-        reshaperfx = reshaper.thicken if slidingwindow is None else partial(
+        reshaperfx = reshaper.thicken if slidingwindowtype is None else partial(
             reshaper.slide,
             thickenfx=reshaper.thicken,
             size=slidingwindow,
