@@ -404,25 +404,32 @@ def eval_decoding(subject,
 
     df_results = pd.DataFrame(results).T
     # save the data frame
-    fname = Path(workdir) / f'parameter_optimazation_{subject}.csv'
+    fname = Path(workdir) / f'parameter_optimazation_sub-{subject}.csv'
     df_results.to_csv(fname)
     fname = Path(figdir) / f'sub-{subject}' / \
             f'parameter_optimization_sub-{subject}.png'
     print(f'generating figure {fname}...')
     fig, ax = plt.subplots(figsize = (9, 5))
-    sns.scatterplot(data=df_results, x='areas', y='peaks', hue='nsample',
-                    style='windowtype', size='ntrial', ax=ax)
+    sns.scatterplot(data=df_results[~df_results.k.notna()], x='areas',
+                    y='peaks', hue='nsample', style='windowtype', size='ntrial',
+                    ax=ax)
     plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
     fig.suptitle(f'Parameter search for subject {subject}')
+    fig.set_xlabels('avg accuracy 500ms prior response')
+    fig.set_ylabels('peak accuracy')
+
     plt.tight_layout()
     fig.figure.savefig(fname)
 
     fname = Path(figdir) /  f'sub-{subject}' / \
             f'parameter_optimization_srm_sub-{subject}.png'
     print(f'generating figure {fname}...')
-    fig = sns.relplot(data=df_results, x='areas', y='peaks', col='windowtype',
-                      row='ntrial', hue='nsample', style='srmsample', size='k')
+    fig = sns.relplot(data=df_results[df_results.k.notna()], x='areas',
+                      y='peaks', col='windowtype', row='ntrial', hue='nsample',
+                      style='srmsample', size='k')
     fig.figure.suptitle(f'SRM parameter search for subject {subject}')
+    fig.suptitle(f'Parameter search for subject {subject}')
+    fig.set_xlabels('avg accuracy 500ms prior response')
     plt.tight_layout()
     fig.figure.savefig(fname)
 
