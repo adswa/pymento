@@ -339,10 +339,10 @@ def plot_decoding_over_all_classes(scores,
 
 
 def eval_decoding(subject,
-                  datadir,
-                  bidsdir,
-                  workdir,
-                  figdir='/tmp'):
+                  datadir='/data/project/brainpeach/memento-sss',
+                  bidsdir='/data/project/brainpeach/memento-bids',
+                  workdir='/data/project/brainpeach/decoding',
+                  figdir='/data/project/brainpeach/decoding'):
     """Perform a temporal decoding analysis with a variety of parameters and
     plot the resulting decoding performance measures. Tested variables are:
     dec_factor, k, srmsamples, ntrials, nsamples, slidingwindow,
@@ -406,7 +406,8 @@ def eval_decoding(subject,
     # save the data frame
     fname = Path(workdir) / f'parameter_optimazation_{subject}.csv'
     df_results.to_csv(fname)
-    fname = Path(figdir) / f'parameter_optimization_sub-{subject}.png'
+    fname = Path(figdir) / f'sub-{subject}' / \
+            f'parameter_optimization_sub-{subject}.png'
     print(f'generating figure {fname}...')
     fig, ax = plt.subplots(figsize = (9, 5))
     sns.scatterplot(data=df_results, x='areas', y='peaks', hue='nsample',
@@ -416,7 +417,8 @@ def eval_decoding(subject,
     plt.tight_layout()
     fig.figure.savefig(fname)
 
-    fname = Path(figdir) / f'parameter_optimization_srm_sub-{subject}.png'
+    fname = Path(figdir) /  f'sub-{subject}' / \
+            f'parameter_optimization_srm_sub-{subject}.png'
     print(f'generating figure {fname}...')
     fig = sns.relplot(data=df_results, x='areas', y='peaks', col='windowtype',
                       row='ntrial', hue='nsample', style='srmsample', size='k')
