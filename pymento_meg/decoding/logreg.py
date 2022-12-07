@@ -415,9 +415,9 @@ def eval_decoding(subject,
                     ax=ax)
     plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
     fig.suptitle(f'Parameter search for subject {subject}')
-    fig.set_xlabels('avg accuracy 500ms prior response')
-    fig.set_ylabels('peak accuracy')
-
+    plt.xlabel('avg accuracy 500ms prior response')
+    plt.ylabel('peak accuracy')
+    plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
     plt.tight_layout()
     fig.figure.savefig(fname)
 
