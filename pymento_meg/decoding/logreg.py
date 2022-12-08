@@ -428,7 +428,7 @@ def eval_decoding(subject,
                       y='peaks', col='windowtype', row='ntrial', hue='nsample',
                       style='srmsample', size='k')
     fig.figure.suptitle(f'SRM parameter search for subject {subject}')
-    fig.suptitle(f'Parameter search for subject {subject}')
+    fig.set_ylabels('peak accuracy')
     fig.set_xlabels('avg accuracy 500ms prior response')
     plt.tight_layout()
     fig.figure.savefig(fname)
