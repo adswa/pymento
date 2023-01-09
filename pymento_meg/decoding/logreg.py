@@ -420,9 +420,8 @@ def eval_decoding(subject,
     plt.ylabel('peak accuracy')
     plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
     # set the same x- and y-axis limits in all plots for comparability
-    for ax in fig.axes[0]:
-        ax.set_ylim(0.55, 0.9)
-        ax.set_xlim(0.50, 0.7)
+    ax.set_ylim(0.55, 0.9)
+    ax.set_xlim(0.50, 0.7)
     plt.tight_layout()
     fig.figure.savefig(fname)
 
