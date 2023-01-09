@@ -236,7 +236,8 @@ def decode(X,
             outer_pipeline = make_pipeline(
                 trialaverager,
                 StandardScaler(),
-                SpatialPCATransformer(k=k, reshaper=reshaper),
+                SpatialPCATransformer(k=k, reshaper=reshaper,
+                                      trainrange=srmtrainrange),
                 slidingestimator,
             )
     else:
@@ -280,6 +281,7 @@ class Reshaper:
         self._k = k
 
     def flatten(self, X):
+        print(f"flattening X from {X.shape} to {(X.shape[0], -1)}")
         self._sampleshape = X.shape[1:]
         return np.reshape(X, (X.shape[0], -1))
 
@@ -292,6 +294,14 @@ class Reshaper:
          to"""
         print(f"thickening X from {X.shape} to {(X.shape[0], self._k, -1)}")
         return np.reshape(X, (X.shape[0], self._k, -1))
+
+    def thickentotime(self, X, newtime):
+        """Alternative to thicken that allows to reshape back to three,
+         dimensions, but with a specified time dimension instead of a prior
+         extracted one. This allows time subsetting to train ranges."""
+        print(f"thickening X with new time from {X.shape} to "
+              f"{(X.shape[0], self._sampleshape[0], newtime)}")
+        return np.reshape(X, (X.shape[0], self._sampleshape[0], newtime))
 
     def slide(self, X, thickenfx=None, size=10, slidefx=spatiotemporal_slider):
         """This reshaper implements a sliding window across a range of samples
@@ -345,15 +355,27 @@ def trialaveraging(X, y, ntrials=4, nsamples='max'):
 
 class SpatialPCATransformer(BaseEstimator, TransformerMixin):
 
-    def __init__(self, k, reshaper):
+    def __init__(self, k, reshaper, trainrange=None):
         from sklearn.decomposition import PCA
         self.k = k
         self.pca = PCA(n_components=k)
         self.reshaper = reshaper
+        if trainrange is not None:
+            # trainrange needs to be a set or list with a start and end value
+            assert len(trainrange) == 2, 'the trainrange needs to have 2 values'
+            assert trainrange[0] < trainrange[1], \
+                'start value must be smaller than end value'
+        self.trainrange = trainrange
+        self.newtime = None
 
     def _dimensionalityvodoo(self, X):
         # restore to trials x sensors x time
-        X_ = self.reshaper.thicken(X)
+        if self.newtime is not None:
+            X_ = self.reshaper.thickentotime(X, self.newtime)
+            # reset newtime internally
+            self.newtime = None
+        else:
+            X_ = self.reshaper.thicken(X)
         # now bend dimensions: aim is spatial PCA, thus the time dimension is at
         # the wrong place. We need to unwind the time dimension along the trial
         # dimension. **vodoooo**
@@ -363,7 +385,22 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
         return X_
 
     def fit(self, X, y):
-        self.pca.fit(self._dimensionalityvodoo(X))
+        # subset training data to the specified trainrange
+        if self.trainrange is not None:
+            logging.info(f'subsetting PCA training data into train range '
+                         f'{self.trainrange}.')
+            # first, turn X back into trials x sensors x time
+            X_ = self.reshaper.thicken(X)
+            # check that the selected range isn't larger than the available time
+            assert self.trainrange[1] <= X_.shape[-1], \
+                'train range is larger than available data range!'
+            X_ = X_[:, :, self.trainrange[0]:self.trainrange[1]]
+            # flatten, but hold on to the new time dimension
+            self.newtime = X_.shape[-1]
+            X_ = np.reshape(X_, (X_.shape[0], -1))
+            self.pca.fit(self._dimensionalityvodoo(X_))
+        else:
+            self.pca.fit(self._dimensionalityvodoo(X))
         return self
 
     def transform(self, X):
