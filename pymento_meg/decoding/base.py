@@ -112,18 +112,21 @@ def confusion_choice(est, X, y_true, **kwargs):
 
 def sliding_averager(X, size):
     """Custom sliding window function that averages a given amount of samples"""
+    logging.info('Starting averager sliding')
     ntrials, nsensors, nts = X.shape
     # the output has the same number of trials and sensors, but is shorter by
     # the length of one sliding window
     out = np.empty((ntrials, nsensors, nts-size))
     for t in range(out.shape[-1]):
         out[:, :, t] = np.mean(X[:, :, t:t + size], axis=2)
+    logging.info(f"Dimensionality after average sliding is {out.shape}")
     return out
 
 
 def spatiotemporal_slider(X, size):
     """Custom sliding window function that does spatio-temporal integration over
     a given amount of samples"""
+    logging.info('Starting spatiotemporal sliding')
     ntrials, nsensors, nts = X.shape
     # the output is one sliding window shorter in the sample dimension, and has
     # a multitude more sensors as we append other samples sensors into a single
@@ -131,6 +134,7 @@ def spatiotemporal_slider(X, size):
     out = np.empty((ntrials, nsensors * size, nts - size))
     for t in range(out.shape[-1]):
         out[:, :, t] = X[:, :, t:t + size].reshape(ntrials, -1)
+    logging.info(f"Dimensionality after spatiotemporal sliding is {out.shape}")
     return out
 
 
