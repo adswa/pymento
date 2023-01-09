@@ -398,6 +398,7 @@ def eval_decoding(subject,
         areas, peaks = _eval_decoding_perf(acrossclasses, span=[160, 240])
         results[idx] = {'areas': np.median(areas),
                         'peaks': np.median(peaks), 'ntrial': ntrial,
+                        'dimreduction': dimreduction,
                         'nsample': nsample, 'k': k, 'srmsample': srmsample,
                         'windowtype': slidingwindowtype.__name__ if
                         slidingwindowtype is not None else 'None'}
@@ -409,7 +410,7 @@ def eval_decoding(subject,
     fname = Path(figdir) / f'sub-{subject}' / \
             f'parameter_optimization_sub-{subject}.png'
     print(f'generating figure {fname}...')
-    fig, ax = plt.subplots(figsize = (9, 5))
+    fig, ax = plt.subplots(figsize=(9, 5))
     sns.scatterplot(data=df_results[~df_results.k.notna()], x='areas',
                     y='peaks', hue='nsample', style='windowtype', size='ntrial',
                     ax=ax)
@@ -424,9 +425,9 @@ def eval_decoding(subject,
     fname = Path(figdir) /  f'sub-{subject}' / \
             f'parameter_optimization_srm_sub-{subject}.png'
     print(f'generating figure {fname}...')
-    fig = sns.relplot(data=df_results[df_results.k.notna()], x='areas',
-                      y='peaks', col='windowtype', row='ntrial', hue='nsample',
-                      style='srmsample', size='k')
+    fig = sns.relplot(data=df_results[df_results.dimreduction == 'srm'],
+                      x='areas', y='peaks', col='windowtype', row='ntrial',
+                      hue='nsample', style='srmsample', size='k')
     fig.figure.suptitle(f'SRM parameter search for subject {subject}')
     fig.set_ylabels('peak accuracy')
     fig.set_xlabels('avg accuracy 500ms prior response')
@@ -434,10 +435,22 @@ def eval_decoding(subject,
     fig.figure.savefig(fname)
 
 
+    fname = Path(figdir) /  f'sub-{subject}' / \
+            f'parameter_optimization_pca_sub-{subject}.png'
+    print(f'generating figure {fname}...')
+    fig = sns.relplot(data=df_results[df_results.dimreduction == 'pca'],
+                      x='areas', y='peaks', col='windowtype', row='ntrial',
+                      hue='nsample', style='srmsample', size='k')
+    fig.figure.suptitle(f'PCA parameter search for subject {subject}')
+    fig.set_ylabels('peak accuracy')
+    fig.set_xlabels('avg accuracy 500ms prior response')
+    plt.tight_layout()
+    fig.figure.savefig(fname)
+
 def parameter_producer():
     # for now, only loop over parameter spaces of interest.
     # potentially refine hypothesis-driven later
-    for dimreduction in [None, 'srm']:
+    for dimreduction in ['pca', None, 'srm']:
         for ntrial in [1, 5, 10]:
             for nsample in  ['min', 'max', 500]:
                 for slidingwindowtype in [sliding_averager, spatiotemporal_slider, None]:
