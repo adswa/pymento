@@ -404,7 +404,7 @@ def eval_decoding(subject,
 
     df_results = pd.DataFrame(results).T
     # save the data frame
-    fname = Path(workdir) / f'parameter_optimazation_sub-{subject}.csv'
+    fname = Path(workdir) / f'parameter_optimization_sub-{subject}.csv'
     df_results.to_csv(fname)
     fname = Path(figdir) / f'sub-{subject}' / \
             f'parameter_optimization_sub-{subject}.png'
