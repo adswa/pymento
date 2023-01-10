@@ -499,3 +499,29 @@ def _eval_decoding_perf(accuracies, span):
     ]
     peaks = [np.max(acc[span[0]:span[1]]) for acc in accuracies]
     return areas, peaks
+
+
+def aggregate_evals(
+        figdir='/data/project/brainpeach/decoding',
+        subject='all',
+        fpath='/data/project/brainpeach/decoding/parameter_optimazation_sub-*.csv',
+        ):
+    """Read in all decoding parameter optimization results and plot the average
+    results across subjects for each parameter combination. """
+    if not (Path(figdir) /f'sub-{subject}').exists():
+        from os import makedirs
+        import logging
+        logging.info(f'Creating {figdir}/sub-{subject}...')
+        makedirs(Path(figdir)/f'sub-{subject}')
+    from glob import glob
+    dfs = []
+    for file in glob(fpath):
+        df = pd.read_csv(file)
+        dfs.append(df)
+    df_results = pd.concat(dfs)
+    means = df_results.groupby(df_results.index).mean()
+    # a few columns don't survive the averaging, but we can resurrect them from
+    # any single data frame and add them back (they are identical between subs)
+    cols = df[['windowtype', 'nsample', 'dimreduction']]
+    means = means.join(cols)
+    _all_plots(figdir=figdir, subject=subject, df_results=means, aggregate=True)
