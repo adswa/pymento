@@ -152,6 +152,7 @@ def decode(X,
            nsamples=100,
            slidingwindow=10,
            slidingwindowtype=spatiotemporal_slider,
+           spectralsrm=False,
            ):
     """
     Fit an estimator of a given type to every time point in a
@@ -184,6 +185,8 @@ def decode(X,
     :param ntrials: int; how many trials of the same type to average together
     :param nsamples: int; how many bootstrapping draws during trial averaging
     :param slidingwindow: int or None; size of a sliding window in samples
+    :param spectralsrm: bool, whether or not the SRM shall be trained on
+    spectral data
     :return:
     """
     logging.info(f'Initializing TrialAverager with {ntrials} trials per '
@@ -222,7 +225,8 @@ def decode(X,
                 trialaverager,
                 SRMTransformer(k=k,
                                nsamples=srmsamples,
-                               trainrange=srmtrainrange),
+                               trainrange=srmtrainrange,
+                               spectral=spectralsrm),
                 StandardScaler(),
                 slidingestimator,
             )
@@ -418,7 +422,7 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
 
 class SRMTransformer(BaseEstimator, TransformerMixin):
 
-    def __init__(self, k, nsamples=10, trainrange=None):
+    def __init__(self, k, nsamples=10, trainrange=None, spectral=False):
         self.k = k
         self.nsamples = nsamples
         if trainrange is not None:
@@ -427,6 +431,7 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
             assert trainrange[0] < trainrange[1], \
                 'start value must be smaller than end value'
         self.trainrange = trainrange
+        self.spectral = spectral
 
     def fit(self, X, y):
         """
@@ -474,6 +479,10 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
                         axis=1
                     )
                 )
+        if self.spectral:
+            # do a spectral transformation
+            from pymento_meg.srm.simulate import transform_to_power
+            samples = [transform_to_power(s) for s in samples]
         # fit an SRM model on the samples
         srm = shared_response(samples,
                               features=self.k)

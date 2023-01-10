@@ -39,6 +39,7 @@ def temporal_decoding(sub,
                       responselocked=False,
                       slidingwindow=None,
                       slidingwindowtype=spatiotemporal_slider,
+                      spectralsrm=False,
                       ):
     """
     Perform temporal decoding on a memento subject's time series data in sensor
@@ -68,6 +69,7 @@ def temporal_decoding(sub,
      window during decoding
     :param slidingwindowtype: which custom function to use in a sliding window.
     Currently implemented: spatiotemporal_slider and sliding_averager
+    :param spectralsrm: bool, whether SRM is trained on spectral data or not
     :return:
     """
     # define the sampling rate. TODO: read this from the data
@@ -126,6 +128,11 @@ def temporal_decoding(sub,
             # determine the time range for training data
             trainrange = [int(i/dec_factor) for i in srmtrainrange] \
                 if srmtrainrange is not None else None
+            if spectralsrm:
+                # add another output depth
+                fpath = _construct_path(
+                    [workdir, f'sub-{sub}/{dimreduction}/spectral']
+                )
         else:
             trainrange = None
     else:
@@ -146,6 +153,7 @@ def temporal_decoding(sub,
                     ntrials=ntrials,
                     slidingwindow=slidingwindow,
                     slidingwindowtype=slidingwindowtype,
+                    spectralsrm=spectralsrm,
                     )
 
     # save the decoding scores for future use
