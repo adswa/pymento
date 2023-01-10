@@ -485,8 +485,8 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X, y=None):
         X_ = np.reshape(X, (X.shape[0], 306, -1))
-        print('X_ shape is: ', X_.shape)
+        logging.info(f'X_ shape is: {X_.shape}')
         check_is_fitted(self, 'basis')
         transformed = np.stack([np.dot(self.basis.T, x) for x in X_])
-        print('within SRM transform: from ', transformed.shape)
+        logging.info('within SRM transform: from {transformed.shape}')
         return np.reshape(transformed, (transformed.shape[0], -1))
