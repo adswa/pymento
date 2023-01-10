@@ -407,6 +407,10 @@ def eval_decoding(subject,
     # save the data frame
     fname = Path(workdir) / f'parameter_optimization_sub-{subject}.csv'
     df_results.to_csv(fname)
+    # plotting
+    _all_plots(figdir, subject, df_results)
+
+def _all_plots(figdir, subject, df_results, aggregate=False):
     fname = Path(figdir) / f'sub-{subject}' / \
             f'parameter_optimization_sub-{subject}.png'
     print(f'generating figure {fname}...')
@@ -415,29 +419,35 @@ def eval_decoding(subject,
                     y='peaks', hue='nsample', style='windowtype', size='ntrial',
                     ax=ax)
     plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
-    fig.suptitle(f'Parameter search for subject {subject}')
+    title = f'Parameter search for subject {subject}' if not aggregate else \
+        f'Parameter averages across subjects'
+    fig.suptitle(title)
     plt.xlabel('avg accuracy 500ms prior response')
     plt.ylabel('peak accuracy')
     plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
-    # set the same x- and y-axis limits in all plots for comparability
-    ax.set_ylim(0.55, 0.9)
-    ax.set_xlim(0.50, 0.7)
+    if not aggregate:
+        # set the same x- and y-axis limits in all plots for comparability
+        ax.set_ylim(0.55, 0.9)
+        ax.set_xlim(0.50, 0.7)
     plt.tight_layout()
     fig.figure.savefig(fname)
 
-    fname = Path(figdir) /  f'sub-{subject}' / \
+    fname = Path(figdir) / f'sub-{subject}' / \
             f'parameter_optimization_srm_sub-{subject}.png'
     print(f'generating figure {fname}...')
     fig = sns.relplot(data=df_results[df_results.dimreduction == 'srm'],
                       x='areas', y='peaks', col='windowtype', row='ntrial',
                       hue='nsample', style='srmsample', size='k')
-    fig.figure.suptitle(f'SRM parameter search for subject {subject}')
+    title = f'SRM parameter search for subject {subject}' if not aggregate \
+        else f'Aggregate SRM parameter averages across subjects'
+    fig.figure.suptitle(title)
     fig.set_ylabels('peak accuracy')
     fig.set_xlabels('avg accuracy 500ms prior response')
-    # set the same x- and y-axis limits in all plots for comparability
-    for ax in fig.axes[0]:
-        ax.set_ylim(0.55, 0.9)
-        ax.set_xlim(0.50, 0.7)
+    if not aggregate:
+        # set the same x- and y-axis limits in all plots for comparability
+        for ax in fig.axes[0]:
+            ax.set_ylim(0.55, 0.9)
+            ax.set_xlim(0.50, 0.7)
     plt.tight_layout()
     fig.figure.savefig(fname)
 
@@ -448,13 +458,16 @@ def eval_decoding(subject,
     fig = sns.relplot(data=df_results[df_results.dimreduction == 'pca'],
                       x='areas', y='peaks', col='windowtype', row='ntrial',
                       hue='nsample', style='srmsample', size='k')
-    fig.figure.suptitle(f'PCA parameter search for subject {subject}')
+    title = f'PCA parameter search for subject {subject}' if not aggregate \
+        else f'Aggregate PCA parameter averages across subjects'
+    fig.figure.suptitle(title)
     fig.set_ylabels('peak accuracy')
     fig.set_xlabels('avg accuracy 500ms prior response')
-    # set the same x- and y-axis limits in all plots for comparability
-    for ax in fig.axes[0]:
-        ax.set_ylim(0.55, 0.9)
-        ax.set_xlim(0.50, 0.7)
+    if not aggregate:
+        # set the same x- and y-axis limits in all plots for comparability
+        for ax in fig.axes[0]:
+            ax.set_ylim(0.55, 0.9)
+            ax.set_xlim(0.50, 0.7)
     plt.tight_layout()
     fig.figure.savefig(fname)
 
