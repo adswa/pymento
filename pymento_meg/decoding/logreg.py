@@ -131,7 +131,7 @@ def temporal_decoding(sub,
             if spectralsrm:
                 # add another output depth
                 fpath = _construct_path(
-                    [workdir, f'sub-{sub}/{dimreduction}/spectral']
+                    [workdir, f'sub-{sub}/{dimreduction}/spectral/']
                 )
         else:
             trainrange = None
