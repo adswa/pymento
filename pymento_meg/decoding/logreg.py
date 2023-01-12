@@ -542,7 +542,7 @@ def _eval_decoding_perf(accuracies, span):
 def aggregate_evals(
         figdir='/data/project/brainpeach/decoding',
         subject='all',
-        fpath='/data/project/brainpeach/decoding/parameter_optimazation_sub-*.csv',
+        fpath='/data/project/brainpeach/decoding/parameter_optimization_sub-*.csv',
         ):
     """Read in all decoding parameter optimization results and plot the average
     results across subjects for each parameter combination. """
