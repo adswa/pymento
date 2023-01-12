@@ -508,7 +508,7 @@ def parameter_producer():
     # potentially refine hypothesis-driven later
     for dimreduction in ['pca', None, 'srm']:
         for ntrial in [1, 5, 10]:
-            for nsample in  ['min', 'max', 500]:
+            for nsample in ['min', 'max', 500]:
                 for slidingwindowtype in [sliding_averager, spatiotemporal_slider, None]:
                     if dimreduction is None:
                         yield ntrial, nsample, slidingwindowtype, \
@@ -522,8 +522,8 @@ def parameter_producer():
                                               slidingwindowtype, dimreduction, \
                                               k, srmsample, spectralsrm
                             elif dimreduction == 'pca':
-                                yield ntrial, None, slidingwindowtype, \
-                                      dimreduction, k, srmsample, False
+                                yield ntrial, nsample, slidingwindowtype, \
+                                      dimreduction, k, None, False
 
 
 def _eval_decoding_perf(accuracies, span):
