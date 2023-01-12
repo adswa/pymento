@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -369,7 +370,7 @@ def eval_decoding(subject,
     srmtrainrange = [int(i / dec_factor) for i in [2000, 2500]]
 
     # get a parameter combination out of the param generator
-    for idx, (ntrial, nsample, slidingwindowtype, dimreduction, k, srmsample) in \
+    for idx, (ntrial, nsample, slidingwindowtype, dimreduction, k, srmsample, spectralsrm) in \
             enumerate(parameter_producer()):
         X = np.array([decimate(epoch['normalized_data'], dec_factor)
                       for id, epoch in fullsample[subject].items()])
@@ -378,7 +379,8 @@ def eval_decoding(subject,
                             sub=subject,
                             target='choice',
                             target_prefix='choice')
-        print(ntrial, nsample, slidingwindowtype, dimreduction, k, srmsample)
+        logging.info(ntrial, nsample, slidingwindowtype, dimreduction, k,
+                     srmsample, spectralsrm)
         scores = decode(X,
                         y,
                         metric=confusion_choice,
@@ -393,6 +395,7 @@ def eval_decoding(subject,
                         ntrials=ntrial,
                         slidingwindow=slidingwindow,
                         slidingwindowtype=slidingwindowtype,
+                        spectralsrm=spectralsrm,
                         )
 
         acrossclasses = np.asarray(
@@ -408,6 +411,7 @@ def eval_decoding(subject,
                         'peaks': np.median(peaks), 'ntrial': ntrial,
                         'dimreduction': dimreduction,
                         'nsample': nsample, 'k': k, 'srmsample': srmsample,
+                        'spectral': spectralsrm,
                         'windowtype': slidingwindowtype.__name__ if
                         slidingwindowtype is not None else 'None'}
 
@@ -421,7 +425,7 @@ def eval_decoding(subject,
 def _all_plots(figdir, subject, df_results, aggregate=False):
     fname = Path(figdir) / f'sub-{subject}' / \
             f'parameter_optimization_sub-{subject}.png'
-    print(f'generating figure {fname}...')
+    logging.info(f'generating figure {fname}...')
     fig, ax = plt.subplots(figsize=(9, 5))
     sns.scatterplot(data=df_results[~df_results.k.notna()], x='areas',
                     y='peaks', hue='nsample', style='windowtype', size='ntrial',
@@ -442,8 +446,9 @@ def _all_plots(figdir, subject, df_results, aggregate=False):
 
     fname = Path(figdir) / f'sub-{subject}' / \
             f'parameter_optimization_srm_sub-{subject}.png'
-    print(f'generating figure {fname}...')
-    fig = sns.relplot(data=df_results[df_results.dimreduction == 'srm'],
+    logging.info(f'generating figure {fname}...')
+    fig = sns.relplot(data=df_results[(df_results.dimreduction == 'srm') & \
+                                      (df_results.spectral == False)],
                       x='areas', y='peaks', col='windowtype', row='ntrial',
                       hue='nsample', style='srmsample', size='k')
     title = f'SRM parameter search for subject {subject}' if not aggregate \
@@ -459,6 +464,25 @@ def _all_plots(figdir, subject, df_results, aggregate=False):
     plt.tight_layout()
     fig.figure.savefig(fname)
 
+    fname = Path(figdir) / f'sub-{subject}' / \
+            f'parameter_optimization_spectralsrm_sub-{subject}.png'
+    logging.info(f'generating figure {fname}...')
+    fig = sns.relplot(data=df_results[(df_results.dimreduction == 'srm') & \
+                                      (df_results.spectral == True)],
+                      x='areas', y='peaks', col='windowtype', row='ntrial',
+                      hue='nsample', style='srmsample', size='k')
+    title = f'Spectral SRM parameter search for subject {subject}' if not aggregate \
+        else f'Aggregate spectral SRM parameter averages across subjects'
+    fig.figure.suptitle(title)
+    fig.set_ylabels('peak accuracy')
+    fig.set_xlabels('avg accuracy 500ms prior response')
+    if not aggregate:
+        # set the same x- and y-axis limits in all plots for comparability
+        for ax in fig.axes[0]:
+            ax.set_ylim(0.55, 0.9)
+            ax.set_xlim(0.50, 0.7)
+    plt.tight_layout()
+    fig.figure.savefig(fname)
 
     fname = Path(figdir) /  f'sub-{subject}' / \
             f'parameter_optimization_pca_sub-{subject}.png'
@@ -488,12 +512,18 @@ def parameter_producer():
                 for slidingwindowtype in [sliding_averager, spatiotemporal_slider, None]:
                     if dimreduction is None:
                         yield ntrial, nsample, slidingwindowtype, \
-                              dimreduction, None, None
+                              dimreduction, None, None, None
                     else:
                         for k in [2, 5, 10, 25, 80]:
-                            for srmsample in [10, 20, 50]:
-                                yield ntrial, nsample, slidingwindowtype, \
-                                      dimreduction, k, srmsample
+                            if dimreduction == 'srm':
+                                for srmsample in [10, 20, 50]:
+                                    for spectralsrm in [False, True]:
+                                        yield ntrial, nsample, \
+                                              slidingwindowtype, dimreduction, \
+                                              k, srmsample, spectralsrm
+                            elif dimreduction == 'pca':
+                                yield ntrial, None, slidingwindowtype, \
+                                      dimreduction, k, srmsample, False
 
 
 def _eval_decoding_perf(accuracies, span):
@@ -530,6 +560,6 @@ def aggregate_evals(
     means = df_results.groupby(df_results.index).mean()
     # a few columns don't survive the averaging, but we can resurrect them from
     # any single data frame and add them back (they are identical between subs)
-    cols = df[['windowtype', 'nsample', 'dimreduction']]
+    cols = df[['windowtype', 'nsample', 'dimreduction', 'spectral']]
     means = means.join(cols)
     _all_plots(figdir=figdir, subject=subject, df_results=means, aggregate=True)
