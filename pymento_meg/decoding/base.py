@@ -461,24 +461,18 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
                           for target in targets]
             # then, select each of those trials, potentially subselecting the
             # number of time points to a specified range
+            start = 0
+            end = X_.shape[-1]
             if self.trainrange is not None:
                 # subset the time series (train only on specific part of trial)
                 start = self.trainrange[0]
                 end = self.trainrange[1]
-                samples.append(
-                    np.concatenate(
-                        [np.squeeze(X_[i, :, start:end]) for i in sample_ids],
-                        axis=1
-                    )
+            samples.append(
+                np.concatenate(
+                    [np.squeeze(X_[i, :, start:end]) for i in sample_ids],
+                    axis=1 # TODO: This needs to be axis=2!
                 )
-            else:
-                # take all samples as training data
-                samples.append(
-                    np.concatenate(
-                        [np.squeeze(X_[i, :, :]) for i in sample_ids],
-                        axis=1
-                    )
-                )
+            )
         if self.spectral:
             # do a spectral transformation
             from pymento_meg.srm.simulate import transform_to_power
