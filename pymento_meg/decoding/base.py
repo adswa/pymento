@@ -369,6 +369,8 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
             assert len(trainrange) == 2, 'the trainrange needs to have 2 values'
             assert trainrange[0] < trainrange[1], \
                 'start value must be smaller than end value'
+            # check that the train range is not negative
+            assert all(self.trainrange) > 0, 'train range cannot be negative!'
         self.trainrange = trainrange
         self.newtime = None
 
@@ -452,6 +454,8 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
             # check that the selected range isn't larger than the available time
             assert self.trainrange[1] <= X_.shape[-1], \
                 'train range is larger than available data range!'
+            # check that the train range is not negative
+            assert all(self.trainrange) > 0, 'train range cannot be negative!'
         # generate nsamples samples for the shared response model
         samples = []
         for i in range(nsamples):
