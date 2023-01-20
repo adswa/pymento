@@ -469,14 +469,13 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
             samples.append(
                 np.concatenate(
                     # the first dimension is 1, squeeze it away
-                    [np.squeeze(X_[i, :, start:end]) for i in sample_ids],
+                    [self._finalize_target_sample(
+                        np.squeeze(X_[i, :, start:end]))
+                        for i in sample_ids],
                     axis=1
                 )
             )
-        if self.spectral:
-            # do a spectral transformation
-            from pymento_meg.srm.simulate import transform_to_power
-            samples = [transform_to_power(s) for s in samples]
+
         # fit an SRM model on the samples
         srm = shared_response(samples,
                               features=self.k)
@@ -485,6 +484,16 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
         self.basis = avg_basis
         print(self.basis.shape)
         return self
+
+    def _finalize_target_sample(self, data):
+        """Apply a spectral transformation to a virtual SRM subject,
+         if wanted."""
+        if not self.spectral:
+            return data
+        # do a spectral transformation
+        from pymento_meg.srm.simulate import transform_to_power
+        return transform_to_power(data)
+
 
     def transform(self, X, y=None):
         X_ = np.reshape(X, (X.shape[0], 306, -1))
