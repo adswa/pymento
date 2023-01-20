@@ -423,8 +423,7 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
 
 
 class SRMTransformer(BaseEstimator, TransformerMixin):
-
-    def __init__(self, k, nsamples=10, trainrange=None, spectral=False):
+    def __init__(self, k, nsamples, trainrange, spectral):
         self.k = k
         self.nsamples = nsamples
         if trainrange is not None:
