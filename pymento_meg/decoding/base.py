@@ -224,7 +224,7 @@ def decode(X,
             outer_pipeline = make_pipeline(
                 trialaverager,
                 SRMTransformer(k=k,
-                               nsamples=srmsamples,
+                               subjects=srmsamples,
                                trainrange=srmtrainrange,
                                spectral=spectralsrm),
                 StandardScaler(),
@@ -423,9 +423,9 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
 
 
 class SRMTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, k, nsamples, trainrange, spectral):
+    def __init__(self, k, subjects, trainrange, spectral):
         self.k = k
-        self.nsamples = nsamples
+        self.subjects = subjects
         if trainrange is not None:
             # trainrange needs to be a set or list with a start and end value
             assert len(trainrange) == 2, 'the trainrange needs to have 2 values'
@@ -443,11 +443,7 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
         """
         X_ = np.reshape(X, (X.shape[0], 306, -1))
         targets, counts = np.unique(y, return_counts=True)
-        # TODO also account for potential future 'stratified' option
-        nsamples = np.max(counts) if self.nsamples == 'max' \
-            else np.min(counts) if self.nsamples == 'min' \
-            else self.nsamples
-        logging.info(f'Preparing to draw {nsamples} virtual subjects...')
+        logging.info(f'Preparing to draw {self.subjects} virtual subjects...')
         # set up the time subselection for the training data
         if self.trainrange is not None:
             # check that the selected range isn't larger than the available time
@@ -455,9 +451,9 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
                 'train range is larger than available data range!'
             # check that the train range is not negative
             assert all(self.trainrange) > 0, 'train range cannot be negative!'
-        # generate nsamples samples for the shared response model
+        # generate virtual subjects for the shared response model
         samples = []
-        for i in range(nsamples):
+        for subject in range(self.subjects):
             # generate virtual subjects from concatenating data from each target
             # first, get trial ids of one trial per unique target value
             sample_ids = [np.random.choice(np.where(y == target)[0], 1)
@@ -472,8 +468,9 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
                 end = self.trainrange[1]
             samples.append(
                 np.concatenate(
+                    # the first dimension is 1, squeeze it away
                     [np.squeeze(X_[i, :, start:end]) for i in sample_ids],
-                    axis=1 # TODO: This needs to be axis=2!
+                    axis=1
                 )
             )
         if self.spectral:
