@@ -212,15 +212,17 @@ def decode(X,
                          size=slidingwindow,
                          slidefx=slidingwindowtype,
                          )
+        # both PCA and SRM get the same sliding estimator
+        slidingestimator = MyOwnSlidingEstimator(
+            reshaperfx,
+            estimator,
+            n_jobs=n_jobs,
+            scoring='accuracy',
+            verbose=True)
         if dimreduction == 'srm':
             # determine how many virtual subjects are generated internally
             srmsamples = nsamples if srmsamples is None else srmsamples
-            slidingestimator = MyOwnSlidingEstimator(
-                reshaperfx,
-                estimator,
-                n_jobs=n_jobs,
-                scoring='accuracy',
-                verbose=True)
+
             outer_pipeline = make_pipeline(
                 trialaverager,
                 SRMTransformer(k=k,
@@ -231,12 +233,6 @@ def decode(X,
                 slidingestimator,
             )
         elif dimreduction == 'pca':
-            slidingestimator = MyOwnSlidingEstimator(
-                reshaperfx,
-                estimator,
-                n_jobs=n_jobs,
-                scoring='accuracy',
-                verbose=True)
             outer_pipeline = make_pipeline(
                 trialaverager,
                 StandardScaler(),
