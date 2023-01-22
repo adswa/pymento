@@ -152,7 +152,6 @@ def decode(X,
            nsamples=100,
            slidingwindow=10,
            slidingwindowtype=spatiotemporal_slider,
-           spectralsrm=False,
            ):
     """
     Fit an estimator of a given type to every time point in a
@@ -174,7 +173,7 @@ def decode(X,
      implementations confusion_{magnitude,probability,expectedvalue}
     :param n_jobs: int or None; determines parallelization
     :param dimreduction: None or string identifying a transformer;
-     currently supports 'srm' and in the future 'pca'. Will be added
+     currently supports 'srm', 'pca', 'spectralsrm'. Will be added
      to pipeline for dimensionality reduction. Requires parameter k
     :param k: None or int; dimensions to reduce to/features to select
     :param trainrange: None or list of int; if not None its a range of
@@ -185,8 +184,6 @@ def decode(X,
     :param ntrials: int; how many trials of the same type to average together
     :param nsamples: int; how many bootstrapping draws during trial averaging
     :param slidingwindow: int or None; size of a sliding window in samples
-    :param spectralsrm: bool, whether or not the SRM shall be trained on
-    spectral data
     :return:
     """
     logging.info(f'Initializing TrialAverager with {ntrials} trials per '
@@ -218,17 +215,19 @@ def decode(X,
             n_jobs=n_jobs,
             scoring='accuracy',
             verbose=True)
-        if dimreduction == 'srm':
+        if dimreduction in ['srm', 'spectralsrm']:
             # determine how many virtual subjects are generated internally
             assert srmsamples is not None
             srmsamples = nsamples if srmsamples is None else srmsamples
-
+            # no scaler prior SRM, we need the time signature, and SRM does
+            # demeaning itself. We call the StandardScaler() afterwards to
+            # harmonize sensors prior to Logistic Regression
             outer_pipeline = make_pipeline(
                 trialaverager,
                 SRMTransformer(k=k,
                                subjects=srmsamples,
                                trainrange=trainrange,
-                               spectral=spectralsrm),
+                               spectral=False if dimreduction == 'srm' else True),
                 StandardScaler(),
                 slidingestimator,
             )
@@ -273,6 +272,7 @@ def decode(X,
                                   n_jobs=n_jobs
                                   )
     return scores
+
 
 class Reshaper:
     """Helper class to reshape to and from 3D/2D data"""

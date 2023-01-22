@@ -40,7 +40,6 @@ def temporal_decoding(sub,
                       responselocked=False,
                       slidingwindow=None,
                       slidingwindowtype=spatiotemporal_slider,
-                      spectralsrm=False,
                       ):
     """
     Perform temporal decoding on a memento subject's time series data in sensor
@@ -56,7 +55,8 @@ def temporal_decoding(sub,
     :param datadir: str; where is epoched data
     :param bidsdir: str; where is BIDS data
     :param workdir: str; where to save decoding results
-    :param dimreduction: None or sklearn transformer
+    :param dimreduction: None or str; which form of dimensionality reduction to
+     use. Can be None, 'pca', 'srm', 'spectralsrm'.
     :param k: None or int; dimensions to reduce to/features to select
     :param trainrange: None or list of int; if not None needs to be a start
     and end range to subselect training data. *Must* be in 1000Hz samples, e.g.
@@ -132,13 +132,6 @@ def temporal_decoding(sub,
         # determine the time range for training data
         trainrange = [int(i / dec_factor) for i in trainrange] \
             if trainrange is not None else None
-        if dimreduction == 'srm':
-            if spectralsrm:
-                # add another output depth
-                fpath = _construct_path(
-                    [workdir, f'sub-{sub}/{dimreduction}/spectral/']
-                )
-
 
     scores = decode(X,
                     y,
@@ -153,7 +146,6 @@ def temporal_decoding(sub,
                     ntrials=ntrials,
                     slidingwindow=slidingwindow,
                     slidingwindowtype=slidingwindowtype,
-                    spectralsrm=spectralsrm,
                     )
 
     # save the decoding scores for future use
@@ -369,7 +361,7 @@ def eval_decoding(subject,
     trainrange = [int(i / dec_factor) for i in [2000, 2500]]
 
     # get a parameter combination out of the param generator
-    for idx, (ntrial, nsample, slidingwindowtype, dimreduction, k, srmsample, spectralsrm) in \
+    for idx, (ntrial, nsample, slidingwindowtype, dimreduction, k, srmsample) in \
             enumerate(parameter_producer()):
         X = np.array([decimate(epoch['normalized_data'], dec_factor)
                       for id, epoch in fullsample[subject].items()])
@@ -379,7 +371,7 @@ def eval_decoding(subject,
                             target='choice',
                             target_prefix='choice')
         logging.info(ntrial, nsample, slidingwindowtype, dimreduction, k,
-                     srmsample, spectralsrm)
+                     srmsample)
         scores = decode(X,
                         y,
                         metric=confusion_choice,
@@ -394,7 +386,6 @@ def eval_decoding(subject,
                         ntrials=ntrial,
                         slidingwindow=slidingwindow,
                         slidingwindowtype=slidingwindowtype,
-                        spectralsrm=spectralsrm,
                         )
 
         acrossclasses = np.asarray(
@@ -410,7 +401,6 @@ def eval_decoding(subject,
                         'peaks': np.median(peaks), 'ntrial': ntrial,
                         'dimreduction': dimreduction,
                         'nsample': nsample, 'k': k, 'srmsample': srmsample,
-                        'spectral': spectralsrm,
                         'windowtype': slidingwindowtype.__name__ if
                         slidingwindowtype is not None else 'None'}
 
@@ -446,8 +436,7 @@ def _all_plots(figdir, subject, df_results, aggregate=False):
     fname = Path(figdir) / f'sub-{subject}' / \
             f'parameter_optimization_srm_sub-{subject}.png'
     logging.info(f'generating figure {fname}...')
-    fig = sns.relplot(data=df_results[(df_results.dimreduction == 'srm') & \
-                                      (df_results.spectral == False)],
+    fig = sns.relplot(data=df_results[df_results.dimreduction == 'srm'],
                       x='areas', y='peaks', col='windowtype', row='ntrial',
                       hue='nsample', style='srmsample', size='k')
     title = f'SRM parameter search for subject {subject}' if not aggregate \
@@ -466,8 +455,7 @@ def _all_plots(figdir, subject, df_results, aggregate=False):
     fname = Path(figdir) / f'sub-{subject}' / \
             f'parameter_optimization_spectralsrm_sub-{subject}.png'
     logging.info(f'generating figure {fname}...')
-    fig = sns.relplot(data=df_results[(df_results.dimreduction == 'srm') & \
-                                      (df_results.spectral == True)],
+    fig = sns.relplot(data=df_results[df_results.dimreduction == 'spectralsrm'],
                       x='areas', y='peaks', col='windowtype', row='ntrial',
                       hue='nsample', style='srmsample', size='k')
     title = f'Spectral SRM parameter search for subject {subject}' if not aggregate \
@@ -505,24 +493,23 @@ def _all_plots(figdir, subject, df_results, aggregate=False):
 def parameter_producer():
     # for now, only loop over parameter spaces of interest.
     # potentially refine hypothesis-driven later
-    for dimreduction in ['pca', None, 'srm']:
+    for dimreduction in ['pca', None, 'srm', 'spectralsrm']:
         for ntrial in [1, 5, 10]:
             for nsample in ['min', 'max', 500]:
                 for slidingwindowtype in [sliding_averager, spatiotemporal_slider, None]:
                     if dimreduction is None:
                         yield ntrial, nsample, slidingwindowtype, \
-                              dimreduction, None, None, None
+                              dimreduction, None, None
                     else:
                         for k in [2, 5, 10, 25, 80]:
-                            if dimreduction == 'srm':
+                            if dimreduction in ['srm', 'spectralsrm']:
                                 for srmsample in [10, 20, 50]:
-                                    for spectralsrm in [False, True]:
                                         yield ntrial, nsample, \
                                               slidingwindowtype, dimreduction, \
-                                              k, srmsample, spectralsrm
+                                              k, srmsample
                             elif dimreduction == 'pca':
                                 yield ntrial, nsample, slidingwindowtype, \
-                                      dimreduction, k, None, False
+                                      dimreduction, k, None
 
 
 def _eval_decoding_perf(accuracies, span):
@@ -559,6 +546,6 @@ def aggregate_evals(
     means = df_results.groupby(df_results.index).mean()
     # a few columns don't survive the averaging, but we can resurrect them from
     # any single data frame and add them back (they are identical between subs)
-    cols = df[['windowtype', 'nsample', 'dimreduction', 'spectral']]
+    cols = df[['windowtype', 'nsample', 'dimreduction']]
     means = means.join(cols)
     _all_plots(figdir=figdir, subject=subject, df_results=means, aggregate=True)
