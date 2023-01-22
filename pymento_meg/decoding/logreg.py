@@ -123,7 +123,11 @@ def temporal_decoding(sub,
                         target=known_targets[target]['tname'],
                         target_prefix=known_targets[target]['prefix'])
     del fullsample, data
-    if dimreduction is not None:
+    if dimreduction is None:
+        # set output path and be explicit about no trainrange
+        fpath =_construct_path([workdir, f'sub-{sub}/'])
+        trainrange = None
+    else:
         fpath =_construct_path([workdir, f'sub-{sub}/{dimreduction}/'])
         # determine the time range for training data
         trainrange = [int(i / dec_factor) for i in trainrange] \
@@ -134,9 +138,7 @@ def temporal_decoding(sub,
                 fpath = _construct_path(
                     [workdir, f'sub-{sub}/{dimreduction}/spectral/']
                 )
-    else:
-        fpath =_construct_path([workdir, f'sub-{sub}/'])
-        trainrange = None
+
 
     scores = decode(X,
                     y,
