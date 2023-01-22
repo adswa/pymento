@@ -366,9 +366,9 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
             assert trainrange[0] < trainrange[1], \
                 'start value must be smaller than end value'
             # check that the train range is not negative
-            assert all(self.trainrange) > 0, 'train range cannot be negative!'
-        self.trainrange = trainrange
+            assert all(trainrange) > 0, 'train range cannot be negative!'
         self.newtime = None
+        self.trainrange = trainrange
 
     def _dimensionalityvodoo(self, X):
         # restore to trials x sensors x time
