@@ -428,16 +428,8 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
             assert trainrange[0] < trainrange[1], \
                 'start value must be smaller than end value'
         self.trainrange = trainrange
-        self.spectral = spectral
 
     def fit(self, X, y):
-        """
-
-        :param X:
-        :param y:
-        :return:
-        """
-        X_ = np.reshape(X, (X.shape[0], 306, -1))
         targets, counts = np.unique(y, return_counts=True)
         logging.info(f'Preparing to draw {self.subjects} virtual subjects...')
         # set up the time subselection for the training data
@@ -465,7 +457,7 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
             samples.append(
                 np.concatenate(
                     # the first dimension is 1, squeeze it away
-                    [self._finalize_target_sample(
+                    [self._preprocess(
                         np.squeeze(X_[i, :, start:end]))
                         for i in sample_ids],
                     axis=1
@@ -481,20 +473,21 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
         print(self.basis.shape)
         return self
 
-    def _finalize_target_sample(self, data):
-        """Apply a spectral transformation to a virtual SRM subject,
-         if wanted."""
-        if not self.spectral:
-            return data
-        # do a spectral transformation
-        from pymento_meg.srm.simulate import transform_to_power
-        return transform_to_power(data)
-
+    def _preprocess(self, data):
+        return data
 
     def transform(self, X, y=None):
         X_ = np.reshape(X, (X.shape[0], 306, -1))
         logging.info(f'X_ shape is: {X_.shape}')
         check_is_fitted(self, 'basis')
         transformed = np.stack([np.dot(self.basis.T, x) for x in X_])
-        logging.info('within SRM transform: from {transformed.shape}')
+        logging.info(f'within SRM transform: from {transformed.shape}')
         return np.reshape(transformed, (transformed.shape[0], -1))
+
+
+class SpectralSRMTransformer(SRMTransformer):
+
+    def _preprocess(self, data):
+        """Apply a spectral transformation to a virtual SRM subject."""
+        from pymento_meg.srm.simulate import transform_to_power
+        return transform_to_power(data)
