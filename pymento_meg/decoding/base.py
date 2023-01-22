@@ -218,7 +218,7 @@ def decode(X,
         if dimreduction in ['srm', 'spectralsrm']:
             # determine how many virtual subjects are generated internally
             assert srmsamples is not None
-            srmsamples = nsamples if srmsamples is None else srmsamples
+
             # no scaler prior SRM, we need the time signature, and SRM does
             # demeaning itself. We call the StandardScaler() afterwards to
             # harmonize sensors prior to Logistic Regression
