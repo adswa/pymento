@@ -388,7 +388,9 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y):
         # subset training data to the specified trainrange
-        if self.trainrange is not None:
+        if self.trainrange is None:
+            self.pca.fit(self._dimensionalityvodoo(X))
+        else:
             logging.info(f'subsetting PCA training data into train range '
                          f'{self.trainrange}.')
             # first, turn X back into trials x sensors x time
@@ -401,8 +403,6 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
             self.newtime = X_.shape[-1]
             X_ = np.reshape(X_, (X_.shape[0], -1))
             self.pca.fit(self._dimensionalityvodoo(X_))
-        else:
-            self.pca.fit(self._dimensionalityvodoo(X))
         return self
 
     def transform(self, X):
