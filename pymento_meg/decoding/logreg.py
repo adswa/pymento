@@ -32,7 +32,7 @@ def temporal_decoding(sub,
                       workdir='/data/project/brainpeach/decoding',
                       dimreduction=None,
                       k=None,
-                      srmtrainrange=None,
+                      trainrange=None,
                       srmsamples=None,
                       ntrials=4,
                       nsamples=100,
@@ -58,7 +58,7 @@ def temporal_decoding(sub,
     :param workdir: str; where to save decoding results
     :param dimreduction: None or sklearn transformer
     :param k: None or int; dimensions to reduce to/features to select
-    :param srmtrainrange: None or list of int; if not None needs to be a start
+    :param trainrange: None or list of int; if not None needs to be a start
     and end range to subselect training data. *Must* be in 1000Hz samples, e.g.
     [0, 700] for first visual stimulation!
     :param ntrials: int; how many trials of the same type to average together
@@ -127,14 +127,15 @@ def temporal_decoding(sub,
         fpath =_construct_path([workdir, f'sub-{sub}/{dimreduction}/'])
         if dimreduction == 'srm':
             # determine the time range for training data
-            trainrange = [int(i/dec_factor) for i in srmtrainrange] \
-                if srmtrainrange is not None else None
+            trainrange = [int(i/dec_factor) for i in trainrange] \
+                if trainrange is not None else None
             if spectralsrm:
                 # add another output depth
                 fpath = _construct_path(
                     [workdir, f'sub-{sub}/{dimreduction}/spectral/']
                 )
         else:
+            # TODO: WRONG, needs a trainrange also for PCA
             trainrange = None
     else:
         fpath =_construct_path([workdir, f'sub-{sub}/'])
@@ -147,8 +148,7 @@ def temporal_decoding(sub,
                     n_splits=n_splits,
                     dimreduction=dimreduction,
                     k=k,
-                    # train on first visual stim
-                    srmtrainrange=trainrange,
+                    trainrange=trainrange,
                     srmsamples=srmsamples,
                     nsamples=nsamples,
                     ntrials=ntrials,
@@ -367,7 +367,7 @@ def eval_decoding(subject,
     # downsample to 200hz, 10xsample -> 50ms sliding window
     dec_factor = 5
     slidingwindow = 10
-    srmtrainrange = [int(i / dec_factor) for i in [2000, 2500]]
+    trainrange = [int(i / dec_factor) for i in [2000, 2500]]
 
     # get a parameter combination out of the param generator
     for idx, (ntrial, nsample, slidingwindowtype, dimreduction, k, srmsample, spectralsrm) in \
@@ -389,7 +389,7 @@ def eval_decoding(subject,
                         dimreduction=dimreduction,
                         k=k,
                         # train on first visual stim
-                        srmtrainrange=srmtrainrange,
+                        trainrange=trainrange,
                         srmsamples=srmsample,
                         nsamples=nsample,
                         ntrials=ntrial,

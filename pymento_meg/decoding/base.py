@@ -145,7 +145,7 @@ def decode(X,
            metric='accuracy',
            n_jobs=None,
            dimreduction=None,
-           srmtrainrange=None,
+           trainrange=None,
            srmsamples=None,
            k=None,
            ntrials=4,
@@ -177,7 +177,7 @@ def decode(X,
      currently supports 'srm' and in the future 'pca'. Will be added
      to pipeline for dimensionality reduction. Requires parameter k
     :param k: None or int; dimensions to reduce to/features to select
-    :param srmtrainrange: None or list of int; if not None its a range of
+    :param trainrange: None or list of int; if not None its a range of
      samples to subset srm training data to (e.g., [0, 70])
     :param srmsamples: None or int; how many virtual subjects shall be created
     within the shared response modelling. If None, as many subjects as
@@ -227,7 +227,7 @@ def decode(X,
                 trialaverager,
                 SRMTransformer(k=k,
                                subjects=srmsamples,
-                               trainrange=srmtrainrange,
+                               trainrange=trainrange,
                                spectral=spectralsrm),
                 StandardScaler(),
                 slidingestimator,
@@ -237,7 +237,7 @@ def decode(X,
                 trialaverager,
                 StandardScaler(),
                 SpatialPCATransformer(k=k, reshaper=reshaper,
-                                      trainrange=srmtrainrange),
+                                      trainrange=trainrange),
                 slidingestimator,
             )
     else:
