@@ -199,13 +199,12 @@ def decode(X,
                  f'{n_splits} splits')
     cv = StratifiedKFold(n_splits=n_splits)
     if dimreduction is not None:
-        if not k:
-            logging.warning('Parameter k is not set, defaulting to k=10')
-            k = 10
+        assert k is not None
         logging.info(
             f'Fitting a {estimator} using {str(metric)} as the final scoring '
             f'and {dimreduction} for dimensionality reduction.')
         reshaper = Reshaper(k=k)
+        # if we use a sliding window, supply the necessary parameters
         reshaperfx = reshaper.thickentok if slidingwindowtype is None \
             else partial(reshaper.slide,
                          thickenfx=reshaper.thickentok,
@@ -221,6 +220,7 @@ def decode(X,
             verbose=True)
         if dimreduction == 'srm':
             # determine how many virtual subjects are generated internally
+            assert srmsamples is not None
             srmsamples = nsamples if srmsamples is None else srmsamples
 
             outer_pipeline = make_pipeline(
