@@ -125,18 +125,15 @@ def temporal_decoding(sub,
     del fullsample, data
     if dimreduction is not None:
         fpath =_construct_path([workdir, f'sub-{sub}/{dimreduction}/'])
+        # determine the time range for training data
+        trainrange = [int(i / dec_factor) for i in trainrange] \
+            if trainrange is not None else None
         if dimreduction == 'srm':
-            # determine the time range for training data
-            trainrange = [int(i/dec_factor) for i in trainrange] \
-                if trainrange is not None else None
             if spectralsrm:
                 # add another output depth
                 fpath = _construct_path(
                     [workdir, f'sub-{sub}/{dimreduction}/spectral/']
                 )
-        else:
-            # TODO: WRONG, needs a trainrange also for PCA
-            trainrange = None
     else:
         fpath =_construct_path([workdir, f'sub-{sub}/'])
         trainrange = None
