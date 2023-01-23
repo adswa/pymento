@@ -195,39 +195,66 @@ def decode(X,
     logging.info(f'Setting up a Stratified KFold Crossvalidation with '
                  f'{n_splits} splits')
     cv = StratifiedKFold(n_splits=n_splits)
+
+    origspace_reshaper = Flattener()
+
+    if dimreduction:
+        # we need a second reshaper, when we further reduce the dimensionality
+        # of the data in an intermediate step, because the sliding measure
+        # estimation needs to go back into a dim=k x time space
+        dimredspace_reshaper = Flattener()
+        slider_shape_restorefx = dimredspace_reshaper.restore
+    else:
+        slider_shape_restorefx = origspace_reshaper.restore
+
+    # the machinery that MyOwnSlidingEstimator is using to get data into the
+    # necessary shape
+    slider_shaperfx = slider_shape_restorefx \
+        if slidingwindowtype is None else partial(
+            make_sliding_window_samples,
+            orig_shape_restorer=slider_shape_restorefx,
+            size=slidingwindow,
+            slidefx=slidingwindowtype,
+        )
+
+    # all implementations use the same sliding estimator
+    # they only differ by the means of getting data into the
+    # right shape, which is handled by `slider_shaperfx`
+    # set up above
+    slidingestimator = MyOwnSlidingEstimator(
+        slider_shaperfx,
+        estimator,
+        n_jobs=n_jobs,
+        scoring='accuracy',
+        verbose=True)
+
     if dimreduction is not None:
         assert k is not None
+
         logging.info(
             f'Fitting a {estimator} using {str(metric)} as the final scoring '
             f'and {dimreduction} for dimensionality reduction.')
-        reshaper = Reshaper(k=k)
-        # if we use a sliding window, supply the necessary parameters
-        reshaperfx = reshaper.thickentok if slidingwindowtype is None \
-            else partial(reshaper.slide,
-                         thickenfx=reshaper.thickentok,
-                         size=slidingwindow,
-                         slidefx=slidingwindowtype,
-                         )
         # both PCA and SRM get the same sliding estimator
-        slidingestimator = MyOwnSlidingEstimator(
-            reshaperfx,
-            estimator,
-            n_jobs=n_jobs,
-            scoring='accuracy',
-            verbose=True)
         if dimreduction in ['srm', 'spectralsrm']:
             # determine how many virtual subjects are generated internally
             assert srmsamples is not None
-            srmtransformer = SRMTransformer if dimreduction == 'srm' else SpectralSRMTransformer
+
+            srmtransformer_cls = SRMTransformer \
+                if dimreduction == 'srm' else SpectralSRMTransformer
+            srmtransformer = srmtransformer_cls(
+                k=k,
+                origspace_reshaper=origspace_reshaper,
+                dimredspace_reshaper=dimredspace_reshaper,
+                nsubjects=srmsamples,
+                trainrange=trainrange,
+            )
+
             # no scaler prior SRM, we need the time signature, and SRM does
             # demeaning itself. We call the StandardScaler() afterwards to
             # harmonize sensors prior to Logistic Regression
             outer_pipeline = make_pipeline(
                 trialaverager,
-                srmtransformer(k=k,
-                               subjects=srmsamples,
-                               trainrange=trainrange,
-                               ),
+                srmtransformer,
                 StandardScaler(),
                 slidingestimator,
             )
@@ -235,8 +262,12 @@ def decode(X,
             outer_pipeline = make_pipeline(
                 trialaverager,
                 StandardScaler(),
-                SpatialPCATransformer(k=k, reshaper=reshaper,
-                                      trainrange=trainrange),
+                SpatialPCATransformer(
+                    k=k,
+                    origspace_reshaper=origspace_reshaper,
+                    dimredspace_reshaper=dimredspace_reshaper,
+                    trainrange=trainrange,
+                ),
                 slidingestimator,
             )
     else:
@@ -244,28 +275,13 @@ def decode(X,
             f'Fitting {estimator} in a stratified cross-validation with'
             f' {n_splits} splits using {str(metric)} as the final scoring.'
             )
-        reshaper = Reshaper()
-        reshaperfx = reshaper.thicken if slidingwindowtype is None else partial(
-            reshaper.slide,
-            thickenfx=reshaper.thicken,
-            size=slidingwindow,
-            slidefx=slidingwindowtype,
-        )
-
-        slidingestimator = MyOwnSlidingEstimator(
-            reshaperfx,
-            estimator,
-            n_jobs=n_jobs,
-            scoring='accuracy',
-            verbose=True)
-
         outer_pipeline = make_pipeline(
             trialaverager,
             StandardScaler(),
             slidingestimator,
         )
     scores = cross_val_multiscore(outer_pipeline,
-                                  reshaper.flatten(X),
+                                  origspace_reshaper.apply(X),
                                   y,
                                   cv=cv,
                                   scoring=metric,
@@ -274,48 +290,64 @@ def decode(X,
     return scores
 
 
-class Reshaper:
-    """Helper class to reshape to and from 3D/2D data"""
-    def __init__(self, k=None):
-        self._sampleshape = None
-        self._k = k
+class Flattener:
+    """Helper class to reshape to and from nD/2D data"""
+    def __init__(self):
+        self.params = dict(sampleshape=None)
 
-    def flatten(self, X):
-        print(f"flattening X from {X.shape} to {(X.shape[0], -1)}")
-        self._sampleshape = X.shape[1:]
+    def __deepcopy__(self, memo={}):
+        dc = type(self)()
+        # THIS IS A HACK! It's a deepcopy() method but doesn't actually do a
+        # deepcopy!
+        # The sampleshape parameter is crucial to restore the dimensionality of
+        # the data matrix X. It should get set during 'apply' and then reused
+        # during 'restore' ('apply' and 'restore' are called by separate steps
+        # in the pipeline). Cross_val_maultiscore() unconditionally
+        # 'clones' the Flattener object such that the sampleshape set in the
+        # SRM/PCA/SpectralSRMTransformer isn't propagated to the
+        # SlidingEstimator step that relies on it to restore X:
+        # T SlidingEstimator doesn't get to see a set sampleshape and
+        # dimensionality restoring would fail.
+        # This hack tries to circumvent this by storing the sample-
+        # shape in a dictionary (which points always to the same object) and
+        # thus forces the two dimensionality-reduction-Flatteners to be linked.
+        dc.params = self.params
+        return dc
+
+    def apply(self, X):
+        _sampleshape = self.params['sampleshape']
+        logging.info(f"flattening X from {X.shape} to {(X.shape[0], -1)}")
+        assert _sampleshape is None or X.shape[1:] == _sampleshape, \
+            "Must not be called with a different sample shape"
+        self.params['sampleshape'] = X.shape[1:]
         return np.reshape(X, (X.shape[0], -1))
 
-    def thicken(self, X):
-        print(f"thickening X from {X.shape} to {(X.shape[0],)+self._sampleshape}")
-        return np.reshape(X, (X.shape[0],)+self._sampleshape)
+    def restore(self, X):
+        _sampleshape = self.params['sampleshape']
+        logging.info(
+            f"thickening X from {X.shape} to "
+            f"{(X.shape[0],)+_sampleshape}")
+        return np.reshape(X, (X.shape[0],) + _sampleshape)
 
-    def thickentok(self, X):
-        """Thicken X back according to the dimensions the dim reduction reduced
-         to"""
-        print(f"thickening X from {X.shape} to {(X.shape[0], self._k, -1)}")
-        return np.reshape(X, (X.shape[0], self._k, -1))
 
-    def thickentotime(self, X, newtime):
-        """Alternative to thicken that allows to reshape back to three,
-         dimensions, but with a specified time dimension instead of a prior
-         extracted one. This allows time subsetting to train ranges."""
-        print(f"thickening X with new time from {X.shape} to "
-              f"{(X.shape[0], self._sampleshape[0], newtime)}")
-        return np.reshape(X, (X.shape[0], self._sampleshape[0], newtime))
-
-    def slide(self, X, thickenfx=None, size=10, slidefx=spatiotemporal_slider):
-        """This reshaper implements a sliding window across a range of samples
-        specified by the size parameter. A custom sliding function can be passed
-        to determine the sliding behavior. By default, the sliding results in a
-        spatio-temporal integration: All samples in the sliding window are
-        concatenated such that the one resulting sample per sliding window
-        includes the spatia-temporal configuration of all sensors in the window.
-        """
-        logging.info(f'Setting up a sliding window of {size} samples')
-        # First, reshape to trials x sensors x time
-        X_ = thickenfx(X)
-        out = slidefx(X_, size)
-        return out
+def make_sliding_window_samples(
+        X,
+        orig_shape_restorer,
+        size,
+        slidefx,
+):
+    """This reshaper implements a sliding window across a range of samples
+    specified by the size parameter. A custom sliding function can be passed
+    to determine the sliding behavior. By default, the sliding results in a
+    spatio-temporal integration: All samples in the sliding window are
+    concatenated such that the one resulting sample per sliding window
+    includes the spatia-temporal configuration of all sensors in the window.
+    """
+    logging.info(f'Setting up a sliding window of {size} samples')
+    # First, reshape to something like trials x sensors x time
+    X_ = orig_shape_restorer(X)
+    out = slidefx(X_, size)
+    return out
 
 
 def trialaveraging(X, y, ntrials=4, nsamples='max'):
@@ -354,12 +386,18 @@ def trialaveraging(X, y, ntrials=4, nsamples='max'):
 
 
 class SpatialPCATransformer(BaseEstimator, TransformerMixin):
-
-    def __init__(self, k, reshaper, trainrange=None):
+    def __init__(
+            self,
+            k,
+            origspace_reshaper,
+            dimredspace_reshaper,
+            trainrange=None,
+    ):
         from sklearn.decomposition import PCA
         self.k = k
         self.pca = PCA(n_components=k)
-        self.reshaper = reshaper
+        self.origspace_reshaper = origspace_reshaper
+        self.dimredspace_reshaper = dimredspace_reshaper
         if trainrange is not None:
             # trainrange needs to be a set or list with a start and end value
             assert len(trainrange) == 2, 'the trainrange needs to have 2 values'
@@ -367,61 +405,68 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
                 'start value must be smaller than end value'
             # check that the train range is not negative
             assert all(trainrange) > 0, 'train range cannot be negative!'
-        self.newtime = None
         self.trainrange = trainrange
 
     def _dimensionalityvodoo(self, X):
-        # restore to trials x sensors x time
-        if self.newtime is not None:
-            X_ = self.reshaper.thickentotime(X, self.newtime)
-            # reset newtime internally
-            self.newtime = None
-        else:
-            X_ = self.reshaper.thicken(X)
-        # now bend dimensions: aim is spatial PCA, thus the time dimension is at
+        """Get data representation needed for *internal* processing"""
+        # bend dimensions: aim is spatial PCA, thus the time dimension is at
         # the wrong place. We need to unwind the time dimension along the trial
         # dimension. **vodoooo**
-        X_ = np.rollaxis(X_, 2, 1)
+        X_ = np.rollaxis(X, 2, 1)
         # trial*time x sensors
         X_ = X_.reshape(np.prod(X_.shape[:2]), -1)
         return X_
 
     def fit(self, X, y):
+        # restore to trials x sensors x time
+        X_ = self.origspace_reshaper.restore(X)
+
         # subset training data to the specified trainrange
-        if self.trainrange is None:
-            self.pca.fit(self._dimensionalityvodoo(X))
-        else:
+        if self.trainrange is not None:
             logging.info(f'subsetting PCA training data into train range '
                          f'{self.trainrange}.')
-            # first, turn X back into trials x sensors x time
-            X_ = self.reshaper.thicken(X)
-            # check that the selected range isn't larger than the available time
+
+            # check that selected range isn't larger than the available time
             assert self.trainrange[1] <= X_.shape[-1], \
                 'train range is larger than available data range!'
+
             X_ = X_[:, :, self.trainrange[0]:self.trainrange[1]]
-            # flatten, but hold on to the new time dimension
-            self.newtime = X_.shape[-1]
-            X_ = np.reshape(X_, (X_.shape[0], -1))
-            self.pca.fit(self._dimensionalityvodoo(X_))
+
+        self.pca.fit(self._dimensionalityvodoo(X_))
         return self
 
     def transform(self, X):
         # X is trials x sensors*time
+        # restore to trials x sensors x time
+        X_ = self.origspace_reshaper.restore(X)
 
         # the input of the PCA X_ is trial*time x components
-        X_ = self.pca.transform(self._dimensionalityvodoo(X))
+        X_ = self.pca.transform(self._dimensionalityvodoo(X_))
         # restore time axis: trials x times x components
         X_ = X_.reshape(X.shape[0], -1, self.k)
         # restore correct position of time axis: trials x components x times
         X_ = np.rollaxis(X_, 1, 3)
-        # let it goooo
-        return X_
+        # return samples flat, this will also remember "k" for later
+        # shape restores
+        # XXX if there is ever a fit_transform() the following line
+        # must also be in it, to make sure the shape of a k-space
+        # sample is known
+        return self.dimredspace_reshaper.apply(X_)
 
 
 class SRMTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, k, subjects, trainrange, spectral):
+    def __init__(
+            self,
+            k,
+            origspace_reshaper,
+            dimredspace_reshaper,
+            nsubjects,
+            trainrange=None,
+    ):
         self.k = k
-        self.subjects = subjects
+        self.origspace_reshaper = origspace_reshaper
+        self.dimredspace_reshaper = dimredspace_reshaper
+        self.nsubjects = nsubjects
         if trainrange is not None:
             # trainrange needs to be a set or list with a start and end value
             assert len(trainrange) == 2, 'the trainrange needs to have 2 values'
@@ -430,8 +475,12 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
         self.trainrange = trainrange
 
     def fit(self, X, y):
+        # take data back into origspace to have the time axis back
+        # which we need for trainrange selection at minimum
+        X_ = self.origspace_reshaper.restore(X)
+
         targets, counts = np.unique(y, return_counts=True)
-        logging.info(f'Preparing to draw {self.subjects} virtual subjects...')
+        logging.info(f'Preparing to draw {self.nsubjects} virtual subjects...')
         # set up the time subselection for the training data
         if self.trainrange is not None:
             # check that the selected range isn't larger than the available time
@@ -441,7 +490,7 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
             assert all(self.trainrange) > 0, 'train range cannot be negative!'
         # generate virtual subjects for the shared response model
         samples = []
-        for subject in range(self.subjects):
+        for subject in range(self.nsubjects):
             # generate virtual subjects from concatenating data from each target
             # first, get trial ids of one trial per unique target value
             sample_ids = [np.random.choice(np.where(y == target)[0], 1)
@@ -477,12 +526,19 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
         return data
 
     def transform(self, X, y=None):
-        X_ = np.reshape(X, (X.shape[0], 306, -1))
+        # take data back into origspace to have the "sensor" axis back
+        X_ = self.origspace_reshaper.restore(X)
+
         logging.info(f'X_ shape is: {X_.shape}')
         check_is_fitted(self, 'basis')
         transformed = np.stack([np.dot(self.basis.T, x) for x in X_])
         logging.info(f'within SRM transform: from {transformed.shape}')
-        return np.reshape(transformed, (transformed.shape[0], -1))
+        # return samples flat, this will also remember "k" for later
+        # shape restores
+        # XXX if there is ever a fit_transform() the following line
+        # must also be in it, to make sure the shape of a k-space
+        # sample is known
+        return self.dimredspace_reshaper.apply(transformed)
 
 
 class SpectralSRMTransformer(SRMTransformer):
