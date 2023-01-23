@@ -487,7 +487,7 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
             assert self.trainrange[1] <= X_.shape[-1], \
                 'train range is larger than available data range!'
             # check that the train range is not negative
-            assert all(self.trainrange) > 0, 'train range cannot be negative!'
+            assert all(self.trainrange) >= 0, 'train range cannot be negative!'
         # generate virtual subjects for the shared response model
         samples = []
         for subject in range(self.nsubjects):
