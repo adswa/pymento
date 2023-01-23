@@ -245,7 +245,7 @@ def decode(X,
                 k=k,
                 origspace_reshaper=origspace_reshaper,
                 dimredspace_reshaper=dimredspace_reshaper,
-                subjects=srmsamples,
+                nsubjects=srmsamples,
                 trainrange=trainrange,
             )
 
@@ -383,16 +383,15 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
             assert trainrange[0] < trainrange[1], \
                 'start value must be smaller than end value'
             # check that the train range is not negative
-            assert all(self.trainrange) > 0, 'train range cannot be negative!'
+            assert all(trainrange) > 0, 'train range cannot be negative!'
         self.trainrange = trainrange
-        self.newtime = None
 
     def _dimensionalityvodoo(self, X):
         """Get data representation needed for *internal* processing"""
         # bend dimensions: aim is spatial PCA, thus the time dimension is at
         # the wrong place. We need to unwind the time dimension along the trial
         # dimension. **vodoooo**
-        X_ = np.rollaxis(X_, 2, 1)
+        X_ = np.rollaxis(X, 2, 1)
         # trial*time x sensors
         X_ = X_.reshape(np.prod(X_.shape[:2]), -1)
         return X_
@@ -421,7 +420,7 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
         X_ = self.origspace_reshaper.restore(X)
 
         # the input of the PCA X_ is trial*time x components
-        X_ = self.pca.transform(self._dimensionalityvodoo(X))
+        X_ = self.pca.transform(self._dimensionalityvodoo(X_))
         # restore time axis: trials x times x components
         X_ = X_.reshape(X.shape[0], -1, self.k)
         # restore correct position of time axis: trials x components x times
@@ -431,7 +430,7 @@ class SpatialPCATransformer(BaseEstimator, TransformerMixin):
         # XXX if there is ever a fit_transform() the following line
         # must also be in it, to make sure the shape of a k-space
         # sample is known
-        return self.dimredspace_reshaper.flatten(X_)
+        return self.dimredspace_reshaper.apply(X_)
 
 
 class SRMTransformer(BaseEstimator, TransformerMixin):
