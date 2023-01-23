@@ -293,20 +293,41 @@ def decode(X,
 class Flattener:
     """Helper class to reshape to and from nD/2D data"""
     def __init__(self):
-        self._sampleshape = None
+        self.params = dict(sampleshape=None)
+
+    def __deepcopy__(self, memo={}):
+        dc = type(self)()
+        # THIS IS A HACK! It's a deepcopy() method but doesn't actually do a
+        # deepcopy!
+        # The sampleshape parameter is crucial to restore the dimensionality of
+        # the data matrix X. It should get set during 'apply' and then reused
+        # during 'restore' ('apply' and 'restore' are called by separate steps
+        # in the pipeline). Cross_val_maultiscore() unconditionally
+        # 'clones' the Flattener object such that the sampleshape set in the
+        # SRM/PCA/SpectralSRMTransformer isn't propagated to the
+        # SlidingEstimator step that relies on it to restore X:
+        # T SlidingEstimator doesn't get to see a set sampleshape and
+        # dimensionality restoring would fail.
+        # This hack tries to circumvent this by storing the sample-
+        # shape in a dictionary (which points always to the same object) and
+        # thus forces the two dimensionality-reduction-Flatteners to be linked.
+        dc.params = self.params
+        return dc
 
     def apply(self, X):
+        _sampleshape = self.params['sampleshape']
         logging.info(f"flattening X from {X.shape} to {(X.shape[0], -1)}")
-        assert self._sampleshape is None or X.shape[1:] == self._sampleshape, \
+        assert _sampleshape is None or X.shape[1:] == _sampleshape, \
             "Must not be called with a different sample shape"
-        self._sampleshape = X.shape[1:]
+        self.params['sampleshape'] = X.shape[1:]
         return np.reshape(X, (X.shape[0], -1))
 
     def restore(self, X):
+        _sampleshape = self.params['sampleshape']
         logging.info(
             f"thickening X from {X.shape} to "
-            f"{(X.shape[0],)+self._sampleshape}")
-        return np.reshape(X, (X.shape[0],) + self._sampleshape)
+            f"{(X.shape[0],)+_sampleshape}")
+        return np.reshape(X, (X.shape[0],) + _sampleshape)
 
 
 def make_sliding_window_samples(
@@ -517,7 +538,7 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
         # XXX if there is ever a fit_transform() the following line
         # must also be in it, to make sure the shape of a k-space
         # sample is known
-        return self.dimredspace_reshaper.flatten(transformed)
+        return self.dimredspace_reshaper.apply(transformed)
 
 
 class SpectralSRMTransformer(SRMTransformer):
