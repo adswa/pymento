@@ -549,3 +549,194 @@ def aggregate_evals(
     cols = df[['windowtype', 'nsample', 'dimreduction']]
     means = means.join(cols)
     _all_plots(figdir=figdir, subject=subject, df_results=means, aggregate=True)
+
+
+def aggregate_decoding(
+        figdir='/data/project/brainpeach/decoding',
+        mode='subject'
+):
+    """
+    Create aggregate plots across decoding results. As two mode types: 'subject'
+    (aggregating data for any given dimreduction and target over all subjects)
+    or 'dimreduction' (aggregating data for any given subject and target over
+    all dimreduction methods).
+    :param figdir: str, directory where to save figures in
+    :param mode: str, must be one of 'subject' or 'dimreduction'. Used to
+    determine the mode of plotting/aggregating.
+    :return:
+    """
+    # hardcode the parameters used in decoding
+    slidingwindow = 10
+    dec_factor = 5
+    sr = 1000
+
+    if mode == 'subject':
+        # aggregate over subjects
+        hue = y = 'subject'
+        for target, ylim in [['choice', (0.3, 0.99)], ['magnitude', (0.15, 0.45)],
+                             ['probability',  (0.15, 0.45)],
+                             ['expectedvalue', (0.25, 0.5)]]:
+            for dimreduction in [None, 'srm', 'pca', 'spectralsrm']:
+                # hardcode the parameters used in decoding
+                slidingwindow = 10
+                dec_factor = 5
+                sr = 1000
+                timespan = [-1.25, 1.25] if target == 'choice' else [0, 4500]
+                chance = 0.5 if target == 'choice' else \
+                    0.33 if target == 'expectedvalue' else 0.25
+                dfs = []
+                for sub in np.arange(1, 23):
+                    subject = f'00{sub}' if sub < 10 else f'0{sub}'
+                    fpath = f'sub-{subject}/sub-{subject}_decoding-scores_{target}.npy' \
+                        if dimreduction is None else \
+                        f'sub-{subject}/{dimreduction}/sub-{subject}_decoding-scores_{target}.npy'
+
+                    scores = np.load(str(Path(figdir) / fpath))
+                    acrossclasses = np.asarray(
+                        [np.nanmean(get_metrics(c, metric='balanced accuracy'))
+                         for score in scores
+                         for c in np.rollaxis(score, -1, 0)]).reshape(
+                        len(scores), scores.shape[-1]
+                    )
+                    # the x axis (times) gets more and more messier to get right. We need to
+                    # account for time shifts if we used a sliding windows.
+                    # Timeoffset is in seconds
+                    timeoffset = (slidingwindow * dec_factor) / sr if slidingwindow else 0
+                    # times get centered on 0 if responselocking was done. We subtract the
+                    # length of the sliding window
+                    times = np.asarray(np.arange(acrossclasses.shape[-1]) * dec_factor) \
+                            + timespan[0] * sr + timeoffset * sr
+                    df = pd.DataFrame(acrossclasses.T)
+                    df['subject'] = np.repeat(subject, acrossclasses.shape[-1])
+                    df['time'] = times
+                    dfs.append(df)
+                ax = _plot_aggregated(dfs, y, hue, target, dimreduction,
+                                      slidingwindow, dec_factor, chance, ylim,
+                                      )
+                fname = f'decoding_balanced-accuracy_l2logreg_{target}_dimreduction-{dimreduction}.png'
+                print(f'saving figure to {figdir}/{fname}...')
+                ax.fig.savefig(f'{figdir}/{fname}')
+                plt.close('all')
+                # repeat, but average
+                ax = _plot_aggregated(dfs, y, hue, target, dimreduction,
+                                      slidingwindow, dec_factor, chance, ylim,
+                                      average=True)
+                fname = f'averaged-decoding_balanced-accuracy_l2logreg_{target}_dimreduction-{dimreduction}.png'
+                print(f'saving figure to {figdir}/{fname}...')
+                ax.fig.savefig(f'{figdir}/{fname}')
+                plt.close('all')
+
+    elif mode == 'dimreduction':
+        # aggregate over dimreductions
+        hue = y = 'dimreduction'
+        for sub in np.arange(1, 23):
+            subject = f'00{sub}' if sub < 10 else f'0{sub}'
+            for target, ylim in [['choice', (0.3, 0.99)],
+                                 ['magnitude', (0.15, 0.45)],
+                                 ['probability', (0.15, 0.45)],
+                                 ['expectedvalue', (0.25, 0.5)]]:
+                timespan = [-1.25, 1.25] if target == 'choice' else [0, 4500]
+                chance = 0.5 if target == 'choice' else \
+                    0.33 if target == 'expectedvalue' else 0.25
+                dfs = []
+                for dimreduction in [None, 'srm', 'pca', 'spectralsrm']:
+                    fpath = f'sub-{subject}/sub-{subject}_decoding-scores_{target}.npy' \
+                        if dimreduction is None else \
+                        f'sub-{subject}/{dimreduction}/sub-{subject}_decoding-scores_{target}.npy'
+
+                    scores = np.load(str(Path(figdir) / fpath))
+                    acrossclasses = np.asarray(
+                        [np.nanmean(get_metrics(c, metric='balanced accuracy'))
+                         for score in scores
+                         for c in np.rollaxis(score, -1, 0)]).reshape(
+                        len(scores), scores.shape[-1]
+                    )
+                    # the x axis (times) gets more and more messier to get right. We need to
+                    # account for time shifts if we used a sliding windows.
+                    # Timeoffset is in seconds
+                    timeoffset = (slidingwindow * dec_factor) / sr if slidingwindow else 0
+                    # times get centered on 0 if responselocking was done. We subtract the
+                    # length of the sliding window
+                    times = np.asarray(
+                        np.arange(acrossclasses.shape[-1]) * dec_factor) \
+                            + timespan[0] * sr + timeoffset * sr
+                    df = pd.DataFrame(acrossclasses.T)
+                    df['dimreduction'] = np.repeat(dimreduction,
+                                                   acrossclasses.shape[-1])
+                    df['time'] = times
+                    dfs.append(df)
+
+                ax = _plot_aggregated(dfs, y, hue, target,
+                                      dimreduction='all methods',
+                                      slidingwindow=slidingwindow,
+                                      dec_factor=dec_factor,
+                                      chance=chance,
+                                      ylim=ylim,
+                                      )
+                fname = f'sub-{subject}_decoding_balanced-accuracy_l2logreg_{target}_dimreduction-{dimreduction}.png'
+                print(f'saving figure to {figdir}/sub-{subject}/{fname}...')
+                ax.fig.savefig(f'{figdir}/sub-{subject}/{fname}')
+                # repeat, but average
+                ax = _plot_aggregated(dfs, y, hue, target,
+                                      dimreduction='average over methods',
+                                      slidingwindow=slidingwindow,
+                                      dec_factor=dec_factor,
+                                      chance=chance, ylim=ylim,
+                                      average=True)
+                fname = f'sub-{subject}_averaged-decoding_balanced-accuracy_l2logreg_{target}.png'
+                print(f'saving figure to {figdir}/sub-{subject}/{fname}...')
+                ax.fig.savefig(f'{figdir}/sub-{subject}/{fname}')
+                plt.close('all')
+
+
+def _plot_aggregated(dfs,
+                     y,
+                     hue,
+                     target,
+                     dimreduction,
+                     slidingwindow,
+                     dec_factor,
+                     chance,
+                     ylim=None,
+                     average=False
+                     ):
+    # combine the data and plot
+    allscores = pd.concat(dfs)
+    fulldf = pd.melt(allscores,
+                     id_vars=['time', y],
+                     value_vars=np.arange(0, 5),
+                     value_name='accuracy')
+    offset = shading = slidingwindow * dec_factor
+    reflines =[(0 + offset, 'response')] if target == 'choice' else \
+        ((0 + offset, 'onset stimulus'), (700 + offset, 'offset stimulus'),
+         (2700 + offset, 'onset stimulus'), (3400 + offset, 'offset stimulus'))
+    plt_args = dict(x="time", y='accuracy', kind='line', data=fulldf, height=9,
+                    aspect=16/9, alpha=0.3)
+    if not average:
+        plt_args['hue'] = hue
+    ax = sns.relplot(**plt_args)
+    if ylim is not None:
+        ax.set(ylim=ylim)
+    dimred = 'without dimensionality reduction' if dimreduction == None else dimreduction
+    ax.set(title=f'temporal decoding of {target} ({dimred})')
+    if reflines is not None:
+        for x, l in reflines:
+            color = 'black' if l.startswith('offset') else 'green'
+            ax.refline(x=x, color=color, label=l)
+        if shading is not None:
+            ref = reflines[0][0]
+            ax.refline(x=ref-shading, color='gray',
+                       alpha=0.3, linestyle='solid',
+                       label='sliding window')
+                # add a shade the size of the sliding window
+            ax.ax.fill_between([ref, ref-shading], 0, 1, color='gray',
+                               alpha=0.3)
+    ax.refline(y=chance, color='red', linestyle='dotted',
+               label=f"chance-level: {chance}")
+    handles, labels = ax.ax.get_legend_handles_labels()
+    if target == 'choice':
+        # subset legend to avoid duplicatoin
+        plt.legend(handles[-3:], labels[-3:])
+    else:
+        plt.legend(handles[-4:], labels[-4:])
+    return ax
