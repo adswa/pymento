@@ -583,7 +583,8 @@ def aggregate_decoding(
         hue = y = 'subject'
         for target, ylim in [['choice', (0.3, 0.99)], ['magnitude', (0.15, 0.45)],
                              ['probability',  (0.15, 0.45)],
-                             ['expectedvalue', (0.25, 0.5)]]:
+                             ['expectedvalue', (0.25, 0.5)],
+                             ['identity', (0, 0.3)]]:
             for dimreduction in [None, 'srm', 'pca', 'spectralsrm']:
                 # hardcode the parameters used in decoding
                 slidingwindow = 10
@@ -642,7 +643,8 @@ def aggregate_decoding(
             for target, ylim in [['choice', (0.3, 0.99)],
                                  ['magnitude', (0.15, 0.45)],
                                  ['probability', (0.15, 0.45)],
-                                 ['expectedvalue', (0.25, 0.5)]]:
+                                 ['expectedvalue', (0.25, 0.5)],
+                                 ['identity', (0, 0.3)]]:
                 timespan = [-1.25, 1.25] if target == 'choice' else [0, 4500]
                 chance = 0.5 if target == 'choice' else \
                     0.33 if target == 'expectedvalue' else 0.25
