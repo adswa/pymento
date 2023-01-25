@@ -16,6 +16,7 @@ from pymento_meg.decoding.base import (
     confusion_probability,
     confusion_expectedvalue,
     confusion_choice,
+    confusion_id,
     decode,
     sliding_averager,
     spatiotemporal_slider,
@@ -100,7 +101,14 @@ def temporal_decoding(sub,
                                 'label': ['1', '2'], # TODO: recode
                                 'chance': 0.5,
                                 'ylims': (0.3, 0.99),
-                                }
+                                },
+                     'identity': {'prefix': 'ID_',
+                                  'tname': 'Lchar',
+                                  'metric': confusion_id,
+                                  'label': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+                                  'chance': 0.11,
+                                  'ylims': (0, 0.3)
+                                  }
                      }
     if target not in known_targets.keys():
         raise NotImplementedError(f"Can't handle target {target} yet."

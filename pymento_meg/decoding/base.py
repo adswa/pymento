@@ -110,6 +110,16 @@ def confusion_choice(est, X, y_true, **kwargs):
     return np.apply_along_axis(lambda p, t: confusion_matrix(t, p, labels=['choice1.0', 'choice2.0']), 0, y_pred, y_true)
 
 
+def confusion_id(est, X, y_true, **kwargs):
+    """Custom scorer to be able to compute confusion matrix on predictions
+    during cross_val_multiscore. Uses the 'Lchar' stimulus ID value labels"""
+    from sklearn.metrics import confusion_matrix
+    y_pred = est.predict(X)
+    # compute and return confusion matrices for each time point.
+    return np.apply_along_axis(lambda p, t: confusion_matrix(t, p, labels=['ID_A', 'ID_B', 'ID_C', 'ID_D', 'ID_E', 'ID_F', 'ID_G', 'ID_H', 'ID_I']), 0, y_pred, y_true)
+
+
+
 def sliding_averager(X, size):
     """Custom sliding window function that averages a given amount of samples"""
     logging.info('Starting averager sliding')
