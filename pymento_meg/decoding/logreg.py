@@ -581,18 +581,17 @@ def aggregate_decoding(
     if mode == 'subject':
         # aggregate over subjects
         hue = y = 'subject'
-        for target, ylim in [['choice', (0.3, 0.99)], ['magnitude', (0.15, 0.45)],
-                             ['probability',  (0.15, 0.45)],
-                             ['expectedvalue', (0.25, 0.5)],
-                             ['identity', (0, 0.3)]]:
+        for target, ylim, chance in \
+            [['choice', (0.3, 0.99), 0.5], ['magnitude', (0.15, 0.45), 0.25],
+             ['probability',  (0.15, 0.45), 0.25],
+             ['expectedvalue', (0.25, 0.5), 0.33],
+             ['identity', (0, 0.3), 0.11]]:
             for dimreduction in [None, 'srm', 'pca', 'spectralsrm']:
                 # hardcode the parameters used in decoding
                 slidingwindow = 10
                 dec_factor = 5
                 sr = 1000
                 timespan = [-1.25, 1.25] if target == 'choice' else [0, 4500]
-                chance = 0.5 if target == 'choice' else \
-                    0.33 if target == 'expectedvalue' else 0.25
                 dfs = []
                 for sub in np.arange(1, 23):
                     subject = f'00{sub}' if sub < 10 else f'0{sub}'
@@ -640,14 +639,13 @@ def aggregate_decoding(
         hue = y = 'dimreduction'
         for sub in np.arange(1, 23):
             subject = f'00{sub}' if sub < 10 else f'0{sub}'
-            for target, ylim in [['choice', (0.3, 0.99)],
-                                 ['magnitude', (0.15, 0.45)],
-                                 ['probability', (0.15, 0.45)],
-                                 ['expectedvalue', (0.25, 0.5)],
-                                 ['identity', (0, 0.3)]]:
+            for target, ylim, chance in \
+                    [['choice', (0.3, 0.99), 0.5],
+                     ['magnitude', (0.15, 0.45), 0.25],
+                     ['probability', (0.15, 0.45), 0.25],
+                     ['expectedvalue', (0.25, 0.5), 0.33],
+                     ['identity', (0, 0.3), 0.11]]:
                 timespan = [-1.25, 1.25] if target == 'choice' else [0, 4500]
-                chance = 0.5 if target == 'choice' else \
-                    0.33 if target == 'expectedvalue' else 0.25
                 dfs = []
                 for dimreduction in [None, 'srm', 'pca', 'spectralsrm']:
                     fpath = f'sub-{subject}/sub-{subject}_decoding-scores_{target}.npy' \
@@ -683,7 +681,7 @@ def aggregate_decoding(
                                       chance=chance,
                                       ylim=ylim,
                                       )
-                fname = f'sub-{subject}_decoding_balanced-accuracy_l2logreg_{target}_dimreduction-{dimreduction}.png'
+                fname = f'sub-{subject}_decoding_balanced-accuracy_l2logreg_{target}_dimreduction-all.png'
                 print(f'saving figure to {figdir}/sub-{subject}/{fname}...')
                 ax.fig.savefig(f'{figdir}/sub-{subject}/{fname}')
                 # repeat, but average
