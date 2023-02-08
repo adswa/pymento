@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from mne.io import read_raw_fif
+from mne import EvokedArray
 from scipy.signal import decimate
 
 from pymento_meg.srm.srm import (
@@ -18,6 +20,7 @@ from pymento_meg.decoding.base import (
     confusion_choice,
     confusion_id,
     decode,
+    hijack_scorer_for_inverse_transformations,
     sliding_averager,
     spatiotemporal_slider,
 )
@@ -140,7 +143,7 @@ def temporal_decoding(sub,
         # determine the time range for training data
         trainrange = [int(i / dec_factor) for i in trainrange] \
             if trainrange is not None else None
-
+    # get the decoding performance
     scores = decode(X,
                     y,
                     metric=known_targets[target]['metric'],
@@ -155,6 +158,32 @@ def temporal_decoding(sub,
                     slidingwindow=slidingwindow,
                     slidingwindowtype=slidingwindowtype,
                     )
+    topographies = None
+    if topographies is not None and dimreduction in ['srm', 'spectralsrm']:
+        # we also want to see the topographies of the components (implemented as
+        # hijack_scorer_for_inverse_transformations). Because we're using
+        # mne's cross_val_multiscore and not sklearn's cross_validate, we can't
+        # pass multiple metrics for scoring, and have to repeat the decoding
+        # process
+        activation_patterns = decode(X,
+                              y,
+                              metric=hijack_scorer_for_inverse_transformations,
+                              n_jobs=n_jobs,
+                              n_splits=n_splits,
+                              dimreduction=dimreduction,
+                              k=k,
+                              trainrange=trainrange,
+                              srmsamples=srmsamples,
+                              nsamples=nsamples,
+                              ntrials=ntrials,
+                              slidingwindow=slidingwindow,
+                              slidingwindowtype=slidingwindowtype,
+                              )
+        plot_topographies(activation_patterns,
+                          sub=sub,
+                          target=target,
+                          datadir=datadir,
+                          fpath=fpath)
 
     # save the decoding scores for future use
     np.save(Path(fpath) / f'sub-{sub}_decoding-scores_{target}.npy', scores)
@@ -270,6 +299,31 @@ def get_metrics(confm, metric='balanced accuracy'):
 
 def plot_decoding_per_class(scores, times):
     pass
+
+
+def plot_topographies(activation_patterns, sub, target, fpath, datadir):
+    """Take computed activation patterns and plot them as a topography."""
+    # use real data to create a fake evoked structure
+    fname = Path(datadir) / f'sub-001/meg' / f'sub-001_task-memento_proc-sss_meg.fif'
+    raw = read_raw_fif(fname)
+    # drop all non-meg sensors from the info object
+    picks = raw.info['ch_names'][3:309]
+    raw.pick_channels(picks)
+    splits, sensors, kdims = activation_patterns.shape
+    for k in range(kdims):
+        # create one plot per k dimensions with results from all splits
+        fig, ax = plt.subplots(1, splits)
+        for split in splits:
+            data = activation_patterns[0, :, k].reshape(-1, 1)
+            fake_evoked = EvokedArray(data, raw.info)
+            fig = fake_evoked.plot_topomap(times=0,
+                                           title=f"Component {k}",
+                                           colorbar=False,
+                                           size=2
+                                           )
+        fname = Path(fpath) / f'sub-{sub}_decoding-{target}_topographies_k-{k}.png'
+        fig.savefig(fname)
+
 
 def plot_confusion_matrix(confm, labels, normalize=True, fname='/tmp/confm.png'):
     if normalize:
