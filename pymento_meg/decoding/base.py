@@ -74,6 +74,16 @@ class MyOwnSlidingEstimator(SlidingEstimator):
         return params
 
 
+def hijack_scorer_for_inverse_transformations(est, X, y_true, **kwargs):
+    """This function pretends to do scoring, but will actually compute an
+    inverse transform of an SRM transformation matrix following Haufe et al.,
+    2014, in order to obtain neurophysiologically interpretable weights."""
+    # we rely on covariance matrices saved as attributes during fit() in any
+    # SRM transformer
+    srm = est['srmtransformer']
+    return srm.activation_pattern
+
+
 def confusion_magnitude(est, X, y_true, **kwargs):
     """Custom scorer to be able to compute confusion matrix on predictions
     during cross_val_multiscore. Uses the Magnitude value labels"""
