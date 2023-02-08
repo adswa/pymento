@@ -1129,12 +1129,11 @@ def plot_model_basis_topographies(datadir, model, figdir):
     :return:
     """
     # use real data to create a fake evoked structure
-    fname = Path(datadir) / f'sub-001/meg' / f'sub-001_task-memento_proc' \
-                                             f'-sss_meg-1.fif '
+    fname = Path(datadir) / f'sub-001/meg' / f'sub-001_task-memento_proc-sss_meg.fif'
     raw = mne.io.read_raw_fif(fname)
     # drop all non-meg sensors from the info object
     picks = raw.info['ch_names'][3:309]
-    raw.info.pick_channels(picks)
+    raw.pick_channels(picks)
 
     for subject in range(len(model.w_)):
         basis = model.w_[subject]
