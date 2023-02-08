@@ -539,7 +539,12 @@ class SRMTransformer(BaseEstimator, TransformerMixin):
         # average "subject" basis
         avg_basis = np.mean(srm.w_, axis=0)
         self.basis = avg_basis
-        print(self.basis.shape)
+        # compute the data & noise covariance, and transform weights into
+        # neurophysiologically interpretable weights according to Haufe, 2014
+        # use the average of artifical samples
+        avg_data = np.mean(samples, axis=0)
+        self.activation_pattern = \
+            np.cov(avg_data).dot(self.basis).dot(np.cov(srm.s_))
         return self
 
     def _preprocess(self, data):
