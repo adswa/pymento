@@ -33,15 +33,22 @@ def generalize(subject,
     fpath = Path(_construct_path([figdir, f'sub-{subject}/']))
     for target in extreme_targets:
         tname = known_targets[target]['tname']
-        for condition, value in extreme_targets[target].items():
+        # read in the training data (1s, centered around response)
+        train_fullsample, train_data = get_general_data_structure(
+            subject=subject,
+            datadir=trainingdir,
+            bidsdir=bidsdir,
+            condition='nobrain-brain',
+            timespan=[-0.5, 0.5])
+        # read in the testing data (2.7s, first visual stimulus + delay
+        test_fullsample, test_data = get_general_data_structure(
+            subject=subject,
+            datadir=testingdir,
+            bidsdir=bidsdir,
+            condition='nobrain-brain',
+            timespan=[0, 2.7])
 
-            # read in the training data (1s, centered around response)
-            train_fullsample, train_data = get_general_data_structure(
-                subject=subject,
-                datadir=trainingdir,
-                bidsdir=bidsdir,
-                condition='nobrain-brain',
-                timespan=[-0.5, 0.5])
+        for condition, value in extreme_targets[target].items():
 
             X_train = np.array([decimate(epoch['normalized_data'], dec_factor)
                                for i, epoch in train_fullsample[subject].items()
@@ -49,20 +56,11 @@ def generalize(subject,
             y_train = np.array(['choice' + str(epoch['choice'])
                                for i, epoch in train_fullsample[subject].items()
                                if epoch[tname] in value])
-            if any(y_train) == 'choice0.0':
+            if any(y_train == 'choice0.0'):
                 # remove trials where the participant did not make a choice
                 idx = np.where(y_train == 'choice0.0')
                 y_train = np.delete(y_train, idx)
                 X_train = np.delete(X_train, idx, axis=0)
-            del train_fullsample, train_data
-
-            # read in the testing data (2.7s, first visual stimulus + delay
-            test_fullsample, test_data = get_general_data_structure(
-                subject=subject,
-                datadir=testingdir,
-                bidsdir=bidsdir,
-                condition='nobrain-brain',
-                timespan=[0, 2.7])
 
             X_test = np.array([decimate(epoch['normalized_data'], dec_factor)
                                for id, epoch in test_fullsample[subject].items()
@@ -70,12 +68,11 @@ def generalize(subject,
             y_test = np.array(['choice' + str(epoch['choice'])
                                for i, epoch in test_fullsample[subject].items()
                                if epoch[tname] in value])
-            if any(y_test) == 'choice0.0':
+            if any(y_test == 'choice0.0'):
                 # remove trials where the participant did not make a choice
                 idx = np.where(y_test == 'choice0.0')
                 y_test = np.delete(y_test, idx)
                 X_test = np.delete(X_test, idx, axis=0)
-            del test_fullsample, test_data
 
             # set up a generalizing estimator
             clf = make_pipeline(
