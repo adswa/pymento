@@ -25,6 +25,42 @@ from pymento_meg.decoding.base import (
     spatiotemporal_slider,
 )
 
+# set and check target infos
+known_targets = {'probability': {'prefix': 'P',
+                                 'tname': 'LoptProb',
+                                 'metric': confusion_probability,
+                                 'label': ['10%', '20%', '40%', '80%'],
+                                 'chance': 0.25,
+                                 'ylims': (0.15, 0.45)},
+                 'magnitude': {'prefix': 'M',
+                               'tname': 'LoptMag',
+                               'metric': confusion_magnitude,
+                               'label': ['0.5', '1', '2', '4'],
+                               'chance': 0.25,
+                               'ylims': (0.15, 0.45)},
+                 'expectedvalue': {'prefix': 'EV',
+                                   'tname': 'ev',
+                                   'metric': confusion_expectedvalue,
+                                   'label': ['0.2', '0.4', '0.8'],
+                                   'chance': 0.33,
+                                   'ylims': (0.25, 0.5)},
+                 'choice': {'prefix': 'choice',
+                            'tname': 'choice',
+                            'metric': confusion_choice,
+                            'label': ['1', '2'],  # TODO: recode
+                            'chance': 0.5,
+                            'ylims': (0.3, 0.99),
+                            },
+                 'identity': {'prefix': 'ID_',
+                              'tname': 'Lchar',
+                              'metric': confusion_id,
+                              'label': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+                                        'I'],
+                              'chance': 0.11,
+                              'ylims': (0, 0.3)
+                              }
+                 }
+
 
 def temporal_decoding(sub,
                       target,
@@ -79,40 +115,6 @@ def temporal_decoding(sub,
     """
     # define the sampling rate. TODO: read this from the data
     sr = 1000
-    # set and check target infos
-    known_targets = {'probability': {'prefix': 'P',
-                                     'tname':'LoptProb',
-                                     'metric': confusion_probability,
-                                     'label': ['10%', '20%', '40%', '80%'],
-                                     'chance': 0.25,
-                                     'ylims': (0.15, 0.45)},
-                     'magnitude': {'prefix': 'M',
-                                   'tname': 'LoptMag',
-                                   'metric': confusion_magnitude,
-                                   'label': ['0.5', '1', '2', '4'],
-                                   'chance': 0.25,
-                                   'ylims': (0.15, 0.45)},
-                     'expectedvalue': {'prefix': 'EV',
-                                       'tname': 'ev',
-                                       'metric': confusion_expectedvalue,
-                                       'label': ['0.2', '0.4', '0.8'],
-                                       'chance': 0.33,
-                                       'ylims': (0.25, 0.5)},
-                     'choice': {'prefix': 'choice',
-                                'tname': 'choice',
-                                'metric': confusion_choice,
-                                'label': ['1', '2'], # TODO: recode
-                                'chance': 0.5,
-                                'ylims': (0.3, 0.99),
-                                },
-                     'identity': {'prefix': 'ID_',
-                                  'tname': 'Lchar',
-                                  'metric': confusion_id,
-                                  'label': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
-                                  'chance': 0.11,
-                                  'ylims': (0, 0.3)
-                                  }
-                     }
     if target not in known_targets.keys():
         raise NotImplementedError(f"Can't handle target {target} yet."
                                   f" Know targets: {known_targets.keys()}")
