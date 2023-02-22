@@ -72,7 +72,7 @@ def generalize(subject,
                 LogisticRegression(solver='liblinear')
             )
 
-            time_gen = GeneralizingEstimator(clf, scoring='balanced_accuracy',
+            time_gen = GeneralizingEstimator(clf, scoring='roc_auc',
                                              n_jobs=-1, verbose=True)
             # train on the motor response
             time_gen.fit(X=X_train, y=y_train)
