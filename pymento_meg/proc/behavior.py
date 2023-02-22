@@ -19,7 +19,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 
 from pymento_meg.orig.behavior import read_bids_logfile
-
+from pymento_meg.utils import _construct_path
 
 def bigdf(bidsdir):
     """
@@ -208,7 +208,8 @@ def print_coefs(data, means, names, sub, acc, figdir='/tmp'):
     plt.ylabel('normalized coefficients')
     plt.title(f'Log. reg of stimulus params on choice, sub-{sub}.'
               f' Acc: {acc:.2f}')
-    fname = Path(figdir) / f'logreg_stimulus-params-choice_subject-{sub}.png'
+    fname = _construct_path(
+        [figdir, f'sub-{sub}', f'logreg_stimulus-params-choice_subject-{sub}.png'])
     logging.info(f'Saving a boxplot of parameter importance into {fname}.')
     plt.savefig(fname)
     plt.close('all')
@@ -223,6 +224,6 @@ def plot_speed_stats(coefs, figdir='/tmp'):
                      ylabel='seconds',
                      xlabel='Global and no-brainer statistics',
                      figsize=(12, 6))
-    fname = Path(figdir) / 'memento_aggregate_reaction_times.png'
+    fname = _construct_path([figdir, 'group', 'memento_aggregate_reaction_times.png'])
     logging.info(f'Saving reaction times plot at {fname}')
     fig.figure.savefig(fname)
