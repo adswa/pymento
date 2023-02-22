@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+from scipy.signal import decimate
+
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
@@ -18,7 +20,7 @@ def generalize(subject,
                bidsdir,
                figdir,
                ):
-
+    dec_factor = 5
     # select only those trials with a high value
     extreme_targets = {
         'probability': {'low': [0.1],
@@ -41,12 +43,17 @@ def generalize(subject,
                 condition='nobrain-brain',
                 timespan=[-0.5, 0.5])
 
-            X_train = np.array([epoch['normalized_data']
+            X_train = np.array([decimate(epoch['normalized_data'], dec_factor)
                                for i, epoch in train_fullsample[subject].items()
                                if epoch[tname] in value])
             y_train = np.array(['choice' + str(epoch['choice'])
                                for i, epoch in train_fullsample[subject].items()
                                if epoch[tname] in value])
+            if any(y_train) == 'choice0.0':
+                # remove trials where the participant did not make a choice
+                idx = np.where(y_train == 'choice0.0')
+                y_train = np.delete(y_train, idx)
+                X_train = np.delete(X_train, idx, axis=0)
             del train_fullsample, train_data
 
             # read in the testing data (2.7s, first visual stimulus + delay
@@ -57,13 +64,17 @@ def generalize(subject,
                 condition='nobrain-brain',
                 timespan=[0, 2.7])
 
-            X_test = np.array([epoch['normalized_data']
+            X_test = np.array([decimate(epoch['normalized_data'], dec_factor)
                                for id, epoch in test_fullsample[subject].items()
                                if epoch[tname] in value])
             y_test = np.array(['choice' + str(epoch['choice'])
                                for i, epoch in test_fullsample[subject].items()
                                if epoch[tname] in value])
-
+            if any(y_test) == 'choice0.0':
+                # remove trials where the participant did not make a choice
+                idx = np.where(y_test == 'choice0.0')
+                y_test = np.delete(y_test, idx)
+                X_test = np.delete(X_test, idx, axis=0)
             del test_fullsample, test_data
 
             # set up a generalizing estimator
@@ -85,15 +96,15 @@ def generalize(subject,
 
             # plot
             fig, ax = plt.subplots(1)
-            im = ax.matshow(scores, vmin=0.3, vmax=0.7,
+            im = ax.matshow(scores, vmin=0., vmax=1.,
                             cmap='RdBu_r', origin='lower')
-            ax.axhline(500, color='k')
-            ax.axvline(700, color='k')
+            ax.axhline(500/dec_factor, color='k')
+            ax.axvline(700/dec_factor, color='k')
             ax.xaxis.set_ticks_position('bottom')
-            ax.set_xlabel('Test Time (ms), stim 1')
-            ax.set_ylabel('Train Time (ms), response')
+            ax.set_xlabel('Test Time (5ms), stim 1')
+            ax.set_ylabel('Train Time (5ms), response')
             ax.set_title(f'Generalization based on {condition} {target}')
-            plt.suptitle("Decoding choice")
+            plt.suptitle("Decoding choice (ROC AUC)")
             plt.colorbar(im, ax=ax)
             fname = fpath / f'sub-{subject}_generalization_{target}-{condition}.png'
             logging.info(f"Saving generalization plot into {fname}")
