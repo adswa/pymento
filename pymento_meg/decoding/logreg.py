@@ -804,3 +804,86 @@ def _plot_aggregated(dfs,
     else:
         plt.legend(handles[-4:], labels[-4:])
     return ax
+
+
+def regress_behavior_on_reinstatement(bidsdir, decoding_dir):
+    from pymento_meg.proc.behavior import logreg
+    from statsmodels.formula.api import ols
+    # get the beta weights for stimulus properties driving choice behavior
+    coefs = logreg(bidsdir)
+    subjects = ['001', '002', '003', '004', '005', '006', '007', '008', '009',
+               '010', '011', '012', '013', '014', '015', '016', '017', '018',
+               '019', '020', '021', '022']
+    vars = ['LoptProb', 'LoptMag', 'l_ev'],
+    res = pd.DataFrame()
+    for target in ['expectedvalue', 'magnitude', 'probability', 'identity']:
+        # perform one regression per decoding target that allows a statement
+        # about reinstatement
+        designmatrix = pd.DataFrame()
+        scoring = {}
+        # generate the static part of the design matrix:
+        for sub in subjects:
+            behav = {label: beta for label, beta in zip(
+                ['LoptProb', 'LoptMag', 'l_ev', 'RoptProb', 'RoptMag', 'r_ev'],
+                coefs[sub]['pure_coefs']
+            )}
+            designmatrix = \
+                designmatrix.append({'sub': sub, **behav}, ignore_index=True)
+
+            # read in the data, and cache it
+            fname = Path(decoding_dir) / f'sub-{sub}' / \
+                    f'sub-{sub}_decoding-scores_{target}.npy'
+            scores = np.load(fname)
+            acrossclasses = np.asarray(
+                [np.nanmean(get_metrics(c, metric='balanced accuracy'))
+                 for score in scores
+                 for c in np.rollaxis(score, -1, 0)]).reshape(
+                len(scores), scores.shape[-1]
+            )
+            scoring[sub] = acrossclasses.mean(axis=0)
+        # a counter for samples
+        s = 0
+        while s < len(acrossclasses[-1]) - 1:
+            designmatrix['reinstatement'] = [scoring[subject][s] for subject in subjects]
+            print(f'running on sample {s}')
+            model = \
+                ols('reinstatement ~ LoptProb + LoptMag + l_ev',
+                    designmatrix).fit()
+            betas = {label: beta for label, beta in zip(
+                ['intercept', 'LoptProb', 'LoptMag', 'l_ev'],
+                model._results.params
+            )}
+            ts = {label: beta for label, beta in zip(
+                ['t_intercept', 't_LoptProb', 't_LoptMag', 't_l_ev'],
+                model._results.tvalues
+            )}
+            ps = {label: beta for label, beta in zip(
+                ['p_intercept', 'p_LoptProb', 'p_LoptMag', 'p_l_ev'],
+                model._results.pvalues
+            )}
+            res = res.append({**betas, **ts, **ps, 'target': target}, ignore_index=True)
+            s += 1
+
+    for target in ['expectedvalue', 'magnitude', 'probability', 'identity']:
+        df = res[res.target == target]
+        times = np.arange(0, 889) * 5
+        df['times'] = times
+        t_vals = pd.melt(df, id_vars=['times'],
+                         value_vars=['t_LoptProb', 't_LoptMag', 't_l_ev'],
+                         value_name='t_value')
+        plt_args = dict(x="times", y='t_value', hue='variable', kind='line',
+                        data=t_vals, height=9, aspect=16/9, alpha=0.8)
+        ax = sns.relplot(**plt_args)
+        ax.set(ylim=[-4, 4])
+        ax.refline(y=1.96, color='red', linestyle='dotted',
+               label=f"statistical significance")
+        ax.refline(y=-1.96, color='red', linestyle='dotted',
+               label=f"statistical significance")
+        reflines = ((0, 'onset stimulus'), (700, 'offset stimulus'),
+                    (2700, 'onset stimulus'), (3400, 'offset stimulus'))
+        for x, l in reflines:
+            color = 'black' if l.startswith('offset') else 'green'
+            ax.refline(x=x, color=color, label=l)
+        ax.set(title=f"Relationship of neural representation of {target},"
+                     f" and influence of stimulus parameter on choice")
+        ax.savefig(f'/home/adina/scratch/test-{target}.png')

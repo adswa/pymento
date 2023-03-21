@@ -14,14 +14,25 @@ from pymento_meg.decoding.logreg import known_targets
 from pymento_meg.srm.srm import get_general_data_structure
 from pymento_meg.utils import _construct_path
 
+
 def generalize(subject,
                trainingdir,
                testingdir,
                bidsdir,
                figdir,
                ):
+    """
+    Parameters
+    ----------
+    :param subject:
+    :param trainingdir: Directory with epochs centered around response
+    :param testingdir: Directory with epochs centered around visual stimulus 1
+    :param bidsdir:
+    :param figdir:
+    :return:
+    """
     dec_factor = 5
-    # select only those trials with a high value
+    # order trials according to values of stimulus parameters
     extreme_targets = {
         'probability': {'low': [0.1],
                         'medium': [0.2, 0.4],
@@ -49,7 +60,6 @@ def generalize(subject,
             timespan=[0, 2.7])
 
         for condition, value in extreme_targets[target].items():
-
             X_train = np.array([decimate(epoch['normalized_data'], dec_factor)
                                for i, epoch in train_fullsample[subject].items()
                                if epoch[tname] in value])
@@ -91,18 +101,30 @@ def generalize(subject,
             logging.info(f"Saving generalization scores into {fname}")
             np.save(fname, scores)
 
-            # plot
-            fig, ax = plt.subplots(1)
-            im = ax.matshow(scores, vmin=0., vmax=1.,
-                            cmap='RdBu_r', origin='lower')
-            ax.axhline(500/dec_factor, color='k')
-            ax.axvline(700/dec_factor, color='k')
-            ax.xaxis.set_ticks_position('bottom')
-            ax.set_xlabel('Test Time (5ms), stim 1')
-            ax.set_ylabel('Train Time (5ms), response')
-            ax.set_title(f'Generalization based on {condition} {target}')
-            plt.suptitle("Decoding choice (ROC AUC)")
-            plt.colorbar(im, ax=ax)
-            fname = fpath / f'sub-{subject}_generalization_{target}-{condition}.png'
-            logging.info(f"Saving generalization plot into {fname}")
-            fig.savefig(fname)
+            y_test_copy = y_test.copy()
+            # do a permutation test comparison
+            null_distribution = []
+            for i in range(25):
+                # shuffle works in place
+                np.random.shuffle(y_test_copy)
+                scrambled_scores = time_gen.score(X=X_test, y=y_test_copy)
+                null_distribution.append(scrambled_scores)
+            scrambled_scores = np.mean(null_distribution, axis=0)
+            for scoring, description in [(scores, 'actual'),
+                                         (scrambled_scores, 'scrambled')]:
+                # plot
+                fig, ax = plt.subplots(1)
+                im = ax.matshow(scoring, vmin=0., vmax=1.,
+                                cmap='RdBu_r', origin='lower')
+                ax.axhline(500/dec_factor, color='k')
+                ax.axvline(700/dec_factor, color='k')
+                ax.xaxis.set_ticks_position('bottom')
+                ax.set_xlabel('Test Time (5ms), stim 1')
+                ax.set_ylabel('Train Time (5ms), response')
+                ax.set_title(f'Generalization based on {condition} {target} ({description} data)')
+                plt.suptitle("Decoding choice (ROC AUC)")
+                plt.colorbar(im, ax=ax)
+                plt.tight_layout()
+                fname = fpath / f'sub-{subject}_generalization_{target}-{condition}_{description}.png'
+                logging.info(f"Saving generalization plot into {fname}")
+                fig.savefig(fname)
