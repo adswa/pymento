@@ -62,10 +62,10 @@ def generalize(subject,
         for condition, value in extreme_targets[target].items():
             X_train = np.array([decimate(epoch['normalized_data'], dec_factor)
                                for i, epoch in train_fullsample[subject].items()
-                               if epoch[tname] in value])
+                               ])
             y_train = np.array(['choice' + str(epoch['choice'])
                                for i, epoch in train_fullsample[subject].items()
-                               if epoch[tname] in value])
+                               ])
             if any(y_train == 'choice0.0'):
                 # remove trials where the participant did not make a choice
                 idx = np.where(y_train == 'choice0.0')
