@@ -34,12 +34,12 @@ def generalize(subject,
     dec_factor = 5
     # order trials according to values of stimulus parameters
     extreme_targets = {
-        'probability': {'low': [0.1],
+        'probability': {'extreme': [0.1, 0.8],
                         'medium': [0.2, 0.4],
-                        'high': [0.8]},
-        'magnitude': {'low': [0.5],
+                        },
+        'magnitude': {'extreme': [0.5, 4],
                       'medium': [1, 2],
-                      'high': [4]}
+                      }
     }
     fpath = Path(_construct_path([figdir, f'sub-{subject}/']))
     for target in extreme_targets:
