@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from pathlib import Path
 
 from scipy.signal import decimate
@@ -133,22 +134,39 @@ def generalize(subject,
                 np.random.shuffle(y_test_copy)
                 scrambled_scores = time_gen.score(X=X_test, y=y_test_copy)
                 null_distribution.append(scrambled_scores)
-            scrambled_scores = np.mean(null_distribution, axis=0)
+            # save the null distribution to do a permutation test later
+            fname = fpath / \
+                    f'sub-{subject}_gen-scores_{target}-{condition}_scrambled.npy'
+            logging.info(f"Saving scrambled scores into {fname}")
+            np.save(fname, null_distribution)
+
             for scoring, description in [(scores, 'actual'),
-                                         (scrambled_scores, 'scrambled')]:
+                                         (scores_hypothetical, 'hypothetical')]:
+                if scores_hypothetical is None:
+                    continue
                 # plot
-                fig, ax = plt.subplots(1)
+                fig, ax = plt.subplots(1, figsize=[16, 3])
                 im = ax.matshow(scoring, vmin=0., vmax=1.,
-                                cmap='RdBu_r', origin='lower')
-                ax.axhline(500/dec_factor, color='k')
-                ax.axvline(700/dec_factor, color='k')
+                                cmap='RdBu_r', origin='lower',
+                                extent=np.array([0, 2700, -100, 100]))
+                ax.axhline(0, color='k', linestyle='dotted', label='motor response')
+                ax.axvline(700, color='k', label='stimulus offset')
                 ax.xaxis.set_ticks_position('bottom')
-                ax.set_xlabel('Test Time (5ms), stim 1')
-                ax.set_ylabel('Train Time (5ms), response')
-                ax.set_title(f'Generalization based on {condition} {target} ({description} data)')
-                plt.suptitle("Decoding choice (ROC AUC)")
-                plt.colorbar(im, ax=ax)
-                plt.tight_layout()
+                ax.set_xlabel('Test Time (ms), stimulus 1 and delay period')
+                ax.set_ylabel('Train Time (ms), \n response-centered')
+                plt.suptitle(f'Generalization based on {condition} {target} ({description} targets)')
+                ax.set_title("Decoding choice (accuracy)")
+                axins = inset_axes(
+                    ax,
+                    width="0.5%",
+                    height="100%",
+                    loc="lower left",
+                    bbox_to_anchor=(1.01, 0., 1, 1),
+                    bbox_transform=ax.transAxes,
+                    borderpad=0
+                )
+                fig.colorbar(im, cax=axins)
+                ax.legend(bbox_to_anchor=(0.5, 1.15, 0.5, 0.5))
                 fname = fpath / f'sub-{subject}_generalization_{target}-{condition}_{description}.png'
                 logging.info(f"Saving generalization plot into {fname}")
                 fig.savefig(fname)
