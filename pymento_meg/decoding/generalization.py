@@ -34,32 +34,36 @@ def generalize(subject,
     dec_factor = 5
     # order trials according to values of stimulus parameters
     extreme_targets = {
-        'probability': {'extreme': [0.1, 0.8],
+        'probability': {'low': [0.1],
                         'medium': [0.2, 0.4],
+                        'high': [0.8]
                         },
-        'magnitude': {'extreme': [0.5, 4],
+        'magnitude': {'low': [0.5],
                       'medium': [1, 2],
+                      'high': [4]
                       }
     }
     fpath = Path(_construct_path([figdir, f'sub-{subject}/']))
+    # read in the training data (1s, centered around response)
+    train_fullsample, train_data = get_general_data_structure(
+        subject=subject,
+        datadir=trainingdir,
+        bidsdir=bidsdir,
+        condition='nobrain-brain',
+        timespan=[-0.5, 0.5])
+    # read in the testing data (2.7s, first visual stimulus + delay
+    test_fullsample, test_data = get_general_data_structure(
+        subject=subject,
+        datadir=testingdir,
+        bidsdir=bidsdir,
+        condition='nobrain-brain',
+        timespan=[0, 2.7])
+
+    # do the analysis for both stimulus features
     for target in extreme_targets:
         tname = known_targets[target]['tname']
-        # read in the training data (1s, centered around response)
-        train_fullsample, train_data = get_general_data_structure(
-            subject=subject,
-            datadir=trainingdir,
-            bidsdir=bidsdir,
-            condition='nobrain-brain',
-            timespan=[-0.5, 0.5])
-        # read in the testing data (2.7s, first visual stimulus + delay
-        test_fullsample, test_data = get_general_data_structure(
-            subject=subject,
-            datadir=testingdir,
-            bidsdir=bidsdir,
-            condition='nobrain-brain',
-            timespan=[0, 2.7])
-
         for condition, value in extreme_targets[target].items():
+            # train on all trials, except for trials where no reaction was made
             X_train = np.array([decimate(epoch['normalized_data'], dec_factor)
                                for i, epoch in train_fullsample[subject].items()
                                ])
