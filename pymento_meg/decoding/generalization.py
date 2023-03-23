@@ -60,6 +60,14 @@ def generalize(subject,
         condition='nobrain-brain',
         timespan=[0, 2.7])
 
+    # custom colormap to overlay p-values:
+    import matplotlib.colors as mc
+    c_white = mc.colorConverter.to_rgba('white', alpha=0)
+    c_black = mc.colorConverter.to_rgba('black', alpha=1)
+    cmap_rb = mc.LinearSegmentedColormap.from_list('rb_cmap',
+                                                   [c_white, c_black],
+                                                   512)
+
     # do the analysis for both stimulus features
     for target in extreme_targets:
         tname = known_targets[target]['tname']
@@ -129,26 +137,37 @@ def generalize(subject,
             y_test_copy = y_test.copy()
             # do a permutation test comparison
             null_distribution = []
-            for i in range(25):
+            n_permutations = 25
+            for i in range(n_permutations):
                 # shuffle works in place
                 np.random.shuffle(y_test_copy)
                 scrambled_scores = time_gen.score(X=X_test, y=y_test_copy)
                 null_distribution.append(scrambled_scores)
-            # save the null distribution to do a permutation test later
+            # save the null distribution
             fname = fpath / \
                     f'sub-{subject}_gen-scores_{target}-{condition}_scrambled.npy'
             logging.info(f"Saving scrambled scores into {fname}")
             np.save(fname, null_distribution)
+
+            # create distributions for each time point and model
+            p_vals = np.zeros(null_distribution.shape[-2:])
+            for model in range(null_distribution.shape[1]):
+                for timepoint in range(null_distribution.shape[2]):
+                    # the proportion of null_values greater than real values
+                    p_vals[model, timepoint] = \
+                        ((null_distribution[:, model, timepoint] >= scores[model, timepoint]).sum() + 1) / (
+                                n_permutations + 1)
+            binary_mask = p_vals > 0.05
 
             for scoring, description in [(scores, 'actual'),
                                          (scores_hypothetical, 'hypothetical')]:
                 if scores_hypothetical is None:
                     continue
                 # plot
-                fig, ax = plt.subplots(1, figsize=[16, 3])
+                fig, ax = plt.subplots(1, figsize=[9, 4], frameon=False)
                 im = ax.matshow(scoring, vmin=0., vmax=1.,
                                 cmap='RdBu_r', origin='lower',
-                                extent=np.array([0, 2700, -100, 100]))
+                                extent=np.array([0, 2700, -500, 500]))
                 ax.axhline(0, color='k', linestyle='dotted', label='motor response')
                 ax.axvline(700, color='k', label='stimulus offset')
                 ax.xaxis.set_ticks_position('bottom')
@@ -158,7 +177,7 @@ def generalize(subject,
                 ax.set_title("Decoding choice (accuracy)")
                 axins = inset_axes(
                     ax,
-                    width="0.5%",
+                    width="2%",
                     height="100%",
                     loc="lower left",
                     bbox_to_anchor=(1.01, 0., 1, 1),
@@ -167,6 +186,16 @@ def generalize(subject,
                 )
                 fig.colorbar(im, cax=axins)
                 ax.legend(bbox_to_anchor=(0.5, 1.15, 0.5, 0.5))
-                fname = fpath / f'sub-{subject}_generalization_{target}-{condition}_{description}.png'
+                ax.set_aspect('auto')
+                fname = fpath / \
+                        f'sub-{subject}_generalization_{target}-{condition}_{description}.png'
+                logging.info(f"Saving generalization plot into {fname}")
+                fig.savefig(fname)
+                # overlay the p-values. non-significant areas will become black
+                im2 = ax.matshow(binary_mask, cmap=cmap_rb, vmin=0.,
+                                 vmax=1., origin='lower',
+                                extent=np.array([0, 2700, -500, 500]))
+                fname = fpath / \
+                        f'sub-{subject}_generalization_{target}-{condition}_{description}_pval-mask.png'
                 logging.info(f"Saving generalization plot into {fname}")
                 fig.savefig(fname)
