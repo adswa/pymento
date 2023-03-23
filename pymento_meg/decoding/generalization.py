@@ -137,12 +137,13 @@ def generalize(subject,
             y_test_copy = y_test.copy()
             # do a permutation test comparison
             null_distribution = []
-            n_permutations = 25
+            n_permutations = 50
             for i in range(n_permutations):
                 # shuffle works in place
                 np.random.shuffle(y_test_copy)
                 scrambled_scores = time_gen.score(X=X_test, y=y_test_copy)
                 null_distribution.append(scrambled_scores)
+            null_distribution = np.asarray(null_distribution)
             # save the null distribution
             fname = fpath / \
                     f'sub-{subject}_gen-scores_{target}-{condition}_scrambled.npy'
