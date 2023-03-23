@@ -76,9 +76,13 @@ def generalize(subject,
                 y_train = np.delete(y_train, idx)
                 X_train = np.delete(X_train, idx, axis=0)
 
+            # first, test on data corresponding to the target value (e.g., high
+            # probability) with choice labels from the later actual choice.
+            # As before, exclude trials without a reaction
             X_test = np.array([decimate(epoch['normalized_data'], dec_factor)
                                for id, epoch in test_fullsample[subject].items()
                                if epoch[tname] in value])
+
             y_test = np.array(['choice' + str(epoch['choice'])
                                for i, epoch in test_fullsample[subject].items()
                                if epoch[tname] in value])
@@ -94,16 +98,32 @@ def generalize(subject,
                 LogisticRegression(solver='liblinear')
             )
 
-            time_gen = GeneralizingEstimator(clf, scoring='roc_auc',
+            time_gen = GeneralizingEstimator(clf, scoring='accuracy',
                                              n_jobs=-1, verbose=True)
             # train on the motor response
             time_gen.fit(X=X_train, y=y_train)
-            # test on the stimulus presentation
+            # test on the stimulus presentation, with true labels
             scores = time_gen.score(X=X_test, y=y_test)
             # save the scores
-            fname = fpath / f'sub-{subject}_gen-scores_{target}-{condition}.npy'
+            fname = fpath / \
+                    f'sub-{subject}_gen-scores_{target}-{condition}_true-y.npy'
             logging.info(f"Saving generalization scores into {fname}")
             np.save(fname, scores)
+
+            # next, repeat the classification but test with labels implied from
+            # value of the target (e.g., high probability -> left choice)
+            if condition is not 'medium':
+                choice = 'choice1.0' if condition == 'high' \
+                    else 'choice2.0'
+                hypothetical_y = np.repeat(choice, len(X_test))
+                scores_hypothetical = time_gen.score(X=X_test, y=hypothetical_y)
+                # save the scores
+                fname = fpath / \
+                        f'sub-{subject}_gen-scores_{target}-{condition}_hypo-y.npy'
+                logging.info(f"Saving generalization scores into {fname}")
+                np.save(fname, scores_hypothetical)
+            else:
+                scores_hypothetical = None
 
             y_test_copy = y_test.copy()
             # do a permutation test comparison
