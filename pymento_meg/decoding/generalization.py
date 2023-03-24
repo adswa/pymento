@@ -133,6 +133,7 @@ def generalize(subject,
                 np.save(fname, scores_hypothetical)
             else:
                 scores_hypothetical = None
+                binary_mask_hypo = None
 
             y_test_copy = y_test.copy()
             # do a permutation test comparison
@@ -160,8 +161,20 @@ def generalize(subject,
                                 n_permutations + 1)
             binary_mask = p_vals > 0.05
 
-            for scoring, description in [(scores, 'actual'),
-                                         (scores_hypothetical, 'hypothetical')]:
+            if scores_hypothetical is not None:
+                p_vals = np.zeros(null_distribution.shape[-2:])
+                for model in range(null_distribution.shape[1]):
+                    for timepoint in range(null_distribution.shape[2]):
+                        # the proportion of null_values greater than real values
+                        p_vals[model, timepoint] = \
+                            ((null_distribution[:, model, timepoint] >= scores[
+                                model, timepoint]).sum() + 1) / (
+                                    n_permutations + 1)
+                binary_mask_hypo = p_vals > 0.05
+
+            for scoring, description, mask in \
+                    [(scores, 'actual', binary_mask),
+                     (scores_hypothetical, 'hypothetical', binary_mask_hypo)]:
                 if scores_hypothetical is None:
                     continue
                 # plot
@@ -193,7 +206,7 @@ def generalize(subject,
                 logging.info(f"Saving generalization plot into {fname}")
                 fig.savefig(fname)
                 # overlay the p-values. non-significant areas will become black
-                im2 = ax.matshow(binary_mask, cmap=cmap_rb, vmin=0.,
+                im2 = ax.matshow(mask, cmap=cmap_rb, vmin=0.,
                                  vmax=1., origin='lower',
                                 extent=np.array([0, 2700, -500, 500]))
                 fname = fpath / \
