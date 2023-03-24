@@ -167,7 +167,7 @@ def generalize(subject,
                     for timepoint in range(null_distribution.shape[2]):
                         # the proportion of null_values greater than real values
                         p_vals[model, timepoint] = \
-                            ((null_distribution[:, model, timepoint] >= scores[
+                            ((null_distribution[:, model, timepoint] >= scores_hypothetical[
                                 model, timepoint]).sum() + 1) / (
                                     n_permutations + 1)
                 binary_mask_hypo = p_vals > 0.05
