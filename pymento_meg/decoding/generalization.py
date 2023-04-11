@@ -23,6 +23,34 @@ def generalize(subject,
                figdir,
                ):
     """
+    Perform several temporal generalization analyses: For each subject, take
+    1000ms centered around the motor response part of a trial and train a
+    Logistic Regression to classify left or right choice on every time point.
+    Afterwards, evaluate the models on all timepoints from the start of a trial
+    until the end of the delay period. The generalization analysis is done
+    separately for trials corresponding to different values (high, medium, and
+    low values) on the two stimulus dimensions 'magnitude' and 'probability'
+    via test-trial selection: We test how well the models predicting eventual
+    choice later in the trial generalize for test periods with low, medium, or
+    high magnitude or probability. As the y data is eventual choice later in the
+    trial, the results from these analyses depict how well the true response is
+    already decodable earlier in the trial.
+    In addition to this, we also run a generalization analysis that doesn't use
+    true choice behavior later in the trail, but hypothetical choice behavior
+    given the stimulus value on a given stimulus dimension. High magnitude and
+    probability values of the first stimulus are assumed to predict left
+    choices, whereas low magnitude and probability values are assumed to predict
+    right choices. These analysis depict how well a potentially prepared
+    response is already decodable earlier in the trial.
+    Both generalization analyses are complemented with a permutation test. This
+    permutation test shuffles labels to break X-y associations, and generates a
+    null distribution from it. With a one-sided 5% alpha level, a binary mask
+    hides all time points except those with accuracies exceeding the accuracies
+    in the null distribution at least in 95% of shuffles.
+
+    This function saves scoring from real and hyptothetical y-values, and
+    plain temporal generalization plots as well as plots overlayed with p-value
+    masks from the permutation tests.
     Parameters
     ----------
     :param subject:
