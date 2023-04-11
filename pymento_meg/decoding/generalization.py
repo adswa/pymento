@@ -21,6 +21,7 @@ def generalize(subject,
                testingdir,
                bidsdir,
                figdir,
+               n_permutations=100,
                ):
     """
     Perform several temporal generalization analyses: For each subject, take
@@ -53,11 +54,11 @@ def generalize(subject,
     masks from the permutation tests.
     Parameters
     ----------
-    :param subject:
+    :param subject: int, subject identifier, e.g. 001
     :param trainingdir: Directory with epochs centered around response
     :param testingdir: Directory with epochs centered around visual stimulus 1
-    :param bidsdir:
-    :param figdir:
+    :param bidsdir: Directory with BIDS structured raw data
+    :param figdir: Directory to save plots in
     :return:
     """
     dec_factor = 5
@@ -166,7 +167,6 @@ def generalize(subject,
             y_test_copy = y_test.copy()
             # do a permutation test comparison
             null_distribution = []
-            n_permutations = 50
             for i in range(n_permutations):
                 # shuffle works in place
                 np.random.shuffle(y_test_copy)
