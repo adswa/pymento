@@ -91,7 +91,7 @@ def generalize(subject,
     # custom colormap to overlay p-values:
     import matplotlib.colors as mc
     c_white = mc.colorConverter.to_rgba('white', alpha=0)
-    c_black = mc.colorConverter.to_rgba('black', alpha=1)
+    c_black = mc.colorConverter.to_rgba('gray', alpha=1)
     cmap_rb = mc.LinearSegmentedColormap.from_list('rb_cmap',
                                                    [c_white, c_black],
                                                    512)
@@ -237,6 +237,7 @@ def generalize(subject,
                 im2 = ax.matshow(mask, cmap=cmap_rb, vmin=0.,
                                  vmax=1., origin='lower',
                                 extent=np.array([0, 2700, -500, 500]))
+                ax.xaxis.set_ticks_position('bottom')
                 fname = fpath / \
                         f'sub-{subject}_generalization_{target}-{condition}_{description}_pval-mask.png'
                 logging.info(f"Saving generalization plot into {fname}")
