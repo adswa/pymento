@@ -227,7 +227,7 @@ def generalize(subject,
                     borderpad=0
                 )
                 fig.colorbar(im, cax=axins)
-                ax.legend(bbox_to_anchor=(0.5, 1.15, 0.5, 0.5))
+                ax.legend(bbox_to_anchor=(0, 0, 1, 0.2))
                 ax.set_aspect('auto')
                 fname = fpath / \
                         f'sub-{subject}_generalization_{target}-{condition}_{description}.png'
@@ -238,6 +238,7 @@ def generalize(subject,
                                  vmax=1., origin='lower',
                                 extent=np.array([0, 2700, -500, 500]))
                 ax.xaxis.set_ticks_position('bottom')
+                ax.set_aspect('auto')
                 fname = fpath / \
                         f'sub-{subject}_generalization_{target}-{condition}_{description}_pval-mask.png'
                 logging.info(f"Saving generalization plot into {fname}")
