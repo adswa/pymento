@@ -21,7 +21,7 @@ def generalize(subject,
                testingdir,
                bidsdir,
                figdir,
-               n_permutations=100,
+               n_permutations=500,
                ):
     """
     Perform several temporal generalization analyses: For each subject, take
