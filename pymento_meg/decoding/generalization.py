@@ -16,6 +16,20 @@ from pymento_meg.srm.srm import get_general_data_structure
 from pymento_meg.utils import _construct_path
 
 
+
+# order trials according to values of stimulus parameters
+extreme_targets = {
+    'probability': {'low': [0.1],
+                    'medium': [0.2, 0.4],
+                    'high': [0.8]
+                    },
+    'magnitude': {'low': [0.5],
+                  'medium': [1, 2],
+                  'high': [4]
+                  }
+}
+
+
 def generalize(subject,
                trainingdir,
                testingdir,
@@ -62,17 +76,6 @@ def generalize(subject,
     :return:
     """
     dec_factor = 5
-    # order trials according to values of stimulus parameters
-    extreme_targets = {
-        'probability': {'low': [0.1],
-                        'medium': [0.2, 0.4],
-                        'high': [0.8]
-                        },
-        'magnitude': {'low': [0.5],
-                      'medium': [1, 2],
-                      'high': [4]
-                      }
-    }
     fpath = Path(_construct_path([figdir, f'sub-{subject}/']))
     # read in the training data (1s, centered around response)
     train_fullsample, train_data = get_general_data_structure(
