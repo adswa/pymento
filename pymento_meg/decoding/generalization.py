@@ -167,13 +167,19 @@ def generalize(subject,
                 scores_hypothetical = None
                 binary_mask_hypo = None
 
-            y_test_copy = y_test.copy()
+            y_train_copy = y_train.copy()
             # do a permutation test comparison
             null_distribution = []
             for i in range(n_permutations):
                 # shuffle works in place
-                np.random.shuffle(y_test_copy)
-                scrambled_scores = time_gen.score(X=X_test, y=y_test_copy)
+                np.random.shuffle(y_train_copy)
+                # build a new classifier based on scrambled data
+                null_time_gen = GeneralizingEstimator(clf, scoring='accuracy',
+                                                 n_jobs=-1, verbose=True)
+                # train on the motor response
+                null_time_gen.fit(X=X_train, y=y_train_copy)
+                # test on the stimulus presentation, with true labels
+                scrambled_scores = time_gen.score(X=X_train, y=y_train)
                 null_distribution.append(scrambled_scores)
             null_distribution = np.asarray(null_distribution)
             # save the null distribution
