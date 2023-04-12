@@ -68,7 +68,7 @@ def generalize(subject,
     masks from the permutation tests.
     Parameters
     ----------
-    :param subject: int, subject identifier, e.g. 001
+    :param subject: str, subject identifier, e.g. '001'
     :param trainingdir: Directory with epochs centered around response
     :param testingdir: Directory with epochs centered around visual stimulus 1
     :param bidsdir: Directory with BIDS structured raw data
