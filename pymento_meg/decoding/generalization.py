@@ -218,9 +218,10 @@ def generalize(subject,
                 fig, ax = plt.subplots(1, figsize=[9, 4], frameon=False)
                 im = ax.matshow(scoring, vmin=0., vmax=1.,
                                 cmap='RdBu_r', origin='lower',
-                                extent=np.array([0, 2700, -500, 500]))
+                                extent=np.array([0, 3400, -500, 500]))
                 ax.axhline(0, color='k', linestyle='dotted', label='motor response')
                 ax.axvline(700, color='k', label='stimulus offset')
+                ax.axvline(2700, color='green', label='stimulus onset')
                 ax.xaxis.set_ticks_position('bottom')
                 ax.set_xlabel('Test Time (ms), stimulus 1 and delay period')
                 ax.set_ylabel('Train Time (ms), \n response-centered')
