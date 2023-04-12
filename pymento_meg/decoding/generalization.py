@@ -90,7 +90,7 @@ def generalize(subject,
         datadir=testingdir,
         bidsdir=bidsdir,
         condition='nobrain-brain',
-        timespan=[0, 2.7])
+        timespan=[0, 3.4])
 
     # custom colormap to overlay p-values:
     import matplotlib.colors as mc
