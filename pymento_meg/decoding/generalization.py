@@ -44,7 +44,7 @@ def generalize(subject,
                testingdir,
                bidsdir,
                figdir,
-               n_permutations=500,
+               n_permutations=100,
                ):
     """
     Perform several temporal generalization analyses: For each subject, take
@@ -214,13 +214,13 @@ def generalize(subject,
                      (scores_hypothetical, 'hypothetical', binary_mask_hypo)]:
                 if scores_hypothetical is None:
                     continue
-            plot_generalization(scoring=scoring,
-                                description=description,
-                                condition=condition,
-                                target=target,
-                                fpath=fpath,
-                                subject=subject,
-                                mask=mask)
+                plot_generalization(scoring=scoring,
+                                    description=description,
+                                    condition=condition,
+                                    target=target,
+                                    fpath=fpath,
+                                    subject=subject,
+                                    mask=mask)
 
 
 def plot_generalization(scoring, description, condition, target,
