@@ -209,48 +209,61 @@ def generalize(subject,
                                 model, timepoint]).sum() + 1) / (
                                     n_permutations + 1)
                 binary_mask_hypo = p_vals > 0.05
-
             for scoring, description, mask in \
                     [(scores, 'actual', binary_mask),
                      (scores_hypothetical, 'hypothetical', binary_mask_hypo)]:
                 if scores_hypothetical is None:
                     continue
-                # plot
-                fig, ax = plt.subplots(1, figsize=[9, 4], frameon=False)
-                im = ax.matshow(scoring, vmin=0., vmax=1.,
-                                cmap='RdBu_r', origin='lower',
-                                extent=np.array([0, 3400, -500, 500]))
-                ax.axhline(0, color='k', linestyle='dotted', label='motor response')
-                ax.axvline(700, color='k', label='stimulus offset')
-                ax.axvline(2700, color='green', label='stimulus onset')
-                ax.xaxis.set_ticks_position('bottom')
-                ax.set_xlabel('Test Time (ms), stimulus 1 and delay period')
-                ax.set_ylabel('Train Time (ms), \n response-centered')
-                plt.suptitle(f'Generalization based on {condition} {target} ({description} targets)')
-                ax.set_title("Decoding choice (accuracy)")
-                axins = inset_axes(
-                    ax,
-                    width="2%",
-                    height="100%",
-                    loc="lower left",
-                    bbox_to_anchor=(1.01, 0., 1, 1),
-                    bbox_transform=ax.transAxes,
-                    borderpad=0
-                )
-                fig.colorbar(im, cax=axins)
-                ax.legend(bbox_to_anchor=(0, 0, 1, 0.2))
-                ax.set_aspect('auto')
-                fname = fpath / \
-                        f'sub-{subject}_generalization_{target}-{condition}_{description}.png'
-                logging.info(f"Saving generalization plot into {fname}")
-                fig.savefig(fname)
-                # overlay the p-values. non-significant areas will become black
-                im2 = ax.matshow(mask, cmap=cmap_rb, vmin=0.,
-                                 vmax=1., origin='lower',
-                                extent=np.array([0, 2700, -500, 500]))
-                ax.xaxis.set_ticks_position('bottom')
-                ax.set_aspect('auto')
-                fname = fpath / \
-                        f'sub-{subject}_generalization_{target}-{condition}_{description}_pval-mask.png'
-                logging.info(f"Saving generalization plot into {fname}")
-                fig.savefig(fname)
+            plot_generalization(scoring=scoring,
+                                description=description,
+                                condition=condition,
+                                target=target,
+                                fpath=fpath,
+                                subject=subject,
+                                mask=mask)
+
+
+def plot_generalization(scoring, description, condition, target,
+                        fpath, subject, mask=None):
+    """Plot a temporal generalization matrix for the trial"""
+    fig, ax = plt.subplots(1, figsize=[9, 4], frameon=False)
+    im = ax.matshow(scoring, vmin=0., vmax=1.,
+                    cmap='RdBu_r', origin='lower',
+                    extent=np.array([0, 3400, -500, 500]))
+    ax.axhline(0, color='k', linestyle='dotted', label='motor response')
+    ax.axvline(700, color='k', label='stimulus offset')
+    ax.axvline(2700, color='green', label='stimulus onset')
+    ax.xaxis.set_ticks_position('bottom')
+    ax.set_xlabel('Test Time (ms), stimulus 1 and delay period')
+    ax.set_ylabel('Train Time (ms), \n response-centered')
+    plt.suptitle(f'Generalization based on {condition} {target} '
+                 f'({description} targets)')
+    ax.set_title("Decoding choice (accuracy)")
+    axins = inset_axes(
+        ax,
+        width="2%",
+        height="100%",
+        loc="lower left",
+        bbox_to_anchor=(1.01, 0., 1, 1),
+        bbox_transform=ax.transAxes,
+        borderpad=0
+    )
+    fig.colorbar(im, cax=axins)
+    ax.legend(bbox_to_anchor=(0, 0, 1, 0.2))
+    ax.set_aspect('auto')
+    fname = fpath / \
+            f'sub-{subject}_generalization_{target}-{condition}_{description}.png'
+    logging.info(f"Saving generalization plot into {fname}")
+    fig.savefig(fname)
+    if mask is None:
+        return
+    # overlay the p-values. non-significant areas will become black
+    im2 = ax.matshow(mask, cmap=cmap_rb, vmin=0.,
+                     vmax=1., origin='lower',
+                     extent=np.array([0, 3400, -500, 500]))
+    ax.xaxis.set_ticks_position('bottom')
+    ax.set_aspect('auto')
+    fname = fpath / \
+            f'sub-{subject}_generalization_{target}-{condition}_{description}_pval-mask.png'
+    logging.info(f"Saving generalization plot into {fname}")
+    fig.savefig(fname)
