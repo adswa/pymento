@@ -190,25 +190,23 @@ def generalize(subject,
             np.save(fname, null_distribution)
 
             # create distributions for each time point and model
-            p_vals = np.zeros(null_distribution.shape[-2:])
-            for model in range(null_distribution.shape[1]):
-                for timepoint in range(null_distribution.shape[2]):
-                    # the proportion of null_values greater than real values
-                    p_vals[model, timepoint] = \
-                        ((null_distribution[:, model, timepoint] >= scores[model, timepoint]).sum() + 1) / (
-                                n_permutations + 1)
+            p_vals = np.zeros(scores.shape)
+            for n in null_distribution:
+                p_vals += n >= scores
+            p_vals += 1
+            p_vals /= (len(null_distribution + 1))
+            # create a binary mask from p_vals
             binary_mask = p_vals > 0.05
 
             if scores_hypothetical is not None:
-                p_vals = np.zeros(null_distribution.shape[-2:])
-                for model in range(null_distribution.shape[1]):
-                    for timepoint in range(null_distribution.shape[2]):
-                        # the proportion of null_values greater than real values
-                        p_vals[model, timepoint] = \
-                            ((null_distribution[:, model, timepoint] >= scores_hypothetical[
-                                model, timepoint]).sum() + 1) / (
-                                    n_permutations + 1)
+                # create p_values and mask also for hypothetical target data
+                p_vals = np.zeros(scores_hypothetical.shape)
+                for n in null_distribution:
+                    p_vals += n >= scores_hypothetical
+                p_vals += 1
+                p_vals /= (len(null_distribution + 1))
                 binary_mask_hypo = p_vals > 0.05
+
             for scoring, description, mask in \
                     [(scores, 'actual', binary_mask),
                      (scores_hypothetical, 'hypothetical', binary_mask_hypo)]:
