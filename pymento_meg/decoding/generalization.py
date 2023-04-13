@@ -1,6 +1,8 @@
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as mc
+
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from pathlib import Path
 
@@ -16,7 +18,6 @@ from pymento_meg.srm.srm import get_general_data_structure
 from pymento_meg.utils import _construct_path
 
 
-
 # order trials according to values of stimulus parameters
 extreme_targets = {
     'probability': {'low': [0.1],
@@ -28,6 +29,14 @@ extreme_targets = {
                   'high': [4]
                   }
 }
+
+
+# custom colormap to overlay p-values:
+c_white = mc.colorConverter.to_rgba('white', alpha=0)
+c_black = mc.colorConverter.to_rgba('gray', alpha=1)
+cmap_rb = mc.LinearSegmentedColormap.from_list('rb_cmap',
+                                               [c_white, c_black],
+                                               512)
 
 
 def generalize(subject,
@@ -91,14 +100,6 @@ def generalize(subject,
         bidsdir=bidsdir,
         condition='nobrain-brain',
         timespan=[0, 3.4])
-
-    # custom colormap to overlay p-values:
-    import matplotlib.colors as mc
-    c_white = mc.colorConverter.to_rgba('white', alpha=0)
-    c_black = mc.colorConverter.to_rgba('gray', alpha=1)
-    cmap_rb = mc.LinearSegmentedColormap.from_list('rb_cmap',
-                                                   [c_white, c_black],
-                                                   512)
 
     # do the analysis for both stimulus features
     for target in extreme_targets:
