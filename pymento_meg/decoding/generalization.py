@@ -267,3 +267,44 @@ def plot_generalization(scoring, description, condition, target,
             f'sub-{subject}_generalization_{target}-{condition}_{description}_pval-mask.png'
     logging.info(f"Saving generalization plot into {fname}")
     fig.savefig(fname)
+
+
+def aggregate_generalization(
+        figdir='/data/project/brainpeach/decoding',
+):
+    """
+    Create aggregate plots across generalization results.
+    :param figdir: str, directory where to save figures in and where to find
+    scores
+    :return:
+    """
+    figdir = Path(figdir)
+    for target in extreme_targets:
+        for condition, value in extreme_targets[target].items():
+            hypo_scores = []
+            true_scores = []
+            for sub in np.arange(1, 23):
+                subject = f'00{sub}' if sub < 10 else f'0{sub}'
+
+                fname = figdir / f'sub-{subject}' / \
+                        f'sub-{subject}_gen-scores_{target}-{condition}_true-y.npy'
+                truescore = np.load(fname)
+                true_scores.append(truescore)
+            avg_trues = np.mean(true_scores, axis=0)
+            description = f'averaged_actual'
+            plot_generalization(avg_trues, description=description,
+                                condition=condition, target=target,
+                                fpath=figdir, subject='group', mask=None)
+            if condition == 'medium':
+                continue
+            for sub in np.arange(1, 23):
+                subject = f'00{sub}' if sub < 10 else f'0{sub}'
+                fname = figdir / f'sub-{subject}' / \
+                        f'sub-{subject}_gen-scores_{target}-{condition}_hypo-y.npy'
+                hyposcore = np.load(fname)
+                hypo_scores.append(hyposcore)
+            avg_hypos = np.mean(hypo_scores, axis=0)
+            description = f'averaged_hypothetical'
+            plot_generalization(avg_hypos, description=description,
+                                condition=condition, target=target,
+                                fpath=figdir, subject='group', mask=None)
