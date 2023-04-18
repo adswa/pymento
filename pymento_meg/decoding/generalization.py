@@ -268,7 +268,7 @@ def plot_generalization(scoring, description, condition, target,
 
 
 def aggregate_generalization(
-        figdir='/data/project/brainpeach/decoding',
+        figdir='/data/project/brainpeach/generalization',
 ):
     """
     Create aggregate plots across generalization results.
