@@ -318,14 +318,13 @@ def aggregate_generalization(
                                 fixed_cbar=False)
 
 
-
-def generalization_intergrating_behavior(subject,
-                                         trainingdir,
-                                         testingdir,
-                                         bidsdir,
-                                         figdir,
-                                         n_permutations=100,
-                                         ):
+def generalization_integrating_behavior(subject,
+                                        trainingdir,
+                                        testingdir,
+                                        bidsdir,
+                                        figdir,
+                                        n_permutations=100,
+                                        ):
 
     dec_factor = 5
     fpath = Path(_construct_path([figdir, f'sub-{subject}/']))
