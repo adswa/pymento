@@ -19,6 +19,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 
 from pymento_meg.orig.behavior import read_bids_logfile
+from pymento_meg.decoding.logreg import get_metrics
 from pymento_meg.utils import _construct_path
 
 def bigdf(bidsdir):
@@ -145,6 +146,8 @@ def logreg(bidsdir,
                  for k in range(X.shape[1]) for i in range(len(scores))]
                 ),
             X.shape[1])
+        # also average the beta coefficients without normalization
+        coefs_pure = np.mean([scores[i][1][0] for i in range(len(scores))], axis=0)
         # next, calculate average across folds for each parameter, as a label
         avg_coefs = np.mean(
             [np.abs(scores[i][1:][0][0]) / np.sum(np.abs(scores[i][1:][0][0]))
@@ -160,7 +163,8 @@ def logreg(bidsdir,
                     figdir=figdir)
         # keep all the coefficients for later
         coefs[sub]['acc'] = avg_acc
-        coefs[sub]['coefs'] = avg_coefs
+        coefs[sub]['normed_coefs'] = avg_coefs
+        coefs[sub]['pure_coefs'] = coefs_pure
         coefs[sub]['stats'] = speed
         coefs[sub]['gain'] = gain
     # plot the reaction times
