@@ -222,12 +222,16 @@ def generalize(subject,
 
 
 def plot_generalization(scoring, description, condition, target,
-                        fpath, subject, mask=None):
+                        fpath, subject, mask=None, fixed_cbar=True):
     """Plot a temporal generalization matrix for the trial"""
     fig, ax = plt.subplots(1, figsize=[9, 4], frameon=False)
-    im = ax.matshow(scoring, vmin=0., vmax=1.,
-                    cmap='RdBu_r', origin='lower',
-                    extent=np.array([0, 3400, -500, 500]))
+    pltkwargs = {'origin': 'lower',
+                 'extent': np.array([0, 3400, -500, 500])}
+    if fixed_cbar:
+        # set cbar limits to 0, 1
+        pltkwargs['vmin'] = 0.
+        pltkwargs['vmax'] = 1.
+    im = ax.matshow(scoring, cmap='RdBu_r', **pltkwargs)
     ax.axhline(0, color='k', linestyle='dotted', label='motor response')
     ax.axvline(700, color='k', label='stimulus offset')
     ax.axvline(2700, color='green', label='stimulus onset')
@@ -256,9 +260,7 @@ def plot_generalization(scoring, description, condition, target,
     if mask is None:
         return
     # overlay the p-values. non-significant areas will become black
-    im2 = ax.matshow(mask, cmap=cmap_rb, vmin=0.,
-                     vmax=1., origin='lower',
-                     extent=np.array([0, 3400, -500, 500]))
+    im2 = ax.matshow(mask, cmap=cmap_rb, **pltkwargs)
     ax.xaxis.set_ticks_position('bottom')
     ax.set_aspect('auto')
     fname = fpath / \
@@ -292,7 +294,8 @@ def aggregate_generalization(
             description = f'averaged_actual'
             plot_generalization(avg_trues, description=description,
                                 condition=condition, target=target,
-                                fpath=figdir, subject='group', mask=None)
+                                fpath=figdir, subject='group', mask=None,
+                                fixed_cbar=False)
             if condition == 'medium':
                 continue
             for sub in np.arange(1, 23):
@@ -305,4 +308,5 @@ def aggregate_generalization(
             description = f'averaged_hypothetical'
             plot_generalization(avg_hypos, description=description,
                                 condition=condition, target=target,
-                                fpath=figdir, subject='group', mask=None)
+                                fpath=figdir, subject='group', mask=None,
+                                fixed_cbar=False)
