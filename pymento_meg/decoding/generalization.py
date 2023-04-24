@@ -380,9 +380,20 @@ def generalization_intergrating_behavior(subject,
     # z-score everything
     df.apply(zscore)
     df['integrate'] = (df.LoptMag * mag) + (df.LoptProb * prob) + (df.LEV * EV)
-    # split into hypothetical choice based on median
-    df['choice'] = df.integrate < df.integrate.median()
-    y_test = df.choice.map({False: 'choice2.0', True: 'choice1.0'}).values
+    # split in the highest and lowest 25%
+    col = 'integrate'
+    upper, lower = df[col].quantile([0.25, 0.75])
+    # everything is negative, more negative = left choice
+    conditions = [df[col] <= upper,
+                  df[col] >= lower]
+    choices = ["choice1.0", 'choice2.0']
+    df["choice"] = np.select(conditions, choices, default=None)
+    # get indices of all trials that did not make the cut
+    medium_trials = np.where(df['choice'].values == None)[0]
+
+    # remove the trials that didn't make the cut from the data
+    X_test = np.delete(X_test, medium_trials, axis=0)
+    y_test = df['choice'].fillna(np.nan).dropna().values
 
     # set up a generalizing estimator
     clf = make_pipeline(
