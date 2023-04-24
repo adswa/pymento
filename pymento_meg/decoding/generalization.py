@@ -6,6 +6,8 @@ import matplotlib.colors as mc
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from pathlib import Path
 
+import pandas as pd
+from scipy.stats import zscore
 from scipy.signal import decimate
 
 from sklearn.pipeline import make_pipeline
@@ -16,7 +18,7 @@ from mne.decoding import GeneralizingEstimator
 from pymento_meg.decoding.logreg import known_targets
 from pymento_meg.srm.srm import get_general_data_structure
 from pymento_meg.utils import _construct_path
-
+from pymento_meg.proc.behavior import logreg
 
 # order trials according to values of stimulus parameters
 extreme_targets = {
@@ -310,3 +312,125 @@ def aggregate_generalization(
                                 condition=condition, target=target,
                                 fpath=figdir, subject='group', mask=None,
                                 fixed_cbar=False)
+
+
+
+def generalization_intergrating_behavior(subject,
+                                         trainingdir,
+                                         testingdir,
+                                         bidsdir,
+                                         figdir,
+                                         n_permutations=100,
+                                         ):
+
+    dec_factor = 5
+    fpath = Path(_construct_path([figdir, f'sub-{subject}/']))
+    # read in the training data (1s, centered around response)
+    train_fullsample, train_data = get_general_data_structure(
+        subject=subject,
+        datadir=trainingdir,
+        bidsdir=bidsdir,
+        condition='nobrain-brain',
+        timespan=[-0.5, 0.5])
+    # read in the testing data (2.7s, first visual stimulus + delay
+    test_fullsample, test_data = get_general_data_structure(
+        subject=subject,
+        datadir=testingdir,
+        bidsdir=bidsdir,
+        condition='nobrain-brain',
+        timespan=[0, 3.4])
+    # train on all trials, except for trials where no reaction was made
+    X_train = np.array([decimate(epoch['normalized_data'], dec_factor)
+                        for i, epoch in train_fullsample[subject].items()
+                        ])
+    y_train = np.array(['choice' + str(epoch['choice'])
+                        for i, epoch in train_fullsample[subject].items()
+                        ])
+    if any(y_train == 'choice0.0'):
+        # remove trials where the participant did not make a choice
+        idx = np.where(y_train == 'choice0.0')
+        logging.info(f"Subject sub-{subject} did not make a choice in "
+                     f"{len(idx)} training trials")
+        y_train = np.delete(y_train, idx)
+        X_train = np.delete(X_train, idx, axis=0)
+
+    # get the test data
+    X_test = np.array([decimate(epoch['normalized_data'], dec_factor)
+                       for id, epoch in test_fullsample[subject].items()])
+    # calculate hypothetical labels. First, get regression coefficients
+    prob, mag, EV = logreg(bidsdir=bidsdir,
+                           figdir='/tmp',
+                           n_splits=10,
+                           subject=subject)[subject]['pure_coefs'][:3]
+    # make a dataframe for easier data manipulation
+    df = pd.DataFrame(test_data)
+    # drop everything we don't need
+    df = df.drop(columns=['epoch', 'trial_type', 'data', 'normalized_data',
+                          'prevLchar', 'prevRchar', 'prevRT', 'prevchoice',
+                          'Lchar', 'Rchar', 'RT',  'prevLoptMag',
+                          'prevLoptProb', 'prevRoptMag', 'prevRoptProb',
+                          'choice', 'pointdiff', 'subject', 'trial_no'])
+    # calculate EV from demeaned prob & magnitude
+    df['LEV'] = (df.LoptProb - df.LoptProb.mean()) * \
+                     (df.LoptMag - df.LoptMag.mean())
+    # z-score everything
+    df.apply(zscore)
+    df['integrate'] = (df.LoptMag * mag) + (df.LoptProb * prob) + (df.LEV * EV)
+    # split into hypothetical choice based on median
+    df['choice'] = df.integrate < df.integrate.median()
+    y_test = df.choice.map({False: 'choice2.0', True: 'choice1.0'}).values
+
+    # set up a generalizing estimator
+    clf = make_pipeline(
+        StandardScaler(),
+        LogisticRegression(solver='liblinear')
+    )
+
+    time_gen = GeneralizingEstimator(clf, scoring='accuracy',
+                                     n_jobs=-1, verbose=True)
+    # train on the motor response
+    time_gen.fit(X=X_train, y=y_train)
+    # test on the stimulus presentation, with true labels
+    scores = time_gen.score(X=X_test, y=y_test)
+    # save the scores
+    fname = fpath / \
+            f'sub-{subject}_gen-scores_estimated-y.npy'
+    logging.info(f"Saving generalization scores into {fname}")
+    np.save(fname, scores)
+
+    y_train_copy = y_train.copy()
+    # do a permutation test comparison
+    null_distribution = []
+    for i in range(n_permutations):
+        # shuffle works in place
+        np.random.shuffle(y_train_copy)
+        # build a new classifier based on scrambled data
+        null_time_gen = GeneralizingEstimator(clf, scoring='accuracy',
+                                              n_jobs=-1, verbose=True)
+        # train on the motor response
+        null_time_gen.fit(X=X_train, y=y_train_copy)
+        # test on the stimulus presentation, with true labels
+        scrambled_scores = time_gen.score(X=X_test, y=y_test)
+        null_distribution.append(scrambled_scores)
+    null_distribution = np.asarray(null_distribution)
+    # save the null distribution
+    fname = fpath / \
+            f'sub-{subject}_gen-scores_estimated-y_scrambled.npy'
+    logging.info(f"Saving scrambled scores into {fname}")
+    np.save(fname, null_distribution)
+
+    # create distributions for each time point and model
+    p_vals = np.zeros(scores.shape)
+    for n in null_distribution:
+        p_vals += n >= scores
+    p_vals += 1
+    p_vals /= (len(null_distribution + 1))
+    # create a binary mask from p_vals
+    binary_mask = p_vals > 0.05
+    plot_generalization(scoring=scores,
+                        description='estimated',
+                        condition='trials',
+                        target='all',
+                        fpath=fpath,
+                        subject=subject,
+                        mask=binary_mask)
