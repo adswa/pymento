@@ -117,6 +117,8 @@ def generalize(subject,
             if any(y_train == 'choice0.0'):
                 # remove trials where the participant did not make a choice
                 idx = np.where(y_train == 'choice0.0')
+                logging.info(f"Subject sub-{subject} did not make a choice in "
+                             f"{len(idx)} training trials")
                 y_train = np.delete(y_train, idx)
                 X_train = np.delete(X_train, idx, axis=0)
 
@@ -133,6 +135,8 @@ def generalize(subject,
             if any(y_test == 'choice0.0'):
                 # remove trials where the participant did not make a choice
                 idx = np.where(y_test == 'choice0.0')
+                logging.info(f"Subject sub-{subject} did not make a choice in "
+                             f"{len(idx)} testing trials")
                 y_test = np.delete(y_test, idx)
                 X_test = np.delete(X_test, idx, axis=0)
 
