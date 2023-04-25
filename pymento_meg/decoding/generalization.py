@@ -335,7 +335,7 @@ def generalization_integrating_behavior(subject,
         bidsdir=bidsdir,
         condition='nobrain-brain',
         timespan=[-0.5, 0.5])
-    # read in the testing data (2.7s, first visual stimulus + delay
+    # read in the testing data (3.4s, first stim + delay + 2nd stim)
     test_fullsample, test_data = get_general_data_structure(
         subject=subject,
         datadir=testingdir,
@@ -361,9 +361,10 @@ def generalization_integrating_behavior(subject,
     X_test = np.array([decimate(epoch['normalized_data'], dec_factor)
                        for id, epoch in test_fullsample[subject].items()])
     # calculate hypothetical labels. First, get regression coefficients
+    # TODO: logistic regression with only left characteristics?
     prob, mag, EV = logreg(bidsdir=bidsdir,
                            figdir='/tmp',
-                           n_splits=10,
+                           n_splits=100,
                            subject=subject)[subject]['pure_coefs'][:3]
     # make a dataframe for easier data manipulation
     df = pd.DataFrame(test_data)
@@ -377,22 +378,24 @@ def generalization_integrating_behavior(subject,
     df['LEV'] = (df.LoptProb - df.LoptProb.mean()) * \
                      (df.LoptMag - df.LoptMag.mean())
     # z-score everything
-    df.apply(zscore)
+    df = df.apply(zscore)
     df['integrate'] = (df.LoptMag * mag) + (df.LoptProb * prob) + (df.LEV * EV)
     # split in the highest and lowest 25%
     col = 'integrate'
-    upper, lower = df[col].quantile([0.25, 0.75])
+    lower, upper = df[col].quantile([0.25, 0.75])
     # everything is negative, more negative = left choice
-    conditions = [df[col] <= upper,
-                  df[col] >= lower]
-    choices = ["choice1.0", 'choice2.0']
+    conditions = [df[col] >= upper,
+                  df[col] <= lower]
+    # we believe that choice2.0 is right, choice1.0 is left
+    choices = ['choice2.0', "choice1.0"]
     df["choice"] = np.select(conditions, choices, default=None)
     # get indices of all trials that did not make the cut
     medium_trials = np.where(df['choice'].values == None)[0]
 
     # remove the trials that didn't make the cut from the data
     X_test = np.delete(X_test, medium_trials, axis=0)
-    y_test = df['choice'].fillna(np.nan).dropna().values
+    y_test = np.delete(np.array(df.choice), medium_trials, axis=0)
+    #y_test = df['choice'].fillna(np.nan).dropna().values
 
     # set up a generalizing estimator
     clf = make_pipeline(
