@@ -325,6 +325,7 @@ def plot_generalization(scoring, description, condition, target,
 
 def aggregate_generalization(
         figdir='/data/project/brainpeach/generalization',
+        n_permutations=10000
 ):
     """
     Create aggregate plots across generalization results.
@@ -337,6 +338,7 @@ def aggregate_generalization(
         for condition, value in extreme_targets[target].items():
             hypo_scores = []
             true_scores = []
+            scrambled_scores = {}
             for sub in np.arange(1, 23):
                 subject = f'00{sub}' if sub < 10 else f'0{sub}'
 
@@ -344,11 +346,37 @@ def aggregate_generalization(
                         f'sub-{subject}_gen-scores_{target}-{condition}_true-y.npy'
                 truescore = np.load(fname)
                 true_scores.append(truescore)
+
+                fname_scrambled = figdir / f'sub-{subject}' / \
+                    f'sub-{subject}_gen-scores_{target}-{condition}_scrambled.npy'
+                scrambled_score = np.load(fname_scrambled)
+                scrambled_scores[sub] = scrambled_score
             avg_trues = np.mean(true_scores, axis=0)
+            # permutate
+            null_distribution = []
+            permutation_count = scrambled_scores[sub].shape[0]
+            for i in range(n_permutations):
+                null_distribution.append(
+                    np.mean(
+                        [scrambled_scores[sub][np.random.randint(
+                            0, high=permutation_count, size=1)[0]]
+                         for sub in np.arange(1, 23)],
+                        axis=0
+                    ),
+                )
+            null_distribution = np.asarray(null_distribution)
+            # create distributions for each time point and model
+            p_vals = np.zeros(avg_trues.shape)
+            for n in null_distribution:
+                p_vals += n >= avg_trues
+            p_vals += 1
+            p_vals /= (len(null_distribution + 1))
+            # create a binary mask from p_vals
+            binary_mask = p_vals > 0.05
             description = f'averaged_actual'
             plot_generalization(avg_trues, description=description,
                                 condition=condition, target=target,
-                                fpath=figdir, subject='group', mask=None,
+                                fpath=figdir, subject='group', mask=binary_mask,
                                 fixed_cbar=False)
             if condition == 'medium':
                 continue
@@ -359,10 +387,18 @@ def aggregate_generalization(
                 hyposcore = np.load(fname)
                 hypo_scores.append(hyposcore)
             avg_hypos = np.mean(hypo_scores, axis=0)
+            # create distributions for each time point and model
+            p_vals = np.zeros(avg_hypos.shape)
+            for n in null_distribution:
+                p_vals += n >= avg_hypos
+            p_vals += 1
+            p_vals /= (len(null_distribution + 1))
+            # create a binary mask from p_vals
+            binary_mask = p_vals > 0.05
             description = f'averaged_hypothetical'
             plot_generalization(avg_hypos, description=description,
                                 condition=condition, target=target,
-                                fpath=figdir, subject='group', mask=None,
+                                fpath=figdir, subject='group', mask=binary_mask,
                                 fixed_cbar=False)
 
 
