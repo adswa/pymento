@@ -400,6 +400,48 @@ def aggregate_generalization(
                                 condition=condition, target=target,
                                 fpath=figdir, subject='group', mask=binary_mask,
                                 fixed_cbar=False)
+    # finally, compute group aggregates for the estimated plots
+    estimated_scores = []
+    estimated_scrambled = {}
+    for sub in np.arange(1, 23):
+        subject = f'00{sub}' if sub < 10 else f'0{sub}'
+
+        fname = figdir / f'sub-{subject}' / \
+                f'sub-{subject}_gen-scores_estimated-y.npy'
+        estimatedscore = np.load(fname)
+        estimated_scores.append(estimatedscore)
+
+        fname_scrambled = figdir / f'sub-{subject}' / \
+                          f'sub-{subject}_gen-scores_estimated-y_scrambled.npy'
+        scrambled_score = np.load(fname_scrambled)
+        estimated_scrambled[sub] = scrambled_score
+    avg_estimates = np.mean(estimated_scores, axis=0)
+    # permutate
+    null_distribution = []
+    permutation_count = estimated_scrambled[sub].shape[0]
+    for i in range(n_permutations):
+        null_distribution.append(
+            np.mean(
+                [estimated_scrambled[sub][np.random.randint(
+                    0, high=permutation_count, size=1)[0]]
+                 for sub in np.arange(1, 23)],
+                axis=0
+            ),
+        )
+    null_distribution = np.asarray(null_distribution)
+    # create distributions for each time point and model
+    p_vals = np.zeros(avg_estimates.shape)
+    for n in null_distribution:
+        p_vals += n >= avg_estimates
+    p_vals += 1
+    p_vals /= (len(null_distribution + 1))
+    # create a binary mask from p_vals
+    binary_mask = p_vals > 0.05
+    description = f'averaged_estimated'
+    plot_generalization(avg_estimates, description=description,
+                        condition='trials', target='all',
+                        fpath=figdir, subject='group', mask=binary_mask,
+                        fixed_cbar=False)
 
 
 def generalization_integrating_behavior(subject,
