@@ -447,7 +447,7 @@ def generalization_integrating_behavior(subject,
     # split in the highest and lowest 25%
     col = 'integrate'
     lower, upper = df[col].quantile([0.25, 0.75])
-    # everything is negative, more negative = left choice
+    # more negative = left choice
     conditions = [df[col] >= upper,
                   df[col] <= lower]
     # we believe that choice2.0 is right, choice1.0 is left
