@@ -128,35 +128,12 @@ def generalize(subject,
                 scores_hypothetical = None
                 binary_mask_hypo = None
 
-            y_train_scrambled = y_train.copy()
-            # do a permutation test comparison
-            null_distribution = []
-            for i in range(n_permutations):
-                # shuffle works in place
-                np.random.shuffle(y_train_scrambled)
-                # build a new classifier based on scrambled data
-                null_time_gen = GeneralizingEstimator(clf, scoring='accuracy',
-                                                 n_jobs=-1, verbose=True)
-                # train on the motor response
-                null_time_gen.fit(X=X_train, y=y_train_scrambled)
-                # test on the stimulus presentation, with true labels
-                scrambled_scores = null_time_gen.score(X=X_test, y=y_test)
-                null_distribution.append(scrambled_scores)
-            null_distribution = np.asarray(null_distribution)
-            # save the null distribution
             fname = fpath / \
                     f'sub-{subject}_gen-scores_{target}-{condition}_scrambled.npy'
-            logging.info(f"Saving scrambled scores into {fname}")
-            np.save(fname, null_distribution)
-
-            # create distributions for each time point and model
-            p_vals = np.zeros(scores.shape)
-            for n in null_distribution:
-                p_vals += n >= scores
-            p_vals += 1
-            p_vals /= (len(null_distribution + 1))
-            # create a binary mask from p_vals
-            binary_mask = p_vals > 0.05
+            null_distribution, binary_mask =\
+                _permute(y_train=y_train, X_train=X_train, y_test=y_test,
+                         X_test=X_test, clf=clf, fname=fname, scores=scores,
+                         n_permutations=n_permutations, alpha=0.05)
 
             if scores_hypothetical is not None:
                 # create p_values and mask also for hypothetical target data
@@ -227,6 +204,53 @@ def _make_X_n_y(fullsample, subject, dec_factor, drop_non_responses=True,
             X = np.delete(X, idx, axis=0)
     return X, y
 
+
+def _permute(y_train, X_train, y_test, X_test, clf, fname, scores,
+             n_permutations=100, alpha=0.05):
+    """Perform a permutation test for the generalization analysis by permuting
+    y_train labels, retraining a new generalizing estimator, and testing it on
+    true test data n_permutations times. It will save the scrambled scores
+    (null distribution), and return a binary mask corresponding to the specified
+    alpha level of significance as well as the null distribution
+    Parameters
+    ----------
+    :param y_train: 1D array, true y training labels
+    :param X_train: 3D array, true training epochs
+    :param y_test: 1D array, true y testing labels
+    :param X_test: 3D array, true testing labels
+    :param clf: sklearn pipeline, contains the estimator for generalization
+    :param fname: str, Path to save scrambled scores at
+    :param n_permutations: int, how often to draw null distributions
+    :param alpha: significance level for the p-value map
+    """
+    y_train_scrambled = y_train.copy()
+    # do a permutation test comparison
+    null_distribution = []
+    for i in range(n_permutations):
+        # shuffle works in place
+        np.random.shuffle(y_train_scrambled)
+        # build a new classifier based on scrambled data
+        null_time_gen = GeneralizingEstimator(clf, scoring='accuracy',
+                                              n_jobs=-1, verbose=True)
+        # train on the motor response
+        null_time_gen.fit(X=X_train, y=y_train_scrambled)
+        # test on the stimulus presentation, with true labels
+        scrambled_scores = null_time_gen.score(X=X_test, y=y_test)
+        null_distribution.append(scrambled_scores)
+    null_distribution = np.asarray(null_distribution)
+    # save the null distribution
+    logging.info(f"Saving scrambled scores into {fname}")
+    np.save(fname, null_distribution)
+
+    # create distributions for each time point and model
+    p_vals = np.zeros(scores.shape)
+    for n in null_distribution:
+        p_vals += n >= scores
+    p_vals += 1
+    p_vals /= (len(null_distribution + 1))
+    # create a binary mask from p_vals
+    binary_mask = p_vals > alpha
+    return null_distribution, binary_mask
 
 
 def _train_and_score_generalizer(X_train, X_test, y_train, y_test, fname):
@@ -408,35 +432,13 @@ def generalization_integrating_behavior(subject,
                                      y_train=y_train, y_test=y_test,
                                      fname=fname)
 
-    y_train_scrambled = y_train.copy()
-    # do a permutation test comparison
-    null_distribution = []
-    for i in range(n_permutations):
-        # shuffle works in place
-        np.random.shuffle(y_train_scrambled)
-        # build a new classifier based on scrambled data
-        null_time_gen = GeneralizingEstimator(clf, scoring='accuracy',
-                                              n_jobs=-1, verbose=True)
-        # train on the motor response
-        null_time_gen.fit(X=X_train, y=y_train_scrambled)
-        # test on the stimulus presentation, with true labels
-        scrambled_scores = null_time_gen.score(X=X_test, y=y_test)
-        null_distribution.append(scrambled_scores)
-    null_distribution = np.asarray(null_distribution)
-    # save the null distribution
     fname = fpath / \
             f'sub-{subject}_gen-scores_estimated-y_scrambled.npy'
-    logging.info(f"Saving scrambled scores into {fname}")
-    np.save(fname, null_distribution)
+    null_distribution, binary_mask = \
+        _permute(y_train=y_train, X_train=X_train, y_test=y_test,
+                 X_test=X_test, clf=clf, fname=fname, scores=scores,
+                 n_permutations=n_permutations, alpha=0.05)
 
-    # create distributions for each time point and model
-    p_vals = np.zeros(scores.shape)
-    for n in null_distribution:
-        p_vals += n >= scores
-    p_vals += 1
-    p_vals /= (len(null_distribution + 1))
-    # create a binary mask from p_vals
-    binary_mask = p_vals > 0.05
     plot_generalization(scoring=scores,
                         description='estimated',
                         condition='trials',
