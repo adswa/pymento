@@ -86,23 +86,11 @@ def generalize(subject,
     :param figdir: Directory to save plots in
     :return:
     """
-    dec_factor = 5
     fpath = Path(_construct_path([figdir, f'sub-{subject}/']))
-    # read in the training data (1s, centered around response)
-    train_fullsample, train_data = get_general_data_structure(
-        subject=subject,
-        datadir=trainingdir,
-        bidsdir=bidsdir,
-        condition='nobrain-brain',
-        timespan=[-0.5, 0.5])
-    # read in the testing data (2.7s, first visual stimulus + delay
-    test_fullsample, test_data = get_general_data_structure(
-        subject=subject,
-        datadir=testingdir,
-        bidsdir=bidsdir,
-        condition='nobrain-brain',
-        timespan=[0, 3.4])
-
+    dec_factor = 5
+    train_fullsample, train_data, test_fullsample, test_data = \
+        _read_test_n_train(subject=subject, trainingdir=trainingdir,
+                           testingdir=testingdir, bidsdir=bidsdir)
     # do the analysis for both stimulus features
     for target in extreme_targets:
         tname = known_targets[target]['tname']
@@ -227,6 +215,25 @@ def generalize(subject,
                                     mask=mask)
 
 
+def _read_test_n_train(subject, trainingdir, testingdir, bidsdir):
+    """Helper to read in training and testing data"""
+    # read in the training data (1s, centered around response)
+    train_fullsample, train_data = get_general_data_structure(
+        subject=subject,
+        datadir=trainingdir,
+        bidsdir=bidsdir,
+        condition='nobrain-brain',
+        timespan=[-0.5, 0.5])
+    # read in the testing data (2.7s, first visual stimulus + delay
+    test_fullsample, test_data = get_general_data_structure(
+        subject=subject,
+        datadir=testingdir,
+        bidsdir=bidsdir,
+        condition='nobrain-brain',
+        timespan=[0, 3.4])
+    return train_fullsample, train_data, test_fullsample, test_data
+
+
 def plot_generalization(scoring, description, condition, target,
                         fpath, subject, mask=None, fixed_cbar=True):
     """Plot a temporal generalization matrix for the trial"""
@@ -328,20 +335,11 @@ def generalization_integrating_behavior(subject,
 
     dec_factor = 5
     fpath = Path(_construct_path([figdir, f'sub-{subject}/']))
-    # read in the training data (1s, centered around response)
-    train_fullsample, train_data = get_general_data_structure(
-        subject=subject,
-        datadir=trainingdir,
-        bidsdir=bidsdir,
-        condition='nobrain-brain',
-        timespan=[-0.5, 0.5])
-    # read in the testing data (3.4s, first stim + delay + 2nd stim)
-    test_fullsample, test_data = get_general_data_structure(
-        subject=subject,
-        datadir=testingdir,
-        bidsdir=bidsdir,
-        condition='nobrain-brain',
-        timespan=[0, 3.4])
+
+    train_fullsample, train_data, test_fullsample, test_data = \
+        _read_test_n_train(subject=subject, trainingdir=trainingdir,
+                           testingdir=testingdir, bidsdir=bidsdir)
+    # train on all trials, except for trials where no reaction was made
     # train on all trials, except for trials where no reaction was made
     X_train = np.array([decimate(epoch['normalized_data'], dec_factor)
                         for i, epoch in train_fullsample[subject].items()
