@@ -107,8 +107,10 @@ def generalize(subject,
                                          value=value)
             fname = fpath / \
                     f'sub-{subject}_gen-scores_{target}-{condition}_true-y.npy'
-            logging.info(f"Saving generalization scores into {fname}")
-            np.save(fname, scores)
+            scores, clf, time_gen = \
+                _train_and_score_generalizer(X_train=X_train, X_test=X_test,
+                                             y_train=y_train, y_test=y_test,
+                                             fname=fname)
 
             # next, repeat the classification but test with labels implied from
             # value of the target (e.g., high probability -> left choice)
@@ -224,6 +226,29 @@ def _make_X_n_y(fullsample, subject, dec_factor, drop_non_responses=True,
             y = np.delete(y, idx)
             X = np.delete(X, idx, axis=0)
     return X, y
+
+
+
+def _train_and_score_generalizer(X_train, X_test, y_train, y_test, fname):
+    """Helper to set up and initially train and score a pipeline and
+     Generalizing Estimator. Saves the scores, and returns the pipelines and
+     generated scores"""
+    # set up a generalizing estimator
+    clf = make_pipeline(
+        StandardScaler(),
+        LogisticRegression(solver='liblinear')
+    )
+
+    time_gen = GeneralizingEstimator(clf, scoring='accuracy',
+                                     n_jobs=-1, verbose=True)
+    # train on the motor response
+    time_gen.fit(X=X_train, y=y_train)
+    # test on the stimulus presentation, with true labels
+    scores = time_gen.score(X=X_test, y=y_test)
+    # save the scores
+    logging.info(f"Saving generalization scores into {fname}")
+    np.save(fname, scores)
+    return scores, clf, time_gen
 
 
 def plot_generalization(scoring, description, condition, target,
@@ -376,23 +401,12 @@ def generalization_integrating_behavior(subject,
     y_test = np.delete(np.array(df.choice), medium_trials, axis=0)
     #y_test = df['choice'].fillna(np.nan).dropna().values
 
-    # set up a generalizing estimator
-    clf = make_pipeline(
-        StandardScaler(),
-        LogisticRegression(solver='liblinear')
-    )
-
-    time_gen = GeneralizingEstimator(clf, scoring='accuracy',
-                                     n_jobs=-1, verbose=True)
-    # train on the motor response
-    time_gen.fit(X=X_train, y=y_train)
-    # test on the stimulus presentation, with true labels
-    scores = time_gen.score(X=X_test, y=y_test)
-    # save the scores
     fname = fpath / \
             f'sub-{subject}_gen-scores_estimated-y.npy'
-    logging.info(f"Saving generalization scores into {fname}")
-    np.save(fname, scores)
+    scores, clf, time_gen = \
+        _train_and_score_generalizer(X_train=X_train, X_test=X_test,
+                                     y_train=y_train, y_test=y_test,
+                                     fname=fname)
 
     y_train_scrambled = y_train.copy()
     # do a permutation test comparison
