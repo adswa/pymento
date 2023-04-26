@@ -523,4 +523,5 @@ def generalization_integrating_behavior(subject,
                         target='all',
                         fpath=fpath,
                         subject=subject,
-                        mask=binary_mask)
+                        mask=binary_mask,
+                        fixed_cbar=False)
