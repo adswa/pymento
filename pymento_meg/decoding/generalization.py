@@ -186,7 +186,7 @@ def generalize(subject,
                 # train on the motor response
                 null_time_gen.fit(X=X_train, y=y_train_copy)
                 # test on the stimulus presentation, with true labels
-                scrambled_scores = time_gen.score(X=X_test, y=y_test)
+                scrambled_scores = null_time_gen.score(X=X_test, y=y_test)
                 null_distribution.append(scrambled_scores)
             null_distribution = np.asarray(null_distribution)
             # save the null distribution
