@@ -96,51 +96,15 @@ def generalize(subject,
         tname = known_targets[target]['tname']
         for condition, value in extreme_targets[target].items():
             # train on all trials, except for trials where no reaction was made
-            X_train = np.array([decimate(epoch['normalized_data'], dec_factor)
-                               for i, epoch in train_fullsample[subject].items()
-                               ])
-            y_train = np.array(['choice' + str(epoch['choice'])
-                               for i, epoch in train_fullsample[subject].items()
-                               ])
-            if any(y_train == 'choice0.0'):
-                # remove trials where the participant did not make a choice
-                idx = np.where(y_train == 'choice0.0')
-                logging.info(f"Subject sub-{subject} did not make a choice in "
-                             f"{len(idx)} training trials")
-                y_train = np.delete(y_train, idx)
-                X_train = np.delete(X_train, idx, axis=0)
+            X_train, y_train = _make_X_n_y(train_fullsample, subject,
+                                           dec_factor, drop_non_responses=True)
 
             # first, test on data corresponding to the target value (e.g., high
             # probability) with choice labels from the later actual choice.
             # As before, exclude trials without a reaction
-            X_test = np.array([decimate(epoch['normalized_data'], dec_factor)
-                               for id, epoch in test_fullsample[subject].items()
-                               if epoch[tname] in value])
-
-            y_test = np.array(['choice' + str(epoch['choice'])
-                               for i, epoch in test_fullsample[subject].items()
-                               if epoch[tname] in value])
-            if any(y_test == 'choice0.0'):
-                # remove trials where the participant did not make a choice
-                idx = np.where(y_test == 'choice0.0')
-                logging.info(f"Subject sub-{subject} did not make a choice in "
-                             f"{len(idx)} testing trials")
-                y_test = np.delete(y_test, idx)
-                X_test = np.delete(X_test, idx, axis=0)
-
-            # set up a generalizing estimator
-            clf = make_pipeline(
-                StandardScaler(),
-                LogisticRegression(solver='liblinear')
-            )
-
-            time_gen = GeneralizingEstimator(clf, scoring='accuracy',
-                                             n_jobs=-1, verbose=True)
-            # train on the motor response
-            time_gen.fit(X=X_train, y=y_train)
-            # test on the stimulus presentation, with true labels
-            scores = time_gen.score(X=X_test, y=y_test)
-            # save the scores
+            X_test, y_test = _make_X_n_y(test_fullsample, subject, dec_factor,
+                                         drop_non_responses=True, tname=tname,
+                                         value=value)
             fname = fpath / \
                     f'sub-{subject}_gen-scores_{target}-{condition}_true-y.npy'
             logging.info(f"Saving generalization scores into {fname}")
@@ -232,6 +196,34 @@ def _read_test_n_train(subject, trainingdir, testingdir, bidsdir):
         condition='nobrain-brain',
         timespan=[0, 3.4])
     return train_fullsample, train_data, test_fullsample, test_data
+
+
+def _make_X_n_y(fullsample, subject, dec_factor, drop_non_responses=True,
+                tname=None, value=None):
+    if tname is None and value is None:
+        X = np.array([decimate(epoch['normalized_data'], dec_factor)
+                          for i, epoch in fullsample[subject].items()
+                          ])
+        y = np.array(['choice' + str(epoch['choice'])
+                      for i, epoch in fullsample[subject].items()
+                      ])
+    else:
+        # subset X and y to trials that match a stimulus condition
+        X = np.array([decimate(epoch['normalized_data'], dec_factor)
+                      for id, epoch in fullsample[subject].items()
+                      if epoch[tname] in value])
+        y = np.array(['choice' + str(epoch['choice'])
+                      for i, epoch in fullsample[subject].items()
+                      if epoch[tname] in value])
+    if drop_non_responses:
+        if any(y == 'choice0.0'):
+            # remove trials where the participant did not make a choice
+            idx = np.where(y == 'choice0.0')
+            logging.info(f"Subject sub-{subject} did not make a choice in "
+            f"{len(idx)} training trials")
+            y = np.delete(y, idx)
+            X = np.delete(X, idx, axis=0)
+    return X, y
 
 
 def plot_generalization(scoring, description, condition, target,
@@ -341,19 +333,8 @@ def generalization_integrating_behavior(subject,
                            testingdir=testingdir, bidsdir=bidsdir)
     # train on all trials, except for trials where no reaction was made
     # train on all trials, except for trials where no reaction was made
-    X_train = np.array([decimate(epoch['normalized_data'], dec_factor)
-                        for i, epoch in train_fullsample[subject].items()
-                        ])
-    y_train = np.array(['choice' + str(epoch['choice'])
-                        for i, epoch in train_fullsample[subject].items()
-                        ])
-    if any(y_train == 'choice0.0'):
-        # remove trials where the participant did not make a choice
-        idx = np.where(y_train == 'choice0.0')
-        logging.info(f"Subject sub-{subject} did not make a choice in "
-                     f"{len(idx)} training trials")
-        y_train = np.delete(y_train, idx)
-        X_train = np.delete(X_train, idx, axis=0)
+    X_train, y_train = _make_X_n_y(train_fullsample, subject,
+                                   dec_factor, drop_non_responses=True)
 
     # get the test data
     X_test = np.array([decimate(epoch['normalized_data'], dec_factor)
