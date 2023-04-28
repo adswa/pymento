@@ -24,11 +24,13 @@ from pymento_meg.proc.behavior import logreg
 extreme_targets = {
     'probability': {'low': [0.1],
                     'medium': [0.2, 0.4],
-                    'high': [0.8]
+                    'high': [0.8],
+                    'extreme': [0.1, 0.8]
                     },
     'magnitude': {'low': [0.5],
                   'medium': [1, 2],
-                  'high': [4]
+                  'high': [4],
+                  'extreme': [0.5, 4]
                   }
 }
 
