@@ -470,10 +470,10 @@ def generalization_integrating_behavior(subject,
                        for id, epoch in test_fullsample[subject].items()])
     # calculate hypothetical labels. First, get regression coefficients
     # TODO: logistic regression with only left characteristics?
-    prob, mag, EV = logreg(bidsdir=bidsdir,
-                           figdir='/tmp',
-                           n_splits=100,
-                           subject=subject)[subject]['pure_coefs'][:3]
+    Lprob, Lmag, LEV, Rprob, Rmag, REV = logreg(bidsdir=bidsdir,
+                                                figdir='/tmp',
+                                                n_splits=100,
+                                                subject=subject)[subject]['pure_coefs']
     # make a dataframe for easier data manipulation
     df = pd.DataFrame(test_data)
     # drop everything we don't need
@@ -485,45 +485,62 @@ def generalization_integrating_behavior(subject,
     # calculate EV from demeaned prob & magnitude
     df['LEV'] = (df.LoptProb - df.LoptProb.mean()) * \
                      (df.LoptMag - df.LoptMag.mean())
+    df['REV'] = (df.RoptProb - df.RoptProb.mean()) * \
+                     (df.RoptMag - df.RoptMag.mean())
     # z-score everything
-    df = df.apply(zscore)
-    df['integrate'] = (df.LoptMag * mag) + (df.LoptProb * prob) + (df.LEV * EV)
+    #df = df.apply(zscore)
+    # min-max scale everything
+    df = (df - df.min()) / (df.max() - df.min())
+    df['integrate'] = (df.LoptMag * Lmag) + (df.LoptProb * Lprob) + (df.LEV * LEV)
+    df['integrate_all_infos'] = (df.LoptMag * Lmag) + (df.LoptProb * Lprob) + \
+                                (df.LEV * LEV) + (df.RoptMag * Rmag) + \
+                                (df.RoptProb * Rprob) + (df.REV * REV)
     # split in the highest and lowest 25%
-    col = 'integrate'
-    lower, upper = df[col].quantile([0.25, 0.75])
-    # more negative = left choice
-    conditions = [df[col] >= upper,
-                  df[col] <= lower]
-    # we believe that choice2.0 is right, choice1.0 is left
-    choices = ['choice2.0', "choice1.0"]
-    df["choice"] = np.select(conditions, choices, default=None)
+    for col, target in [('integrate', 'choice'),
+                        ('integrate_all_infos', 'choice_all_infos')]:
+        lower, upper = df[col].quantile([0.49, 0.51])
+        # more negative = left choice
+        conditions = [df[col] >= upper,
+                      df[col] <= lower]
+        # we believe that choice2.0 is right, choice1.0 is left
+        choices = ['choice2.0', "choice1.0"]
+        df[target] = np.select(conditions, choices, default=None)
     # get indices of all trials that did not make the cut
     medium_trials = np.where(df['choice'].values == None)[0]
+    # get all trials were infos from left set of weights and all weights diverge
+    flipping_trials = np.where(df['choice'].values != df['choice_all_infos'].values)[0]
+    # combine them
+    trials_to_exclude = np.union1d(medium_trials, flipping_trials)
 
     # remove the trials that didn't make the cut from the data
-    X_test = np.delete(X_test, medium_trials, axis=0)
-    y_test = np.delete(np.array(df.choice), medium_trials, axis=0)
-    #y_test = df['choice'].fillna(np.nan).dropna().values
+    X_test_flips = X_test[flipping_trials]
+    X_test = np.delete(X_test, trials_to_exclude, axis=0)
+    y_test = np.delete(np.array(df.choice), trials_to_exclude, axis=0)
+    y_test_flips = np.array(df.choice)[flipping_trials]
 
-    fname = fpath / \
-            f'sub-{subject}_gen-scores_estimated-y.npy'
-    scores, clf, time_gen = \
-        _train_and_score_generalizer(X_train=X_train, X_test=X_test,
-                                     y_train=y_train, y_test=y_test,
-                                     fname=fname)
+    for condition, X, y in [('non-flip', X_test, y_test),
+                            ('flip', X_test_flips, y_test_flips)]:
+        fname = fpath / \
+                f'sub-{subject}_gen-scores_{condition}-estimated-y.npy'
+        scores, clf, time_gen = \
+            _train_and_score_generalizer(X_train=X_train, X_test=X,
+                                         y_train=y_train, y_test=y,
+                                         fname=fname)
 
-    fname = fpath / \
-            f'sub-{subject}_gen-scores_estimated-y_scrambled.npy'
-    null_distribution, binary_mask = \
-        _permute(y_train=y_train, X_train=X_train, y_test=y_test,
-                 X_test=X_test, clf=clf, fname=fname, scores=scores,
-                 n_permutations=n_permutations, alpha=0.05)
+        fname = fpath / \
+                f'sub-{subject}_gen-scores_{condition}-estimated-y_scrambled.npy'
+        null_distribution, binary_mask = \
+            _permute(y_train=y_train, X_train=X_train, y_test=y,
+                     X_test=X, clf=clf, fname=fname, scores=scores,
+                     n_permutations=n_permutations, alpha=0.05)
 
-    plot_generalization(scoring=scores,
-                        description='estimated',
-                        condition='trials',
-                        target='all',
-                        fpath=fpath,
-                        subject=subject,
-                        mask=binary_mask,
-                        fixed_cbar=False)
+        plot_generalization(scoring=scores,
+                            description='estimated',
+                            condition=condition,
+                            target='all',
+                            fpath=fpath,
+                            subject=subject,
+                            mask=binary_mask,
+                            fixed_cbar=False)
+
+
