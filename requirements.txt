@@ -9,3 +9,4 @@ pyvista
 mne-bids
 autoreject
 scipy
+brainiak
