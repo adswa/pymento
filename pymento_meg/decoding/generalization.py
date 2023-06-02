@@ -105,14 +105,15 @@ def generalize(subject,
         for condition, value in extreme_targets[target].items():
             # train on all trials, except for trials where no reaction was made
             X_train, y_train = _make_X_n_y(train_fullsample, subject,
-                                           dec_factor, drop_non_responses=True)
+                                           dec_factor, drop_non_responses=True,
+                                           ch_subset=parietal_channels)
 
             # first, test on data corresponding to the target value (e.g., high
             # probability) with choice labels from the later actual choice.
             # As before, exclude trials without a reaction
             X_test, y_test = _make_X_n_y(test_fullsample, subject, dec_factor,
                                          drop_non_responses=True, tname=tname,
-                                         value=value)
+                                         value=value, ch_subset=parietal_channels)
             fname = fpath / \
                     f'sub-{subject}_gen-scores_{target}-{condition}_true-y.npy'
             scores, clf, time_gen = \
@@ -186,7 +187,7 @@ def _read_test_n_train(subject, trainingdir, testingdir, bidsdir):
 
 
 def _make_X_n_y(fullsample, subject, dec_factor, drop_non_responses=True,
-                tname=None, value=None):
+                tname=None, value=None, ch_subset=None):
     if tname is None and value is None:
         X = np.array([decimate(epoch['normalized_data'], dec_factor)
                           for i, epoch in fullsample[subject].items()
@@ -210,6 +211,10 @@ def _make_X_n_y(fullsample, subject, dec_factor, drop_non_responses=True,
             f"{len(idx)} training trials")
             y = np.delete(y, idx)
             X = np.delete(X, idx, axis=0)
+    if ch_subset is not None:
+        # keep only selected channels, identified by index
+        logging.info(f'Selecting a subset of channels: {ch_subset}')
+        X = X[:, ch_subset, :]
     return X, y
 
 
