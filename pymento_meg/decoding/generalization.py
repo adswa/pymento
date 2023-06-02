@@ -123,7 +123,7 @@ def generalize(subject,
 
             # next, repeat the classification but test with labels implied from
             # value of the target (e.g., high probability -> left choice)
-            if condition is not 'medium':
+            if condition != 'medium':
                 choice = 'choice1.0' if condition == 'high' \
                     else 'choice2.0'
                 hypothetical_y = np.repeat(choice, len(X_test))
