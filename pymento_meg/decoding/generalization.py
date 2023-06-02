@@ -49,6 +49,7 @@ cmap_rb = mc.LinearSegmentedColormap.from_list('rb_cmap',
 # for ch in mne.read_vectorview_selection(name=["parietal"], info=raw.info)]
 parietal_channels = [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 66, 67, 68, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 180, 181, 182, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 222, 223, 224, 225, 226, 227, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 279, 280, 281]
 
+
 def generalize(subject,
                trainingdir,
                testingdir,
@@ -499,7 +500,6 @@ def aggregate_generalization(
                             condition='trials', target='all',
                             fpath=figdir, subject='group', mask=binary_mask,
                             fixed_cbar=False)
-
 
 
 def generalization_integrating_behavior(subject,
