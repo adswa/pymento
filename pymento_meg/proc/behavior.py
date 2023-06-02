@@ -141,17 +141,17 @@ def logreg(bidsdir,
         # First, get normalized coefficients from each fold (for boxplot)
         coefs_for_boxplot = np.split(
             np.asarray(
-                [(np.abs(scores[i][1:][0][0]) /
-                  np.sum(np.abs(scores[i][1:][0][0])))[k]
-                 for k in range(X.shape[1]) for i in range(len(scores))]
+                [(np.abs(scores[i][1:]) /
+                  np.sum(np.abs(scores[i][1:])))[k]
+                 for k in range(X.shape[1]) for i in range(n_splits) ]
                 ),
             X.shape[1])
         # also average the beta coefficients without normalization
-        coefs_pure = np.mean([scores[i][1][0] for i in range(len(scores))], axis=0)
+        coefs_pure = np.mean(scores[:, 1:], axis=0)
         # next, calculate average across folds for each parameter, as a label
         avg_coefs = np.mean(
-            [np.abs(scores[i][1:][0][0]) / np.sum(np.abs(scores[i][1:][0][0]))
-             for i in range(len(scores))],
+            [np.abs(scores[i, 1:]) / np.sum(np.abs(scores[i, 1:]))
+             for i in range(n_splits)],
             axis=0
         )
         # create the boxplots
@@ -185,8 +185,8 @@ def getmecoefs(est, X, y_true, **kwargs):
     """
     y_pred = est.predict(X)
     acc = metrics.accuracy_score(y_true, y_pred)
-    coefs = est.steps[1][1].coef_
-    return acc, coefs
+    coefs = est.steps[1][1].coef_[0]
+    return [acc] + list(coefs)
 
 
 def print_coefs(data, means, names, sub, acc, figdir='/tmp'):
