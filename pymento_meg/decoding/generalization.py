@@ -519,11 +519,13 @@ def generalization_integrating_behavior(subject,
     # train on all trials, except for trials where no reaction was made
     # train on all trials, except for trials where no reaction was made
     X_train, y_train = _make_X_n_y(train_fullsample, subject,
-                                   dec_factor, drop_non_responses=True)
+                                   dec_factor, drop_non_responses=True,
+                                   ch_subset=parietal_channels)
 
     # get the test data
     X_test = np.array([decimate(epoch['normalized_data'], dec_factor)
                        for id, epoch in test_fullsample[subject].items()])
+    X_test = X_test[:, parietal_channels, :]
     # calculate hypothetical labels. First, get regression coefficients
     # TODO: logistic regression with only left characteristics?
     Lprob, Lmag, LEV, Rprob, Rmag, REV = logreg(bidsdir=bidsdir,
