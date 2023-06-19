@@ -763,15 +763,23 @@ def get_decision_timespan_on_and_offsets(subject,
 
 
 def shared_response(data,
-                    features):
+                    features,
+                    model='SRM'):
+
     """
     Compute a shared response model from a list of trials
     :param data: list of lists, with MEG data
     :param features: int, specification of feature number for the model
     :return:
     """
-    logging.info(f'Fitting a probabilistic SRM with {features} features...')
-    # fit a probabilistic shared response model
-    model = srm.SRM(features=features)
-    model.fit(data)
+    if model == 'SRM':
+        logging.info(f'Fitting a probabilistic SRM with {features} features...')
+        # fit a probabilistic shared response model
+        model = srm.SRM(features=features)
+        model.fit(data)
+    elif model == 'RSRM':
+        logging.info(f'Fitting a robust SRM with {features} features...')
+        from brainiak.funcalign import rsrm
+        model = rsrm.RSRM(features=features)
+        model.fit(data)
     return model
