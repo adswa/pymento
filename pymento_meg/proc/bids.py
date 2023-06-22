@@ -35,7 +35,7 @@ def read_bids_data(bids_root, subject, datatype="meg", task="memento", suffix="m
             bids_path=bids_path,
             extra_params=dict(on_split_missing="raise"),
         )
-    except ValueError:
+    except (ValueError, FileNotFoundError) as e:
         logging.warn(
             "Ooops! I can't load all splits of the data. This may be because "
             "you run a version of MNE-python that does not read in annexed "
