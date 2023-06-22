@@ -42,7 +42,7 @@ def read_bids_data(bids_root, subject, datatype="meg", task="memento", suffix="m
             "data automatically. I will try to datalad-unlock them for you."
         )
         import datalad.api as dl
-
+        dl.get(bids_path.root)
         dl.unlock(bids_path.directory, dataset=bids_path.root)
         raw = read_raw_bids(
             bids_path=bids_path,
