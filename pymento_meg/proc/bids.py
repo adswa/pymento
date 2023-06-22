@@ -93,6 +93,7 @@ def _get_BIDSPath_processed(subject, bidsdir):
         task="memento",
         root=bidsdir,
         suffix="meg",
+        datatype="meg",
         extension=".fif",
         processing="sss",
     )
