@@ -40,9 +40,10 @@ def read_bids_data(bids_root, subject, datatype="meg", task="memento", suffix="m
             "Ooops! I can't load all splits of the data. This may be because "
             "you run a version of MNE-python that does not read in annexed "
             "data automatically. I will try to datalad-unlock them for you."
+            "If this fails, check that you retrieved the data with datalad get"
+            "or datalad run --input!"
         )
         import datalad.api as dl
-        dl.get(bids_path.root)
         dl.unlock(bids_path.directory, dataset=bids_path.root)
         raw = read_raw_bids(
             bids_path=bids_path,
