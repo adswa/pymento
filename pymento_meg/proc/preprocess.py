@@ -308,6 +308,7 @@ def maxwellfilter(
         calibration=fine_cal_file,
         head_pos=head_pos,
         verbose=True,
+        st_duration=10,
     )
 
     if filtering:
