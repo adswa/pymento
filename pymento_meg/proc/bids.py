@@ -43,7 +43,7 @@ def read_bids_data(bids_root, subject, datatype="meg", task="memento", suffix="m
         )
         import datalad.api as dl
 
-        dl.unlock(bids_path.directory)
+        dl.unlock(bids_path.directory, dataset=bids_path.root)
         raw = read_raw_bids(
             bids_path=bids_path,
             extra_params=dict(on_split_missing="raise"),
