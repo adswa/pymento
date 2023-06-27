@@ -84,12 +84,12 @@ def remove_eyeblinks_and_heartbeat(raw,
                         picks='meg', baseline=None)
     ## First, estimate rejection criteria for high-amplitude artifacts. This is
     ## done via autoreject
-    #logging.info('Estimating bad epochs quick-and-dirty, to improve ICA')
-    #ar = AutoReject(random_state=rng)
+    logging.info('Estimating bad epochs quick-and-dirty, to improve ICA')
+    ar = AutoReject(random_state=rng)
     # fit on first 200 epochs to save (a bit of) time
-    #epochs.load_data()
-    #ar.fit(epochs[:200])
-    #epochs_ar, reject_log = ar.transform(epochs, return_log=True)
+    epochs.load_data()
+    ar.fit(epochs[:200])
+    epochs_ar, reject_log = ar.transform(epochs, return_log=True)
 
     # run an ICA to capture heartbeat and eyeblink artifacts.
     # set a seed for reproducibility.
@@ -100,7 +100,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     # https://github.com/autoreject/autoreject/blob/dfbc64f49eddeda53c5868290a6792b5233843c6/examples/plot_autoreject_workflow.py
     logging.info('Fitting the ICA')
     ica = ICA(max_iter='auto', n_components=45, random_state=rng)
-    ica.fit(epochs)#[~reject_log.bad_epochs])
+    ica.fit(epochs[~reject_log.bad_epochs])
     logging.info("Searching for eyeblink and heartbeat artifacts in the data")
     # get ICA components for the given subject
     if subject == '008':
