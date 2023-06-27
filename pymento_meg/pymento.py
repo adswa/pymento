@@ -235,7 +235,7 @@ def epoch_and_clean_trials(subject,
             Path(diagdir),
             f"sub-{subject}",
             "meg",
-            f"epoch-rejectlog_sub-{subject}.png",
+            f"epoch-rejectlog_sub-{subject}_{epochlength}_.png",
         ]
     )
     fig.savefig(fname)
@@ -246,7 +246,7 @@ def epoch_and_clean_trials(subject,
             Path(diagdir),
             f"sub-{subject}",
             "meg",
-            f"clean-epoch_average_sub-{subject}.png",
+            f"clean-epoch_average_sub-{subject}_{epochlength}.png",
         ]
     )
     fig.savefig(fname)
@@ -257,7 +257,7 @@ def epoch_and_clean_trials(subject,
             Path(diagdir),
             f"sub-{subject}",
             "meg",
-            f"psd_cleaned-epochs-{subject}.png",
+            f"psd_cleaned-epochs-{subject}_{epochlength}.png",
         ]
     )
     psd.savefig(fname)
