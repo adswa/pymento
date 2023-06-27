@@ -10,3 +10,5 @@ mne-bids
 autoreject
 scipy
 brainiak
+imblearn
+meegkit
