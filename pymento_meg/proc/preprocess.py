@@ -21,7 +21,7 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 # for each subject, a dictionary of specific frequency characteristics of noise.
 # This is necessary because some but not all subjects have two peaks around 60Hz
 # The dictionary specifies the frequencies, and the nremove parametrization of
-# dss_line. All have been found via manual search and trial&error
+# dss_line. All have been found via manual search and trial&error for 2.7 second epochs
 ZAPlinefreqs = {
     '001': {'freqs': [50, 58.5],
             'components': [10, 13]},
