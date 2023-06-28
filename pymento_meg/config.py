@@ -325,60 +325,6 @@ event_dict = {
 }
 
 
-# Notes on ICA artifacts for each subject. They were found by hand by
-# - visually inspecting ICA components
-# - visually inspecting automatically detected EOG and ECG components found by
-# eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
-# ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw, method='ctps',
-#                                             threshold='auto')
-ica_comps = {
-    '001': {'ecg': [1, 4],
-            'eog': [0, 23]},    # drops 50 / 23 epochs
-    '002': {'ecg': [24, 34],
-            'eog': [33]},       # drops 120 / 153 epochs
-    '003': {'ecg': [13, 29],
-            'eog': [0, 1]},     # drops 218 / 172 epochs
-    '004': {'ecg': [24, 17],
-            'eog': [0]},        # drops 240 / 0 epochs
-    '005': {'ecg': [2, 37],
-            'eog': [1, 13]},    # drops 23 / 10 epochs
-    '006': {'ecg': [32],
-            'eog': [4, 26]},    # drops 18 / 18
-    '007': {'ecg': [1, 14],
-            'eog': [0]},        # drops 269 / 242 epochs
-    '008': {'ecg': [27],
-            'eog': [4]},        # drops 19 / 18 epochs
-    '009': {'ecg': [6, 41],     # without zapline filtering
-            'eog': [0, 1, 2]},  # drops 189 / 51 epochs (without ZAPline)
-    '010': {'ecg': [5, 15],
-            'eog': [0]},        # drops 24 / 30 epochs
-    '011': {'ecg': [2, 3],
-            'eog': [0, 12]},    # drops 3 / 0 epochs
-    '012': {'ecg': [6, 34],
-            'eog': [0, 5]},     # drops 51 / 21 epochs
-    '013': {'ecg': [7, 14],
-            'eog': [2, 24]},    # drops 10  (40?) / 10 epochs
-    '014': {'ecg': [5, 17, 25],
-            'eog': [0, 6]},     # drops 27 / 0 epochs
-    '015': {'ecg': [1, 6],
-            'eog': [0, 16]},    # drops 20 / 13 epochs
-    '016': {'ecg': [1],
-            'eog': [0, 15]},    # drops 4 epochs
-    '017': {'ecg': [16, 6],     # set bad channels: 0313 0513 0523
-            'eog': [4, 21]},    # drops 62 / 47 epochs
-    '018': {'ecg': [22, 31],
-            'eog': [2]},        # drops 3 / 10 epochs
-    '019': {'ecg': [4, 31],
-            'eog': [13]},       # drops 42 (11?) / 93 epochs
-    '020': {'ecg': [10, 43],
-            'eog': [7, 31]},    # drops 3 / 59 epochs
-    '021': {'ecg': [5, 32, 42],
-            'eog': [11]},       # drops 109 / 144 epochs
-    '022': {'ecg': [8, 33],
-            'eog': [2, 24]},    # drops 18 / 24 epochs
-}
-
-
 # map a set of reward magnitude and probability (in the order) to trial types.
 # the characteristic combinations with letters are frequent (50-75 over the
 # course of the experiment) and occur in the left and right stimulus. The
