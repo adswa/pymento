@@ -127,7 +127,8 @@ def epoch_and_clean_trials(subject,
                            datadir,
                            derivdir,
                            epochlength=3,
-                           eventid={'visualfix/fixCross': 10}):
+                           eventid={'visualfix/fixCross': 10},
+                           reepoch=False):
     """
     Chunk the data into epochs starting at the eventid specified per trial,
     lasting 7 seconds (which should include all trial elements).
@@ -141,6 +142,8 @@ def epoch_and_clean_trials(subject,
     :param derivdir: str, path to a directory where cleaned epochs can be saved
     :param epochlength: int, length of epoch
     :param eventid: dict, the event to start an Epoch from
+    :param reepoch: bool, if True, previously ICA cleaned and saved data
+    will be loaded and epoched, instead of reapplying the ICA.
     """
     # construct name of the first split
     raw_fname = Path(datadir) / f'sub-{subject}/meg' / \
@@ -149,27 +152,42 @@ def epoch_and_clean_trials(subject,
           f"Attempting the following path: {raw_fname}")
     raw = mne.io.read_raw_fif(raw_fname)
     events, event_dict = get_events(raw)
-    # filter the data to remove high-frequency noise. Minimal high-pass filter
-    # based on
-    # https://www.sciencedirect.com/science/article/pii/S0165027021000157
-    # ensure the data is loaded prior to filtering
-    raw.load_data()
-    if subject == '017':
-        logging.info('Setting additional bad channels for subject 17')
-        raw.info['bads'] = ['MEG0313', 'MEG0513', 'MEG0523']
-        raw.interpolate_bads()
-    # high-pass doesn't make sense, raw data has 0.1Hz high-pass filter already!
-    _filter_data(raw, h_freq=100)
-    # ICA to detect and repair artifacts
-    logging.info('Removing eyeblink and heartbeat artifacts')
-    rng = np.random.RandomState(28)
-    remove_eyeblinks_and_heartbeat(raw=raw,
-                                   subject=subject,
-                                   figdir=diagdir,
-                                   events=events,
-                                   eventid=eventid,
-                                   rng=rng,
-                                   )
+    if reepoch:
+        # load pre-existing cleaned data
+        try:
+            raw_fname = Path(datadir) / f'sub-{subject}/meg' / \
+                        f'sub-{subject}_task-memento_cleaned.fif'
+            logging.info(
+                f"Reading in cleaned data from subject sub-{subject}. "
+                f"Attempting the following path: {raw_fname}")
+            raw = mne.io.read_raw_fif(raw_fname)
+        except FileNotFoundError:
+            logging.info(f"Could not find pre-existing cleaned file at "
+                         f"{raw_fname}. Cleaning from scratch.")
+            reepoch = False
+    if not reepoch:
+        logging.info("Cleaning from scratch.")
+        # filter the data to remove high-frequency noise. Minimal high-pass filter
+        # based on
+        # https://www.sciencedirect.com/science/article/pii/S0165027021000157
+        # ensure the data is loaded prior to filtering
+        raw.load_data()
+        if subject == '017':
+            logging.info('Setting additional bad channels for subject 17')
+            raw.info['bads'] = ['MEG0313', 'MEG0513', 'MEG0523']
+            raw.interpolate_bads()
+        # high-pass doesn't make sense, raw data has 0.1Hz high-pass filter already!
+        _filter_data(raw, h_freq=100)
+        # ICA to detect and repair artifacts
+        logging.info('Removing eyeblink and heartbeat artifacts')
+        rng = np.random.RandomState(28)
+        remove_eyeblinks_and_heartbeat(raw=raw,
+                                       subject=subject,
+                                       figdir=diagdir,
+                                       events=events,
+                                       eventid=eventid,
+                                       rng=rng,
+                                       )
     # retrieve metadata to later add SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH
     # THIS WAY WE CAN LATER RECOVER WHICH TRIAL PARAMETERS WE'RE LOOKING AT
     # BASED ON THE LOGS, AS THE EPOCH REJECTION WILL REMOVE TRIALS
@@ -228,6 +246,16 @@ def epoch_and_clean_trials(subject,
     )
     logging.info(f"Saving cleaned, epoched data to {outpath}")
     epochs_clean.save(outpath, overwrite=True)
+    outpath = _construct_path(
+        [
+            Path(derivdir),
+            f"sub-{subject}",
+            "meg",
+            f"sub-{subject}_task-memento_cleaned.fif",
+        ]
+    )
+    logging.info(f"Saving continous data after ICA to {outpath}")
+    raw.save(outpath)
     # visualize the bad sensors for each trial
     fig = ar.get_reject_log(epochs).plot()
     fname = _construct_path(
