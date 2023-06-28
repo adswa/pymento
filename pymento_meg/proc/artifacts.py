@@ -4,7 +4,7 @@ from mne.preprocessing import (
     create_eog_epochs,
     ICA,
 )
-from pymento_meg.config import ica_comps
+
 from autoreject import (
     AutoReject
 )
@@ -143,7 +143,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     plt.rcParams['figure.figsize'] = plt.rcParamsDefault['figure.figsize']
 
     # plot EOG components
-    overlay_eog = ica.plot_overlay(eog_evoked, exclude=ica_comps[subject]['eog'])
+    overlay_eog = ica.plot_overlay(eog_evoked, exclude=eog_indices)
     fname = _construct_path(
         [
             Path(figdir),
@@ -154,7 +154,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     )
     overlay_eog.savefig(fname)
     # plot ECG components
-    overlay_ecg = ica.plot_overlay(ecg_evoked, exclude=ica_comps[subject]['ecg'])
+    overlay_ecg = ica.plot_overlay(ecg_evoked, exclude=ecg_indices)
     fname = _construct_path(
         [
             Path(figdir),
