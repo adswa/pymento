@@ -79,8 +79,8 @@ def remove_eyeblinks_and_heartbeat(raw,
     # Chunk raw data into epochs to fit the ICA
     # No baseline correction as it would interfere with ICA.
     logging.info("Epoching filtered data")
-    epochs = mne.Epochs(filt_raw, events, event_id=eventid,
-                        tmin=0, tmax=3,
+    epochs = mne.Epochs(filt_raw, events, event_id={'visualfix/fixCross':10},
+                        tmin=0, tmax=5,
                         picks='meg', baseline=None)
     ## First, estimate rejection criteria for high-amplitude artifacts. This is
     ## done via autoreject
@@ -104,10 +104,10 @@ def remove_eyeblinks_and_heartbeat(raw,
     logging.info("Searching for eyeblink and heartbeat artifacts in the data")
     # get ICA components for the given subject
     if subject == '008':
-        eog_indices = [10]
-        ecg_indices = [29]
-        #eog_indices = ica_comps[subject]['eog']
-        #ecg_indices = ica_comps[subject]['ecg']
+        # failures to compute ecg components from magnetometers make handsetting
+        # necessary
+        ecg_indices = [18]
+        eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
     # An initially manual component detection did not reproduce after a software
     # update - for now, we have to do the automatic detection for all but sub 8
     else:
