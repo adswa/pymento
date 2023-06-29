@@ -71,7 +71,7 @@ def make_signal(frequency=10,
                 stype='sine',
                 data_size=10000,
                 signal_size=1000,
-                outdir=None,
+                outdir='/tmp',
                 nsignal=1,
                 ):
     """
@@ -120,21 +120,22 @@ def make_signal(frequency=10,
            ylabel='amplitude',
            title=f'Artificially generated signal component ({frequency}Hz)')
     ax.plot(data=timeseries)
-    if outdir is not None:
-        # save the plot
-        outpath = Path(outdir) / \
-                  f'signal.svg'
-        ax.savefig(outpath, bbox_inches='tight')
+
+    # save the plot
+    outpath = Path(outdir) / \
+              f'signal.svg'
+    ax.figure.savefig(outpath, bbox_inches='tight')
     plt.close()
     return timeseries
 
 
+# TODO: this has been changed, redo the simulation
 def transform_to_power(signal):
     """
     Transform a signal into a power spectrum
     :return:
     """
-    power = np.abs(np.fft.fft(signal)) ** 2
+    power = np.abs(np.fft.rfft(signal))
     return power
 
 
@@ -208,7 +209,7 @@ class SeabornFig2Grid():
 def plot_srm(model,
              weights,
              space='spectral',
-             outdir=None):
+             outdir='/tmp'):
     """
     Plot the components of a shared response model as well as its weights
     :param model: SRM model
@@ -225,9 +226,8 @@ def plot_srm(model,
     ax.set(xlabel='sample frequencies' if space == 'spectral' else 'samples',
            ylabel='a.U.',
            title=f'Components in shared ({space}) space')
-    if outdir is not None:
-        outpath = Path(outdir) / f'components_{space}-space_ds.svg'
-        ax.figure.savefig(outpath)
+    outpath = Path(outdir) / f'components_{space}-space_ds.svg'
+    ax.figure.savefig(outpath)
 
     # big potpourri of individual plots
     total_plots = len(weights)
@@ -254,17 +254,16 @@ def plot_srm(model,
                           y='model weights',
                           ylim=[-0.3, 0.3],
                           )
-        g.fig.suptitle('Model weights (left) vs ground truth weights'
-                       '(bottom) for each component',
-                       verticalalignment='baseline')
         m = SeabornFig2Grid(g, fig, gs[i])
         g.plot(sns.scatterplot, sns.histplot, alpha=.5)
-    gs.tight_layout(fig)
-    if outdir is not None:
-        # save the plot
-        outpath = Path(outdir) / \
-                  f'model-weights_versus_ground-truth_ds-{i}.svg'
-        g.fig.savefig(outpath, bbox_inches='tight')
+    m.fig.tight_layout()
+    # save the plot
+    outpath = Path(outdir) / \
+              f'model-weights_versus_ground-truth_ds-individual.svg'
+    g.fig.suptitle('Model weights (left) vs ground truth weights '
+                   '(bottom) for each component',
+                   verticalalignment='baseline')
+    m.fig.savefig(outpath, bbox_inches='tight')
     #plt.show()
     # one plot with all data
     components = np.tile(np.repeat(range(n_components), len(weights[0])), len(weights))
@@ -291,11 +290,11 @@ def plot_srm(model,
     g.fig.suptitle('Relationship between model weights \n'
                    'and ground truth weights for each component',
                    verticalalignment='top')
-    if outdir is not None:
-        # save the plot
-        outpath = Path(outdir) / \
-                  f'model-weights_versus_ground-truth_all-ds.svg'
-        g.fig.savefig(outpath, bbox_inches='tight')
+    # save the plot
+    g.fig.tight_layout()
+    outpath = Path(outdir) / \
+              f'model-weights_versus_ground-truth_all-ds.svg'
+    g.fig.savefig(outpath, bbox_inches='tight')
 
 
 def simulate(n=15,
@@ -499,14 +498,14 @@ def letsroll(n=15, k=3, percent_nosignal=0.3, outdir='/tmp', nsignal=1):
     print("Raw data, no offset, fixed weights:")
     QC(raw, weights, signal, model, transformed)
     # comparable to
-    raw, weights, signal, model, transformed, power  = simulate(n=n,
-                                                        percent_nosignal=percent_nosignal,
-                                                        offset=True,
-                                                        space='spectral',
-                                                        k=k,
-                                                        outdir='/tmp',
-                                                        weights=subject_weights,
-                                                        nsignal=nsignal)
+    raw, weights, signal, model, transformed, power = simulate(n=n,
+                                                      percent_nosignal=percent_nosignal,
+                                                      offset=True,
+                                                      space='spectral',
+                                                      k=k,
+                                                      outdir='/tmp',
+                                                      weights=subject_weights,
+                                                      nsignal=nsignal)
     print("Spectral data, with offset, fixed weights:")
     QC(raw, weights, signal, model, transformed)
 
