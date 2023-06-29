@@ -241,6 +241,14 @@ def parse_args_epochnclean():
         default='visualfirst',
         choices=['visualfirst', 'visualfix', 'visualsecond', 'buttonpress'],
     )
+    parser.add_argument(
+        "--reepoch",
+        help="""If a pre-cleaned recording already exist, this flag epochs it
+        instead of starting an ICA from scratch. If a precleaned recording
+        can not be found under 'sub-{ID}/meg/sub-{ID}_task-memento_cleaned.fif
+        in the data dir, ICA will be redone.""",
+        default=False,
+    )
 
     args = parser.parse_args()
     if args.version:
@@ -383,7 +391,8 @@ def epoch_and_clean():
                            datadir=args.datadir,
                            derivdir=args.derivdir,
                            epochlength=float(args.epochlength),
-                           eventid=eventid)
+                           eventid=eventid,
+                           reepoch=args.reepoch)
 
 
 def srm():
