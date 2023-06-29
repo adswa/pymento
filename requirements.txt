@@ -1,4 +1,4 @@
--e git+git@github.com:mne-tools/mne-python.git@7efad3b52c7b79460b5aa05475e1287c2c6acc4e#egg=mne
+mne
 numpy
 pandas
 scikit-learn
