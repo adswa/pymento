@@ -97,7 +97,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     # We fit it on a set of epochs excluding the initial bad epochs following
     # https://github.com/autoreject/autoreject/blob/dfbc64f49eddeda53c5868290a6792b5233843c6/examples/plot_autoreject_workflow.py
     logging.info('Fitting the ICA')
-    ica = ICA(max_iter='auto', n_components=45, random_state=rng)
+    ica = ICA(max_iter='auto', n_components=45, random_state=8)
     ica.fit(epochs[~reject_log.bad_epochs])
     logging.info("Searching for eyeblink and heartbeat artifacts in the data")
     # get ICA components for the given subject
@@ -106,8 +106,11 @@ def remove_eyeblinks_and_heartbeat(raw,
         # necessary
         ecg_indices = [18]
         eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
-    # An initially manual component detection did not reproduce after a software
-    # update - for now, we have to do the automatic detection for all but sub 8
+    elif subject == '009':
+        # the eog channel of this subject seems faulty, and the data are full of
+        # ocular artifacts spread of loads of components. thus manual selection
+        ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw)
+        eog_indices = [0, 1, 2, 3, 4, 5, 32, 34, 28, 35]
     else:
         eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
         ecg_indices, ecg_scores = ica.find_bads_ecg(filt_raw)
