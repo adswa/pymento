@@ -185,7 +185,6 @@ def epoch_and_clean_trials(subject,
                                        subject=subject,
                                        figdir=diagdir,
                                        events=events,
-                                       eventid=eventid,
                                        rng=rng,
                                        )
     # retrieve metadata to later add SUBJECT SPECIFIC TRIAL NUMBER TO THE EPOCH
