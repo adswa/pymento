@@ -15,12 +15,10 @@ import matplotlib.pyplot as plt
 plt.tight_layout()
 
 
-
 def remove_eyeblinks_and_heartbeat(raw,
                                    subject,
                                    figdir,
                                    events,
-                                   eventid,
                                    rng
                                    ):
     """
