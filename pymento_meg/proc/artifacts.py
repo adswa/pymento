@@ -104,7 +104,7 @@ def remove_eyeblinks_and_heartbeat(raw,
     if subject == '008':
         # failures to compute ecg components from magnetometers make handsetting
         # necessary
-        ecg_indices = [18]
+        ecg_indices = [17]
         eog_indices, eog_scores = ica.find_bads_eog(filt_raw)
     elif subject == '009':
         # the eog channel of this subject seems faulty, and the data are full of
