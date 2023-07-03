@@ -152,6 +152,7 @@ def epoch_and_clean_trials(subject,
           f"Attempting the following path: {raw_fname}")
     raw = mne.io.read_raw_fif(raw_fname)
     events, event_dict = get_events(raw)
+    rng = np.random.RandomState(28)
     if reepoch:
         # load pre-existing cleaned data
         try:
@@ -180,7 +181,6 @@ def epoch_and_clean_trials(subject,
         _filter_data(raw, h_freq=100)
         # ICA to detect and repair artifacts
         logging.info('Removing eyeblink and heartbeat artifacts')
-        rng = np.random.RandomState(28)
         remove_eyeblinks_and_heartbeat(raw=raw,
                                        subject=subject,
                                        figdir=diagdir,
