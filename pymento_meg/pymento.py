@@ -245,16 +245,17 @@ def epoch_and_clean_trials(subject,
     )
     logging.info(f"Saving cleaned, epoched data to {outpath}")
     epochs_clean.save(outpath, overwrite=True)
-    outpath = _construct_path(
-        [
-            Path(derivdir),
-            f"sub-{subject}",
-            "meg",
-            f"sub-{subject}_task-memento_cleaned.fif",
-        ]
-    )
-    logging.info(f"Saving continous data after ICA to {outpath}")
-    raw.save(outpath)
+    if not reepoch:
+        outpath = _construct_path(
+            [
+                Path(derivdir),
+                f"sub-{subject}",
+                "meg",
+                f"sub-{subject}_task-memento_cleaned.fif",
+            ]
+        )
+        logging.info(f"Saving continous data after ICA to {outpath}")
+        raw.save(outpath)
     # visualize the bad sensors for each trial
     fig = ar.get_reject_log(epochs).plot()
     fname = _construct_path(
