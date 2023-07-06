@@ -231,3 +231,43 @@ def plot_speed_stats(coefs, figdir='/tmp'):
     fname = _construct_path([figdir, 'group', 'memento_aggregate_reaction_times.png'])
     logging.info(f'Saving reaction times plot at {fname}')
     fig.figure.savefig(fname)
+
+
+
+
+def regress_reinstatement_on_behavior(workdir,
+                                      dimreduction,
+                                      target,
+                                      bidsdir,
+                                      summary_metric='balanced accuracy'
+                                      ):
+    """
+    For now this is work in progress.
+    :param datadir:
+    :param dimreduction:
+    :param target:
+    :param bidsdir:
+    :param workdir:
+    :return:
+    """
+    pathprefix = Path(workdir) / 'sub-0*'
+    subs = [f[-3:] for f in glob(str(pathprefix))]
+
+    for sub in subs:
+        if dimreduction:
+            fname = Path(workdir) / f'sub-{sub}' / f'{dimreduction}' / \
+                f'sub-{sub}_decoding-scores_{target}.npy'
+        else:
+            fname = Path(workdir) / f'sub-{sub}' / \
+                f'sub-{sub}_decoding-scores_{target}.npy'
+        # read in confusion matrices
+        scores = np.load(fname)
+        # calculate the chosed summary metric from confusion matrices
+        acrossclasses = np.asarray(
+            [np.nanmean(get_metrics(c, metric=summary_metric))
+             for score in scores
+             for c in np.rollaxis(score, -1, 0)]).reshape(len(scores),
+                                                          scores.shape[-1])
+        # aggregate over cross-validation folds
+        decoding = np.mean(acrossclasses, axis=0)
+        behav_data = read_bids_logfile(sub, bidsdir)
