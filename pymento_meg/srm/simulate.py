@@ -61,7 +61,7 @@ def simulate_raw(signal,
            ylabel='amplitude',
            title=f'Artificial signal embedded in noise')
     plt.tight_layout()
-    #plt.close()
+    plt.close()
     return data, weights, [signal]
 
 
@@ -129,7 +129,6 @@ def make_signal(frequency=10,
     return timeseries
 
 
-# TODO: this has been changed, redo the simulation
 def transform_to_power(signal):
     """
     Transform a signal into a power spectrum
