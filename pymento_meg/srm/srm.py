@@ -42,8 +42,8 @@ def srm_with_spectral_transformation(subject=None,
                                      bidsdir=None,
                                      timespan=None,
                                      k=10,
-                                     ntrain=140,
-                                     ntest=100,
+                                     ntrain=240,
+                                     ntest=200,
                                      modelfit='epochwise',
                                      ):
     """
