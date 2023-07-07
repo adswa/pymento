@@ -117,7 +117,11 @@ def srm_with_spectral_transformation(subject=None,
         return
 
     # fit a shared response model on training data in spectral space
-    model = shared_response([ts for k, ts in train_spectral.items()],
+    if modelfit == 'epochs' and len(subject) > 1:
+        data = [ts for sub in train_spectral for ts in train_spectral[sub]]
+    else:
+        data = [ts for k, ts in train_spectral.items()]
+    model = shared_response(data,
                             features=k)
     # transform the test data with it
     transformed = get_transformations(model, test_series, k)
