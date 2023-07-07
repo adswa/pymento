@@ -45,7 +45,8 @@ def srm_with_spectral_transformation(subject=None,
                                      ntrain=240,
                                      ntest=200,
                                      modelfit='epochwise',
-                                     ):
+                                     figdir='/data/project/brainpeach/memento-bids-figs/',
+                                     custom_name_component=''):
     """
     Fit a shared response model on data transformed into frequency space.
     This is the practical implementation of the work simulated in
@@ -59,13 +60,14 @@ def srm_with_spectral_transformation(subject=None,
     :param timespan: list or None, the time span to extract
     :param k: int, number of components used in SRM fitting
     :param modelfit: str, either 'epochwise', 'subjectwise', or 'trialorder'.
+    :param custom_name_component: str, added to plot file name if given
      Determines
      whether SRM is fit on all epochs as if they were subjects, subjectwise
      on averaged epochs, or subject-wise on artificial time series
+
     :return:
     """
 
-    win = 40
     # set a few defaults if unset
     if subject is None:
         subject = ['001', '002', '003', '004', '005', '006', '007', '008',
@@ -126,9 +128,11 @@ def srm_with_spectral_transformation(subject=None,
     # transform the test data with it
     transformed = get_transformations(model, test_series, k)
     # plot the transformed test data by trial features
-    _plot_transformed_components(transformed, k, testset, adderror=False,
-                                 stderror=True, modelfit=modelfit)
-
+    _plot_transformed_components(transformed, k, testset,
+                                 figdir=figdir,
+                                 adderror=False,
+                                 stderror=True, modelfit=modelfit,
+                                 custom_name_component=custom_name_component)
     return \
         transformed, model, train_spectral, train_series, test_spectral,\
         test_series

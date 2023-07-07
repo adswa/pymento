@@ -255,7 +255,8 @@ def _plot_transformed_components(transformed,
                                  adderror=False,
                                  figdir='/tmp',
                                  stderror=False,
-                                 modelfit=None
+                                 modelfit=None,
+                                 custom_name_component='',
                                  ):
     """
     For transformed data containing the motor response/decision, create a range
@@ -268,6 +269,7 @@ def _plot_transformed_components(transformed,
     :param adderror: bool, whether to add the standard deviation around means
     :param figdir: str, Path to a place to save figures
     :param stderror: bool, if true, SEM is used instead of std
+    :param: custom_name_component: str, if given its added to a plot's file name
     :return:
     """
     # plot transformed components:
@@ -275,7 +277,7 @@ def _plot_transformed_components(transformed,
         _plot_helper(k,
                      suptitle='Averaged signal in shared space, component-wise',
                      name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per"
-                          f"-comp.png",
+                          f"-comp{custom_name_component}.png",
                      figdir=figdir,
                      npalette=k,
                      )
