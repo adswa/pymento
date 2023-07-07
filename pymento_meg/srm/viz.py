@@ -48,7 +48,7 @@ def _plot_helper(k,
                  figdir,
                  palette='husl',
                  npalette=None,
-                 figsize=(10, 20),
+                 figsize=(10, 2),
                  xlabel='samples',
                  ylabel='amplitude',
                  vline=None,
@@ -70,6 +70,8 @@ def _plot_helper(k,
     :param vlinelabel: str, label for a vline
     :return:
     """
+    # adjust the figsize by number of components that get plotted
+    figsize = (figsize[0], figsize[1]*k)
     if npalette is None:
         npalette = k
     palette = sns.color_palette(palette, npalette)
