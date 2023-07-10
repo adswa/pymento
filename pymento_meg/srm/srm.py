@@ -57,7 +57,13 @@ def srm_with_spectral_transformation(subject=None,
     :param ntest: int, number of epochs to use in testing
     :param datadir: str, path to directory with epoched data
     :param bidsdir: str, path to directory with bids data
-    :param timespan: list or None, the time span to extract
+    :param timespan: str or list, an identifier of the time span of data to be
+    used for model fitting. If the epochs span the entire trial, it can be one
+    of 'decision' (time locked around the decision in each trial),
+    'firststim' (time locked to the first stimulus, for the
+    stimulus duration), or 'fulltrial' (entire 7second epoch), 'secondstim', or
+    'delay'. Alternatively, specify a list corresponding to a time frame within
+    the experiment (in seconds)
     :param k: int, number of components used in SRM fitting
     :param modelfit: str, either 'epochwise', 'subjectwise', or 'trialorder'.
     :param custom_name_component: str, added to plot file name if given
