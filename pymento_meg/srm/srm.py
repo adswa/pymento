@@ -86,7 +86,7 @@ def srm_with_spectral_transformation(subject=None,
     if modelfit is None:
         modelfit = 'trailtype'
     if timespan is None:
-        timespan = [0, 2700]
+        timespan = [0, 2.7]
     # TODO: distinguish trials with positive and negative feedback
     fullsample, data = get_general_data_structure(subject=subject,
                                                   datadir=datadir,
