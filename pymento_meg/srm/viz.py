@@ -1682,6 +1682,10 @@ def plot_trialtype_distance_matrix(data,
         y_label = 'trial type'
     plt.xlabel(x_label)
     plt.ylabel(y_label)
+    if trialorder is not None:
+        fctr = int(trialtypes / len(trialorder))
+        plt.xticks(ticks=range(len(trialorder)*fctr), labels=trialorder*fctr)
+        plt.yticks(ticks=range(len(trialorder)*fctr), labels=trialorder*fctr)
     if name is None:
         datatype = 'srm' if on_model_data else 'raw'
         name = f'trialtype-distance_{datatype}-data_{trialtypes}-trials_n-{n}' \
