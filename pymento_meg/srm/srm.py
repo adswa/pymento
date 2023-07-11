@@ -204,10 +204,7 @@ def concat_epochs_to_spectral_space(data, shorten=False, separate=False):
                 conditionwise_seriesdata[sub][condition] = epochs
             else:
                 # append the condition to concatenate all trialtypes per subject
-                # TODO check if the dimensionality matches. Its is a list with 24300
-                # arrays of dim 306 so far
                 subject_spectral.extend(spectral_series.T)
-                # TODO, does not yet make sense
                 subject_time.extend(epochs)
         series_spectral[sub] = np.asarray(subject_spectral).T
         series_time[sub] = subject_time
