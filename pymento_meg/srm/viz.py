@@ -1164,7 +1164,9 @@ def plot_model_basis_topographies(datadir, model, figdir):
 def plot_many_distance_matrices(results,
                                 triallength,
                                 figdir,
-                                subjects):
+                                subjects,
+                                trialorder,
+                                description):
     """
     Plot a variety of distance matrices from raw, model, and transformed data
     on single-subject and group level.
@@ -1186,8 +1188,8 @@ def plot_many_distance_matrices(results,
         # trials
         title = f'Correlation distance of trialtypes ({triallength * 10}ms) \n'\
                 f'in shared space ({n} components), fit on left and right \n' \
-                f'averaged training data. Created: {timestr}'
-        name = f'corr-dist_avg-traindata_full-stim_{n}-components.png'
+                f'averaged training data. Trials ordered by {description}'# Created: {timestr}'
+        name = f'corr-dist_avg-traindata_full-stim_{n}-components_order-{description}.png'
         models[n]['full'] = plot_trialtype_distance_matrix(
             results['averaged_trials']['train']['full'],
             n,
@@ -1196,7 +1198,8 @@ def plot_many_distance_matrices(results,
             title=title,
             y_label='trialtype',
             x_label='trialtype',
-            name=name
+            name=name,
+            trialorder=trialorder
         )
         # This fits a probabilistic SRM with n features and returns the model
         # Based on the shared response space of the model, it plots the
@@ -1208,19 +1211,20 @@ def plot_many_distance_matrices(results,
         # trials
         title = f'Correlation distance of trialtypes ({triallength * 10}ms) \n'\
                 f'in shared space ({n} components), fit on left  \n' \
-                f'averaged training data. Created: {timestr}'
-        name = f'corr-dist_avg-traindata_left-stim_{n}-components.png'
+                f'averaged training data. Trials ordered by {description}'# Created: {timestr}'
+        name = f'corr-dist_avg-traindata_left-stim_{n}-components_order-{description}.png'
         models[n]['left'] = plot_trialtype_distance_matrix(
             results['averaged_trials']['train']['left'],
             n,
             figdir=figdir,
             trialtypes=9,
-            clim=[0, 0.5],
+            clim=None,
             triallength=triallength,
             title=title,
             y_label='trialtype',
             x_label='trialtype',
-            name=name
+            name=name,
+            trialorder=trialorder
         )
         # This fits a probabilistic SRM with n features and returns the model
         # Based on the shared response space of the model, it plots the
@@ -1232,8 +1236,8 @@ def plot_many_distance_matrices(results,
         # trials
         title = f'Correlation distance of trialtypes ({triallength * 10}ms) \n'\
                 f'in shared space ({n} components), fit on left and right \n' \
-                f'original training data. Created: {timestr}'
-        name = f'corr-dist_orig-traindata_full-stim_{n}-components.png'
+                f'original training data. Trials ordered by {description}'# Created: {timestr}'
+        name = f'corr-dist_orig-traindata_full-stim_{n}-components_order-{description}.png'
         plot_trialtype_distance_matrix(
             results['original_trials']['train']['full'],
             n,
@@ -1243,7 +1247,8 @@ def plot_many_distance_matrices(results,
             title=title,
             y_label='trialtype',
             x_label='trialtype',
-            name=name
+            name=name,
+            trialorder=trialorder
         )
 
     # create subject specific and averaged distance matrices from raw data
@@ -1264,7 +1269,9 @@ def plot_many_distance_matrices(results,
         nametmpl='group_raw_avg-train_trialdist_18.png',
         y_label='trialtype',
         x_label='trialtype',
-        timestr=timestr
+        timestr=timestr,
+        trialorder=trialorder,
+        description=description
     )
     # This plot uses the MEG data and computes correlation distances between the
     # data in each trial type (here, on averaged test data). It is the baseline
@@ -1282,7 +1289,9 @@ def plot_many_distance_matrices(results,
         nametmpl='group_raw_avg-test_trialdist_18.png',
         y_label='trialtype',
         x_label='trialtype',
-        timestr=timestr
+        timestr=timestr,
+        trialorder=trialorder,
+        description=description
     )
 
     # transform subject raw data into shared model room, plot subject specific
@@ -1310,6 +1319,8 @@ def plot_many_distance_matrices(results,
             y_label='trialtype',
             x_label='trialtype',
             timestr=timestr,
+            trialorder=trialorder,
+            description=description
         )
         # average the transformed time series across subjects, build a single
         # distance matrix from this
@@ -1321,9 +1332,9 @@ def plot_many_distance_matrices(results,
         # trials in the experiment, computed from unseen test data that was
         # transformed into the shared space.
         title = f"Trialtype-by-trialtype distance between averaged \n" \
-                f"transformed ({n} components) test data."
+                f"transformed ({n} components) test data. Trials ordered by {description}"
         name = \
-            f'group_avg-transformed_transformed-n-{n}-avg-test_trialdist-18.png'
+            f'group_avg-transformed_transformed-n-{n}-avg-test_trialdist-18_order-{description}.png'
         mean_shared_test_dist = plot_trialtype_distance_matrix(
             mean_shared_test,
             n='group',
@@ -1335,7 +1346,8 @@ def plot_many_distance_matrices(results,
             title=title,
             y_label='trialtype',
             x_label='trialtype',
-            name=name
+            name=name,
+            trialorder=trialorder
         )
         logging.info(f'Permutation test on transformed test data with {n} '
                      f'components:')
@@ -1364,6 +1376,8 @@ def plot_many_distance_matrices(results,
             y_label='trialtype',
             x_label='trialtype',
             timestr=timestr,
+            trialorder=trialorder,
+            description=description
         )
         # average the transformed time series across subjects, build a single
         # distance matrix from this
@@ -1372,10 +1386,10 @@ def plot_many_distance_matrices(results,
         assert mean_shared_train.shape[0] == n
         # make the distance matrix
         title = f"Trialtype-by-trialtype distance between averaged \n" \
-                f"transformed ({n} components) train data."
+                f"transformed ({n} components) train data. Trials ordered by {description}"
         name = \
             f'group_avg-transformed_transformed-n-{n}-avg-train_' \
-            f'trialdist-18.png'
+            f'trialdist-18_order-{description}.png'
         plot_trialtype_distance_matrix(
             mean_shared_train,
             n='group',
@@ -1387,14 +1401,8 @@ def plot_many_distance_matrices(results,
             title=title,
             y_label='trialtype',
             x_label='trialtype',
-            name=name
-        )
-        logging.info(f'Permutation test on transformed train data with {n} '
-                     f'components:')
-        correlate_distance_matrix_quadrants(
-            mean_shared_test_dist,
-            figdir=figdir + '/group/meg',
-            name=f'averaged_transformed_train_data_srm{n}.png'
+            name=name,
+            trialorder=trialorder
         )
     # finally, average non-transformed timeseries over subjects,
     # and build distance matrices
@@ -1405,8 +1413,8 @@ def plot_many_distance_matrices(results,
         mean = np.mean(data, axis=0)
         assert mean.shape[0] == 306
         title = f'Trialtype-by-trialtype correlation distance on \n' \
-                f'{label} data. Created: {timestr}'
-        name = f'groupavg_{label}_trialdist-18.png'
+                f'{label} data. Trials ordered by {description}'#Created: {timestr}'
+        name = f'groupavg_{label}_trialdist-18_order-{description}.png'
         # make the distance matrix
         plot_trialtype_distance_matrix(mean,
                                        n='group',
@@ -1418,7 +1426,8 @@ def plot_many_distance_matrices(results,
                                        y_label='trialtype',
                                        x_label='trialtype',
                                        title=title,
-                                       name=name
+                                       name=name,
+                                       trialorder=trialorder
                                        )
     return models
 
@@ -1505,6 +1514,8 @@ def compute_raw_distances(data,
                           subjecttitle=None,
                           grouptitle=None,
                           timestr=None,
+                          trialorder=None,
+                          description=None
                           ):
     """
     Take a list of lists with time series from N subjects.
@@ -1537,11 +1548,11 @@ def compute_raw_distances(data,
         if subjecttitle is None or subjecttitle == prev_subjecttitle:
             subjecttitle = f'Correlation distance of trialtypes ' \
                            f'({triallength * 10}ms) \n in {feature} data of' \
-                           f' subject {sub}. Created: {timestr}'
+                           f' subject {sub}. Trials ordered by {description}'#Created: {timestr}'
             # the following is necessary to update the subject id in the title
             prev_subjecttitle = subjecttitle
         ttype = 'full-stim' if trialtypes in [18, 270] else 'left-stim'
-        name = f'sub-{sub}_corr-dist_{feature}data_{ttype}.png'
+        name = f'sub-{sub}_corr-dist_{feature}data_{ttype}_order-{description}.png'
         distmat[sub] = \
             plot_trialtype_distance_matrix(data[idx],
                                            n=sub,
@@ -1553,7 +1564,8 @@ def compute_raw_distances(data,
                                            y_label=y_label,
                                            x_label=x_label,
                                            title=subjecttitle,
-                                           name=name
+                                           name=name,
+                                           trialorder=trialorder
                                            )
     # Fisher-z transform the matrices
     zdistmat = {}
@@ -1607,7 +1619,8 @@ def plot_trialtype_distance_matrix(data,
                                    title=None,
                                    y_label=None,
                                    x_label=None,
-                                   name=None):
+                                   name=None,
+                                   trialorder=None):
     """
     A generic function to fit SRMs and plot distance matrices on trial data.
     In hopes of getting accurate plot titles and names, I'm heavily
