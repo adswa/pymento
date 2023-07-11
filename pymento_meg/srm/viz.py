@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pylab
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
@@ -1658,7 +1659,8 @@ def plot_trialtype_distance_matrix(data,
             'size': 50}
     plt.rc('font', **font)
     plt.figure(figsize=[50, 50])
-    plt.imshow(dist_mat, cmap='viridis', clim=clim)
+    ax = plt.gca()
+    im = plt.imshow(dist_mat, cmap='BrBG', clim=[0, 2])
 
     if title is None:
         # set a figure title according to the number of trialtypes plotted
@@ -1682,7 +1684,10 @@ def plot_trialtype_distance_matrix(data,
         name = f'trialtype-distance_{datatype}-data_{trialtypes}-trials_n-{n}' \
                f'_feature-{feature}.png '
     fname = Path(figdir) / f'group/meg' / name
-    plt.colorbar()
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(im, cax=cax)
+    plt.tight_layout()
     logging.info(f"Saving a distance matrix to {fname}")
     plt.savefig(fname)
     plt.close('all')
