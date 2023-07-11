@@ -1572,8 +1572,8 @@ def compute_raw_distances(data,
     # TODO: backcheck wither this is correct!
     avg = np.nan_to_num(avg, posinf=1)
     avg_corrdist = 1 - avg
-    assert not (avg_corrdist <= -1).any()
-    assert not (avg_corrdist >= 1).any()
+    assert not (avg_corrdist < 0).any()
+    assert not (avg_corrdist >= 2).any()
     # plot it
     # set font specifications for plots
     font = {'family': 'normal',
@@ -1653,6 +1653,9 @@ def plot_trialtype_distance_matrix(data,
 
     dist_mat = sp_distance.squareform(
         sp_distance.pdist(trialmodels_, metric='correlation'))
+    # correlation distance is between 0 (perfect correlation) and 2
+    # (perfect anticorrelation)
+    assert np.logical_and(dist_mat >= 0, dist_mat <= 2).all()
     # set font specifications for plots
     font = {'family': 'normal',
             'weight': 'bold',
