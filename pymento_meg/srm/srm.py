@@ -439,23 +439,25 @@ def test_and_train_split(datadir,
                                                         condition='left-right',
                                                         timespan=timespan_right)
     # define trialorder. according to reward magnitude below
-    trialorder = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
-    # order according to probability:
-    # trialorder = ['E', 'H', 'I', 'C', 'F', 'A', 'G', 'B', 'D']
-    # order according to expected value (prob*reward):
-    # trialorder = ['A', 'C', 'E', 'B', 'F', 'H', 'D', 'G', 'I']
-    results = _create_splits_from_left_and_right_stimulation(
-        subjects=subjects,
-        ntrain=ntrain,
-        ntest=ntest,
-        trialorder=trialorder,
-        leftdata=leftdata,
-        rightdata=rightdata)
-    # create plots based on the data
-    models = plot_many_distance_matrices(results=results,
-                                         triallength=triallength,
-                                         figdir=figdir,
-                                         subjects=subjects)
+    trialorders = (('magnitude', ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']),
+                   ('probability', ['E', 'H', 'I', 'C', 'F', 'A', 'G', 'B', 'D']),
+                   ('expected_value', ['A', 'C', 'E', 'B', 'F', 'H', 'D', 'G', 'I'])
+                   )
+    for desc, trialorder in trialorders:
+        results = _create_splits_from_left_and_right_stimulation(
+            subjects=subjects,
+            ntrain=ntrain,
+            ntest=ntest,
+            trialorder=trialorder,
+            leftdata=leftdata,
+            rightdata=rightdata)
+        # create plots based on the data
+        models = plot_many_distance_matrices(results=results,
+                                             triallength=triallength,
+                                             figdir=figdir,
+                                             subjects=subjects,
+                                             trialorder=trialorder,
+                                             description=desc)
     return results, models
 
 
