@@ -667,7 +667,7 @@ def combine_data(epochs,
     if isinstance(timespan, list):
         logging.info(f"Received a list as a time span. Attempting to "
                      f"subset the available trial data in range "
-                     f"{timespan[0]}, {timespan[1]} samples")
+                     f"{timespan[0]}, {timespan[1]} seconds")
     else:
         logging.info(f"Selecting data for the event description {timespan}.")
 
