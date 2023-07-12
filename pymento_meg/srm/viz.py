@@ -1166,7 +1166,8 @@ def plot_many_distance_matrices(results,
                                 figdir,
                                 subjects,
                                 trialorder,
-                                description):
+                                description,
+                                subset=None):
     """
     Plot a variety of distance matrices from raw, model, and transformed data
     on single-subject and group level.
@@ -1199,7 +1200,8 @@ def plot_many_distance_matrices(results,
             y_label='trialtype',
             x_label='trialtype',
             name=name,
-            trialorder=trialorder
+            trialorder=trialorder,
+            subset=subset
         )
         # This fits a probabilistic SRM with n features and returns the model
         # Based on the shared response space of the model, it plots the
@@ -1224,7 +1226,8 @@ def plot_many_distance_matrices(results,
             y_label='trialtype',
             x_label='trialtype',
             name=name,
-            trialorder=trialorder
+            trialorder=trialorder,
+            subset=subset
         )
         # This fits a probabilistic SRM with n features and returns the model
         # Based on the shared response space of the model, it plots the
@@ -1242,13 +1245,14 @@ def plot_many_distance_matrices(results,
             results['original_trials']['train']['full'],
             n,
             figdir=figdir,
-            trialtypes=270,
+            trialtypes=234, # this ntrain * trialtypes * 2 (left and right)
             triallength=triallength,
             title=title,
             y_label='trialtype',
             x_label='trialtype',
             name=name,
-            trialorder=trialorder
+            trialorder=trialorder,
+            subset=subset
         )
 
     # create subject specific and averaged distance matrices from raw data
@@ -1271,7 +1275,8 @@ def plot_many_distance_matrices(results,
         x_label='trialtype',
         timestr=timestr,
         trialorder=trialorder,
-        description=description
+        description=description,
+        subset=subset
     )
     # This plot uses the MEG data and computes correlation distances between the
     # data in each trial type (here, on averaged test data). It is the baseline
@@ -1291,7 +1296,8 @@ def plot_many_distance_matrices(results,
         x_label='trialtype',
         timestr=timestr,
         trialorder=trialorder,
-        description=description
+        description=description,
+        subset=subset
     )
 
     # transform subject raw data into shared model room, plot subject specific
@@ -1320,7 +1326,8 @@ def plot_many_distance_matrices(results,
             x_label='trialtype',
             timestr=timestr,
             trialorder=trialorder,
-            description=description
+            description=description,
+            subset=subset
         )
         # average the transformed time series across subjects, build a single
         # distance matrix from this
@@ -1347,7 +1354,8 @@ def plot_many_distance_matrices(results,
             y_label='trialtype',
             x_label='trialtype',
             name=name,
-            trialorder=trialorder
+            trialorder=trialorder,
+            subset=subset
         )
         #logging.info(f'Permutation test on transformed test data with {n} '
         #             f'components:')
@@ -1377,7 +1385,8 @@ def plot_many_distance_matrices(results,
             x_label='trialtype',
             timestr=timestr,
             trialorder=trialorder,
-            description=description
+            description=description,
+            subset=subset
         )
         # average the transformed time series across subjects, build a single
         # distance matrix from this
@@ -1402,7 +1411,8 @@ def plot_many_distance_matrices(results,
             y_label='trialtype',
             x_label='trialtype',
             name=name,
-            trialorder=trialorder
+            trialorder=trialorder,
+            subset=subset
         )
         #logging.info(f'Permutation test on transformed train data with {n} '
         #             f'components:')
@@ -1434,7 +1444,8 @@ def plot_many_distance_matrices(results,
                                        x_label='trialtype',
                                        title=title,
                                        name=name,
-                                       trialorder=trialorder
+                                       trialorder=trialorder,
+                                       subset=subset
                                        )
     return models
 
@@ -1522,7 +1533,8 @@ def compute_raw_distances(data,
                           grouptitle=None,
                           timestr=None,
                           trialorder=None,
-                          description=None
+                          description=None,
+                          subset=None
                           ):
     """
     Take a list of lists with time series from N subjects.
@@ -1572,7 +1584,8 @@ def compute_raw_distances(data,
                                            x_label=x_label,
                                            title=subjecttitle,
                                            name=name,
-                                           trialorder=trialorder
+                                           trialorder=trialorder,
+                                           subset=subset
                                            )
     # Fisher-z transform the matrices
     zdistmat = {}
@@ -1627,7 +1640,8 @@ def plot_trialtype_distance_matrix(data,
                                    y_label=None,
                                    x_label=None,
                                    name=None,
-                                   trialorder=None):
+                                   trialorder=None,
+                                   subset=None):
     """
     A generic function to fit SRMs and plot distance matrices on trial data.
     In hopes of getting accurate plot titles and names, I'm heavily

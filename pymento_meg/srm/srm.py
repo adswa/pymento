@@ -459,8 +459,8 @@ def test_and_train_split(datadir,
                                              figdir=figdir,
                                              subjects=subjects,
                                              trialorder=trialorder,
-                                             description=desc)
-    return results, models
+                                             description=desc,
+                                             subset=subset)
 
 
 def plot_trial_components_from_srm(subject,
