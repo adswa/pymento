@@ -1613,7 +1613,7 @@ def compute_raw_distances(data,
             'size': 50}
     plt.rc('font', **font)
     plt.figure(figsize=[50, 50])
-    plt.imshow(avg_corrdist, cmap='viridis')
+    plt.imshow(avg_corrdist, cmap='BrBG')
     plt.colorbar()
     # set a figure title according to the number of trialtypes plotted
     ttype = 'left and right' if trialtypes in [18, 270] else 'left'
@@ -1769,7 +1769,7 @@ def plot_distance_matrix(model, idx, figdir):
                                                         metric='correlation'))
     plt.xlabel('t (100 = 1sec)')
     plt.ylabel('t (100 = 1sec)')
-    plt.imshow(dist_mat, cmap='viridis')
+    plt.imshow(dist_mat, cmap='BrBG')
     # TODO: maybe add vertical lines in experiment landmarks
     plt.colorbar()
     fname = Path(figdir) / f'group/meg' / f'group_task-memento_srm-{idx}' \
