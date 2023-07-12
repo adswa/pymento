@@ -1693,7 +1693,7 @@ def plot_trialtype_distance_matrix(data,
     else:
         assert isinstance(data, np.ndarray)
         if subset is None:
-            assert triallength * trialtypes == model.s_.shape[1], \
+            assert triallength * trialtypes == data.shape[1], \
                 "mismatch between the specified length of a stimulus " \
                 "presentation (triallength) and the available data. Please check!"
             trialmodels_ = np.array(
