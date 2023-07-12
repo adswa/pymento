@@ -404,6 +404,8 @@ def test_and_train_split(datadir,
      subsetting the data. When it isn't a string identifier from combine_data,
      it can be a list with start and end sample in 100Hz, e.g. {'left': [0, 70],
      'right': [270, 340]}
+    :param triallength: int, the number of samples that make up the part of the
+    trial that the model is fit on, e.g., 700samples of visual stimulation.
     :return:
     train_series: list of N=subjects lists artificial time series data,
     ready for SRM

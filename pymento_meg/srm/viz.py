@@ -1649,6 +1649,9 @@ def plot_trialtype_distance_matrix(data,
     :param x_label:
     :param y_label:
     :param name:
+    :param subset: int, instead of the full data the srm was fitted on, only a
+    subset (in samples) from the start of the time series is used to calculate
+    correlation distance (e.g., first 100 samples)
     :return:
     """
     if clim is None:
@@ -1661,15 +1664,31 @@ def plot_trialtype_distance_matrix(data,
         from pymento_meg.srm.srm import shared_response
         model = shared_response(data, features=n)
         # get the componentXtime series of each trial in SRM, and put it into
-        # a nested array. 70 -> length of one trial / averaged trial type
-        trialmodels_ = np.array(
-            [model.s_[:, triallength * i:triallength * (i + 1)].ravel()
-             for i in range(trialtypes)])
+        # a nested array.
+        if subset is None:
+            assert triallength * trialtypes == model.s_.shape[1], \
+                "mismatch between the specified length of a stimulus " \
+                "presentation (triallength) and the available data. Please check!"
+            trialmodels_ = np.array(
+                [model.s_[:, triallength * i:triallength * (i + 1)].ravel()
+                 for i in range(trialtypes)])
+        else:
+            trialmodels_ = np.array(
+                [model.s_[:, triallength * i:triallength * i + subset].ravel()
+                 for i in range(trialtypes)])
     else:
         assert isinstance(data, np.ndarray)
-        trialmodels_ = np.array(
-            [data[:, triallength * i:triallength * (i + 1)].ravel()
-             for i in range(trialtypes)])
+        if subset is None:
+            assert triallength * trialtypes == model.s_.shape[1], \
+                "mismatch between the specified length of a stimulus " \
+                "presentation (triallength) and the available data. Please check!"
+            trialmodels_ = np.array(
+                [data[:, triallength * i:triallength * (i + 1)].ravel()
+                 for i in range(trialtypes)])
+        else:
+            trialmodels_ = np.array(
+                [data[:, triallength * i:triallength * i + subset].ravel()
+                 for i in range(trialtypes)])
 
     dist_mat = sp_distance.squareform(
         sp_distance.pdist(trialmodels_, metric='correlation'))
