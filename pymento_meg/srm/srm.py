@@ -384,9 +384,11 @@ def test_and_train_split(datadir,
                          bidsdir,
                          figdir,
                          subjects=None,
-                         ntrain=15,
-                         ntest=15,
-                         timespan=None):
+                         ntrain=13,
+                         ntest=13,
+                         timespan=None,
+                         triallength=None,
+                         subset=None):
     """
     Create artificially synchronized time series data. In these artificially
     synchronized timeseries, N=ntrain trials per trial type (unique probability-
@@ -417,17 +419,18 @@ def test_and_train_split(datadir,
      for each subject
     """
     if subjects is None:
-        # default to a list of subjects with the most good trial events
-        subjects = ['011', '012', '014', '016', '017',
-                    '018', '019', '020', '022']
+        subjects = ['001', '002', '003', '004', '005', '006', '007', '008',
+                    '009', '010', '011', '012', '013', '014', '015', '016',
+                    '017', '018', '019', '020', '021', '022']
     if timespan is None:
         timespan = {'left': 'firststim',
                     'right': 'secondstim'}
     timespan_left = timespan['left']
     timespan_right = timespan['right']
-    triallength = 70 if isinstance(timespan_left, str) \
-        else timespan_left[1] - timespan_left[0]
-    logging.info(f"Setting trial length to {triallength}")
+    if triallength is None:
+        triallength = 70 if isinstance(timespan_left, str) \
+            else timespan_left[1] - timespan_left[0]
+        logging.info(f"Setting trial length to {triallength}")
     # first stimulus data
     leftsample, leftdata = get_general_data_structure(subject=subjects,
                                                       datadir=datadir,
