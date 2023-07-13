@@ -1772,8 +1772,8 @@ def plot_distance_matrix(model, idx, figdir):
     plt.imshow(dist_mat, cmap='BrBG')
     # TODO: maybe add vertical lines in experiment landmarks
     plt.colorbar()
-    fname = Path(figdir) / f'group/meg' / f'group_task-memento_srm-{idx}' \
-                                          f'_distances.png '
+    fname = _construct_path([Path(figdir), 'group', 'meg',
+                             f'group_task-memento_srm-{idx}_distances.png'])
     plt.savefig(fname)
     plt.close()
 
@@ -1808,9 +1808,8 @@ def plot_srm_model(df,
             '400ms +/- decision time' if timespan == 'decision' else None
     # TODO: this needs some indication of which subjects the plot is made from
     for i in range(nfeatures):
-        fname = Path(figdir) / f'{subject}/meg' / \
-                f'{subject}_{mdl}_{nfeatures}-feat_task-{cond}_' \
-                f'model-{timespan}_comp_{i}.png'
+        fname = _construct_path([Path(figdir), f'{subject}', 'meg',
+                                 f'{subject}_{mdl}_{nfeatures}-feat_task-{cond}_model-{timespan}_comp_{i}.png'])
         if cond == 'left-right':
             fig = sns.lineplot(data=df[df['trial_type'] == 'right (2)'][i])
             sns.lineplot(data=df[df['trial_type'] == 'left (1)'][i]).set_title(
