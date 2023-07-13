@@ -1743,7 +1743,7 @@ def plot_trialtype_distance_matrix(data,
         datatype = 'srm' if on_model_data else 'raw'
         name = f'trialtype-distance_{datatype}-data_{trialtypes}-trials_n-{n}' \
                f'_feature-{feature}.png '
-    fname = Path(figdir) / f'group/meg' / name
+    fname = _construct_path([Path(figdir),  f'group/meg' , name])
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(im, cax=cax)
