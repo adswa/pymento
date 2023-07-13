@@ -443,27 +443,27 @@ def make_distance_matrices(datadir,
                                                         bidsdir=bidsdir,
                                                         condition='left-right',
                                                         timespan=timespan_right)
-    # define trialorder. according to reward magnitude below
-    trialorders = (('magnitude', ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']),
-                   ('probability', ['E', 'H', 'I', 'C', 'F', 'A', 'G', 'B', 'D']),
-                   ('expected_value', ['A', 'C', 'E', 'B', 'F', 'H', 'D', 'G', 'I'])
-                   )
-    for desc, trialorder in trialorders:
-        results = _create_splits_from_left_and_right_stimulation(
-            subjects=subjects,
-            ntrain=ntrain,
-            ntest=ntest,
-            trialorder=trialorder,
-            leftdata=leftdata,
-            rightdata=rightdata)
-        # create plots based on the data
-        models = plot_many_distance_matrices(results=results,
-                                             triallength=triallength,
-                                             figdir=figdir,
-                                             subjects=subjects,
-                                             trialorder=trialorder,
-                                             description=desc,
-                                             subset=subset)
+    # define trialorder into which the stimuli are sorted. The trial order below
+    # is grouped by increasing probability
+    trialorder = ['E', 'H', 'I', 'C', 'F', 'A', 'G', 'B', 'D']
+    desc = 'probability'
+    # do different data mangling: reorder and/or average data from the left or
+    # from the left and right sample.
+    results = _create_splits_from_left_and_right_stimulation(
+        subjects=subjects,
+        ntrain=ntrain,
+        ntest=ntest,
+        trialorder=trialorder,
+        leftdata=leftdata,
+        rightdata=rightdata)
+    # create plots based on the data
+    models = plot_many_distance_matrices(results=results,
+                                         triallength=triallength,
+                                         figdir=figdir,
+                                         subjects=subjects,
+                                         trialorder=trialorder,
+                                         description=desc,
+                                         subset=subset)
 
 
 def plot_trial_components_from_srm(subject,
