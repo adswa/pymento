@@ -380,15 +380,15 @@ def get_general_data_structure(subject,
     return fullsample, data
 
 
-def test_and_train_split(datadir,
-                         bidsdir,
-                         figdir,
-                         subjects=None,
-                         ntrain=13,
-                         ntest=13,
-                         timespan=None,
-                         triallength=None,
-                         subset=None):
+def make_distance_matrices(datadir,
+                          bidsdir,
+                          figdir,
+                          subjects=None,
+                          ntrain=13,
+                          ntest=13,
+                          timespan=None,
+                          triallength=None,
+                          subset=None):
     """
     Create artificially synchronized time series data. In these artificially
     synchronized timeseries, N=ntrain trials per trial type (unique probability-
