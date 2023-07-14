@@ -310,7 +310,8 @@ def _plot_transformed_components(transformed,
                                                   figdir=figdir,
                                                   adderror=True,
                                                   stderror=True,
-                                                  plotting='all'
+                                                  plotting='all',
+                                                  custom_name_component=custom_name_component,
                                                   )
         return
 
@@ -653,7 +654,8 @@ def _plot_transformed_components_by_trialtype(transformed,
                                               adderror=False,
                                               stderror=False,
                                               figdir='/tmp',
-                                              plotting='all'
+                                              plotting='all',
+                                              custom_name_component=None
                                               ):
     """
     Summary plotting function to orchestrate plotting of various time series
@@ -685,7 +687,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             data=data,
             title="Transformed components, per trial type",
             name=f"trialtype-wise_avg-signal_shared-shape_spectral-srm_{k}"
-                 f"-feat_per-comp.png",
+                 f"-feat_per-comp{custom_name_component}.png",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -702,7 +704,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into magnitude "
                   "bins",
             name=f"trialtype-magnitude_avg-signal_shared-shape_spectral-srm_{k}"
-                 f"-feat_per-comp.png",
+                 f"-feat_per-comp{custom_name_component}.png",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -719,7 +721,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into "
                   "probability bins",
             name=f"trialtype-probability_avg-signal_shared-shape_spectral-srm_"
-                 f"{k}-feat_per-comp.png",
+                 f"{k}-feat_per-comp{custom_name_component}.png",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -736,7 +738,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into expected "
                   "value bins",
             name=f"trialtype-exp-value_avg-signal_shared-shape_spectral-srm_{k}"
-                 f"-feat_per-comp.png",
+                 f"-feat_per-comp{custom_name_component}.png",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -766,7 +768,7 @@ def _plot_transformed_components_by_trialtype(transformed,
                          suptitle='Transformed components, with trials '
                                   'grouped by eventual response',
                          name=f'event-choice_avg-signal_shared-shape_spectral'
-                              f'-srm_{k}-feat_per-comp.png',
+                              f'-srm_{k}-feat_per-comp{custom_name_component}.png',
                          figdir=figdir,
                          npalette=2,
                          )
@@ -808,7 +810,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into magnitude "
                   "bins by eventual choice",
             name=f"trialtype-magnitude-bychoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -826,7 +828,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into "
                   "probability bins by eventual choice",
             name=f"trialtype-probability-bychoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -844,7 +846,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into expected "
                   "value bins by eventual choice",
             name=f"trialtype-expectedvalue-bychoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -861,7 +863,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into eventual "
                   "choice by previous choice",
             name=f"trialtype-choice-byprevchoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -879,7 +881,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into magnitude "
                   "bins by previous choice",
             name=f"trialtype-magnitude-byprevchoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -897,7 +899,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into "
                   "probability bins by previous choice",
             name=f"trialtype-probability-byprevchoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -915,7 +917,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into excepted "
                   "value bins by previous choice",
             name=f"trialtype-expectedvalue-byprevchoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
             transformed=transformed,
             k=k,
             figdir=figdir,
