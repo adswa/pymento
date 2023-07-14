@@ -1808,7 +1808,12 @@ def plot_srm_model(df,
             '400ms +/- decision time' if timespan == 'decision' else None
     # TODO: this needs some indication of which subjects the plot is made from
     for i in range(nfeatures):
-        fname = _construct_path([Path(figdir), f'{subject}', 'meg',
+        if type(subject) == list:
+            if len(subject) == 1:
+                subject = subject[0]
+            else:
+                subject = 'group'
+        fname = _construct_path([Path(figdir), f'sub-{subject}', 'meg',
                                  f'{subject}_{mdl}_{nfeatures}-feat_task-{cond}_model-{timespan}_comp_{i}.png'])
         if cond == 'left-right':
             fig = sns.lineplot(data=df[df['trial_type'] == 'right (2)'][i])
