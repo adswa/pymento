@@ -358,8 +358,8 @@ def SRM(subject,
     if model == 'srm':
         from pymento_meg.srm.srm import plot_trial_components_from_srm
         plot_trial_components_from_srm(subject=subject,
-                                          datadir=datadir,
-                                          bidsdir=bidsdir,
-                                          figdir=figdir,
-                                          condition=condition,
-                                          timespan=timespan)
+                                       datadir=datadir,
+                                       bidsdir=bidsdir,
+                                       figdir=figdir,
+                                       condition=condition,
+                                       timespan=timespan)
