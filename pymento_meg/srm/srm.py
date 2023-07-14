@@ -514,7 +514,7 @@ def plot_trial_components_from_srm(subject,
         plot_srm_model(df=final_df,
                        nfeatures=f,
                        figdir=figdir,
-                       subject='group',
+                       subject=subject,
                        mdl='srm',
                        cond=condition,
                        timespan=timespan)
