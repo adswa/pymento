@@ -106,15 +106,14 @@ def generalize(subject,
         for condition, value in extreme_targets[target].items():
             # train on all trials, except for trials where no reaction was made
             X_train, y_train = _make_X_n_y(train_fullsample, subject,
-                                           dec_factor, drop_non_responses=True,
-                                           ch_subset=parietal_channels)
+                                           dec_factor, drop_non_responses=True)
 
             # first, test on data corresponding to the target value (e.g., high
             # probability) with choice labels from the later actual choice.
             # As before, exclude trials without a reaction
             X_test, y_test = _make_X_n_y(test_fullsample, subject, dec_factor,
                                          drop_non_responses=True, tname=tname,
-                                         value=value, ch_subset=parietal_channels)
+                                         value=value)
             fname = fpath / \
                     f'sub-{subject}_gen-scores_{target}-{condition}_true-y.npy'
             scores, clf, time_gen = \
@@ -519,13 +518,11 @@ def generalization_integrating_behavior(subject,
     # train on all trials, except for trials where no reaction was made
     # train on all trials, except for trials where no reaction was made
     X_train, y_train = _make_X_n_y(train_fullsample, subject,
-                                   dec_factor, drop_non_responses=True,
-                                   ch_subset=parietal_channels)
+                                   dec_factor, drop_non_responses=True)
 
     # get the test data
     X_test = np.array([decimate(epoch['normalized_data'], dec_factor)
                        for id, epoch in test_fullsample[subject].items()])
-    X_test = X_test[:, parietal_channels, :]
     # calculate hypothetical labels. First, get regression coefficients
     # TODO: logistic regression with only left characteristics?
     Lprob, Lmag, LEV, Rprob, Rmag, REV = logreg(bidsdir=bidsdir,
