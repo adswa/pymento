@@ -476,8 +476,8 @@ def eval_decoding(subject,
     _all_plots(figdir, subject, df_results)
 
 def _all_plots(figdir, subject, df_results, aggregate=False):
-    fname = Path(figdir) / f'sub-{subject}' / \
-            f'parameter_optimization_sub-{subject}.png'
+    fname = _construct_path([Path(figdir), f'sub-{subject}',
+                             f'parameter_optimization_sub-{subject}.png'])
     logging.info(f'generating figure {fname}...')
     fig, ax = plt.subplots(figsize=(9, 5))
     sns.scatterplot(data=df_results[~df_results.k.notna()], x='areas',
@@ -497,8 +497,8 @@ def _all_plots(figdir, subject, df_results, aggregate=False):
     plt.tight_layout()
     fig.figure.savefig(fname)
 
-    fname = Path(figdir) / f'sub-{subject}' / \
-            f'parameter_optimization_srm_sub-{subject}.png'
+    fname = _construct_path([Path(figdir), f'sub-{subject}',
+            f'parameter_optimization_srm_sub-{subject}.png'])
     logging.info(f'generating figure {fname}...')
     fig = sns.relplot(data=df_results[df_results.dimreduction == 'srm'],
                       x='areas', y='peaks', col='windowtype', row='ntrial',
@@ -516,8 +516,8 @@ def _all_plots(figdir, subject, df_results, aggregate=False):
     plt.tight_layout()
     fig.figure.savefig(fname)
 
-    fname = Path(figdir) / f'sub-{subject}' / \
-            f'parameter_optimization_spectralsrm_sub-{subject}.png'
+    fname = _construct_path([Path(figdir), f'sub-{subject}',
+            f'parameter_optimization_spectralsrm_sub-{subject}.png'])
     logging.info(f'generating figure {fname}...')
     fig = sns.relplot(data=df_results[df_results.dimreduction == 'spectralsrm'],
                       x='areas', y='peaks', col='windowtype', row='ntrial',
@@ -535,8 +535,8 @@ def _all_plots(figdir, subject, df_results, aggregate=False):
     plt.tight_layout()
     fig.figure.savefig(fname)
 
-    fname = Path(figdir) /  f'sub-{subject}' / \
-            f'parameter_optimization_pca_sub-{subject}.png'
+    fname = _construct_path([Path(figdir), f'sub-{subject}',
+            f'parameter_optimization_pca_sub-{subject}.png'])
     print(f'generating figure {fname}...')
     fig = sns.relplot(data=df_results[df_results.dimreduction == 'pca'],
                       x='areas', y='peaks', col='windowtype', row='ntrial',
