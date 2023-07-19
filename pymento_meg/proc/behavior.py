@@ -261,12 +261,14 @@ def plot_speed_stats(bidsdir, figdir='/tmp'):
     df = df.dropna()
     df['nobrainer'] = df['nobrainer'].astype('category')
     # plot overall RTs
+    plt.figure()
     fig = sns.violinplot(data=df, x='RT')
     fig.set_xlabel('Reaction time in seconds')
     fig.set_title('Reaction times')
     fname = _construct_path(
         [figdir, 'group', 'memento_aggregate_reaction_times.png'])
     fig.figure.savefig(fname)
+    plt.figure()
     split = sns.violinplot(data=df, x='RT', y='nobrainer')
     split.set_xlabel('Reaction time in seconds')
     split.set_ylabel('Trial type')
