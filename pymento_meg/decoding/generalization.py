@@ -528,7 +528,7 @@ def generalization_integrating_behavior(subject,
     prob, mag, EV = logreg(bidsdir=bidsdir,
                            figdir='/tmp',
                            n_splits=100,
-                           subbject=subject)[subject]['pure_coefs'][:3]
+                           subject=subject)[subject]['pure_coefs'][:3]
     # make a dataframe for easier data manipulation
     df = pd.DataFrame(test_data)
     # drop everything we don't need
