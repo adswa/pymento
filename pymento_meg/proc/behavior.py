@@ -227,7 +227,7 @@ def print_coefs(data, means, names, sub, acc, figdir='/tmp'):
     plt.close('all')
 
 
-def plot_relative_property_importance_group(coefs, labels, figdir)
+def plot_relative_property_importance_group(coefs, labels, figdir):
     # make it a bar plot
     fig, ax = plt.subplots()
     ax.bar(labels, coefs)
