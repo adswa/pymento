@@ -5,6 +5,7 @@ Input by more experienced cognitive scientists is probably useful before I start
 """
 
 import logging
+import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -163,10 +164,14 @@ def logreg(bidsdir,
                     figdir=figdir)
         # keep all the coefficients for later
         coefs[sub]['acc'] = avg_acc
-        coefs[sub]['normed_coefs'] = avg_coefs
-        coefs[sub]['pure_coefs'] = coefs_pure
+        coefs[sub]['normed_coefs'] = list(avg_coefs)
+        coefs[sub]['pure_coefs'] = list(coefs_pure)
         coefs[sub]['stats'] = speed
         coefs[sub]['gain'] = gain
+        # save subject specific data
+        fname = _construct_path([figdir, f'sub-{sub}', f'sub-{sub}_regression-results_behavior.json'])
+        with open(fname, 'w') as f:
+            json.dump(coefs[sub], f)
     # plot the reaction times
     plot_speed_stats(coefs, figdir)
     # correlate model accuracy with experiment performance
@@ -176,6 +181,9 @@ def logreg(bidsdir,
     logging.info(f"The Spearman rank correlation between experiment "
                  f"performance (total gain) and model accuracy is "
                  f"{corr}")
+    # plot overall importance of parameters affecting choice (average over subs)
+    normed_averages = np.mean([coefs[c]['normed_coefs'] for c in coefs], axis=0)
+    plot_relative_property_importance_group(normed_averages, labels)
     return coefs
 
 
@@ -217,6 +225,18 @@ def print_coefs(data, means, names, sub, acc, figdir='/tmp'):
     logging.info(f'Saving a boxplot of parameter importance into {fname}.')
     plt.savefig(fname)
     plt.close('all')
+
+
+def plot_relative_property_importance_group(coefs, labels, figdir)
+    # make it a bar plot
+    fig, ax = plt.subplots()
+    ax.bar(labels, coefs)
+    ax.set_ylabel('relative importance')
+    ax.set_xlabel('stimulus property (Left or Right)')
+    ax.set_title('Relative influence on choice by stimulus properties')
+    ax.yaxis.grid(True, linestyle='--', color='grey', alpha=0.25)
+    fname = _construct_path([figdir, 'group', 'average_property_importance.png'])
+    fig.savefig(fname)
 
 
 def plot_speed_stats(coefs, figdir='/tmp'):
