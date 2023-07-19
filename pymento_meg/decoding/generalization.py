@@ -515,6 +515,65 @@ def generalization_integrating_behavior(subject,
     train_fullsample, train_data, test_fullsample, test_data = \
         _read_test_n_train(subject=subject, trainingdir=trainingdir,
                            testingdir=testingdir, bidsdir=bidsdir)
+
+    # First, estimate all trials:
+    # train on all trials, except for trials where no reaction was made
+    # train on all trials, except for trials where no reaction was made
+    X_train, y_train = _make_X_n_y(train_fullsample, subject,
+                                   dec_factor, drop_non_responses=True)
+    # get the test data
+    X_test = np.array([decimate(epoch['normalized_data'], dec_factor)
+                       for id, epoch in test_fullsample[subject].items()])
+    # calculate hypothetical labels. First, get regression coefficients
+    prob, mag, EV = logreg(bidsdir=bidsdir,
+                           figdir='/tmp',
+                           n_splits=100,
+                           subbject=subject)[subject]['pure_coefs'][:3]
+    # make a dataframe for easier data manipulation
+    df = pd.DataFrame(test_data)
+    # drop everything we don't need
+    df = df.drop(columns=['epoch', 'trial_type', 'data', 'normalized_data',
+                          'prevLchar', 'prevRchar', 'prevRT', 'prevchoice',
+                          'Lchar', 'Rchar', 'RT',  'prevLoptMag',
+                          'prevLoptProb', 'prevRoptMag', 'prevRoptProb',
+                          'choice', 'pointdiff', 'subject', 'trial_no'])
+    # calculate EV from demeaned prob & magnitude
+    df['LEV'] = (df.LoptProb - df.LoptProb.mean()) * \
+                     (df.LoptMag - df.LoptMag.mean())
+    # min-max scale everything
+    df = (df - df.min()) / (df.max() - df.min())
+    df['integrate'] = (df.LoptMag * mag) + (df.LoptProb * prob) + (df.LEV * EV)
+    col = 'integrate'
+    lower, upper = df[col].quantile([0.25, 0.75])
+    # more negative = left choice
+    conditions = [df[col] >= upper,
+                  df[col] <= lower]
+    # we believe that choice2.0 is right, choice1.0 is left
+    choices = ['choice2.0', "choice1.0"]
+    df["choice"] = np.select(conditions, choices, default=None)
+    # get indices of all trials that did not make the cut
+    medium_trials = np.where(df['choice'].values == None)[0]
+    # remove the trials that didn't make the cut from the data
+    X_test = np.delete(X_test, medium_trials, axis=0)
+    y_test = np.delete(np.array(df.choice), medium_trials, axis=0)
+    fname = fpath / f'sub-{subject}_gen-scores_estimated-y.npy'
+    scores, clf, time_gen =\
+        _train_and_score_generalizer(X_train=X_train, X_test=X_test,
+                                     y_train=y_train, y_test=y_test,
+                                     fname=fname)
+    fname = fpath / f'sub-{subject}_gen-scores_estimated-y_scrambled.npy'
+    null_distribution, binary_mask = _permute(y_train=y_train, X_train=X_train,
+                                              y_test=y_test, X_test=X_test,
+                                              clf=clf, fname=fname,
+                                              scores=scores,
+                                              n_permutations=n_permutations,
+                                              alpha=0.05)
+    plot_generalization(scoring=scores, description='estimated',
+                        condition='trials', target='all', fpath=fpath,
+                        subject=subject, mask=binary_mask, fixed_cbar=False)
+
+    # Next, add an analysis on trials that flip (where the left option appears
+    # more attractive but isn't, or vice versa)
     # train on all trials, except for trials where no reaction was made
     # train on all trials, except for trials where no reaction was made
     X_train, y_train = _make_X_n_y(train_fullsample, subject,
@@ -550,7 +609,7 @@ def generalization_integrating_behavior(subject,
     df['integrate_all_infos'] = (df.LoptMag * Lmag) + (df.LoptProb * Lprob) + \
                                 (df.LEV * LEV) + (df.RoptMag * Rmag) + \
                                 (df.RoptProb * Rprob) + (df.REV * REV)
-    # split in the highest and lowest 25%
+    # split in the highest and lowest
     for col, target in [('integrate', 'choice'),
                         ('integrate_all_infos', 'choice_all_infos')]:
         lower, upper = df[col].quantile([0.49, 0.51])
