@@ -183,7 +183,7 @@ def logreg(bidsdir,
                  f"{corr}")
     # plot overall importance of parameters affecting choice (average over subs)
     normed_averages = np.mean([coefs[c]['normed_coefs'] for c in coefs], axis=0)
-    plot_relative_property_importance_group(normed_averages, labels)
+    plot_relative_property_importance_group(normed_averages, labels, figdir)
     return coefs
 
 
