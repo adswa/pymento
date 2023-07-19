@@ -9,6 +9,7 @@ import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 from pathlib import Path
 from glob import glob
 from scipy.stats import spearmanr
@@ -173,7 +174,7 @@ def logreg(bidsdir,
         with open(fname, 'w') as f:
             json.dump(coefs[sub], f)
     # plot the reaction times
-    plot_speed_stats(coefs, figdir)
+    plot_speed_stats(bidsdir, figdir)
     # correlate model accuracy with experiment performance
     accs = [coefs[k]['acc'] for k in coefs]
     gains = [coefs[k]['gain'] for k in coefs]
@@ -239,18 +240,40 @@ def plot_relative_property_importance_group(coefs, labels, figdir):
     fig.savefig(fname)
 
 
-def plot_speed_stats(coefs, figdir='/tmp'):
+def plot_speed_stats(bidsdir, figdir='/tmp'):
     """Make a boxplot of aggregated reaction time statistics
      across subjects."""
-    stats = pd.DataFrame([coefs[k]['stats'] for k in coefs])
-    fig = stats.plot(kind='box',
-                     title='Aggregate reaction times across subjects',
-                     ylabel='seconds',
-                     xlabel='Global and no-brainer statistics',
-                     figsize=(12, 6))
-    fname = _construct_path([figdir, 'group', 'memento_aggregate_reaction_times.png'])
-    logging.info(f'Saving reaction times plot at {fname}')
+    df = bigdf(bidsdir)
+    # differentiate between brainer and no-brainer trials with a boolean column
+    df['nobrainer'] = [
+        ((df.RoptMag > df.LoptMag) & (df.RoptProb > df.LoptProb)) | \
+        ((df.LoptMag > df.RoptMag) &(df.LoptProb > df.RoptProb))][0]
+    df['nobrainer'] = df['nobrainer'].replace({True: 'No-brainer',
+                                               False: 'Standard'})
+    df = df.drop(columns=['trial_no', 'FixReqT', 'FixTime', 'orReqTime',
+                          'orTime', 'LoptT','RoptT', 'FeedbackT', 'fix_onset',
+                          'LoptOnset', 'or_onset', 'RoptOnset','response_onset',
+                          'feedback_onset', 'trial_no.1', 'LoptProb', 'LoptMag',
+                          'RoptProb', 'RoptMag', 'LoptRew', 'RoptRew', 'choice',
+                          'points','pointdiff', 'timeoutflag', 'breaktrial',
+                          'subject', 'pause_start', 'Empty_screen',
+                          'second_delay_screen'])
+    df = df.dropna()
+    df['nobrainer'] = df['nobrainer'].astype('category')
+    # plot overall RTs
+    fig = sns.violinplot(data=df, x='RT')
+    fig.set_xlabel('Reaction time in seconds')
+    fig.set_title('Reaction times')
+    fname = _construct_path(
+        [figdir, 'group', 'memento_aggregate_reaction_times.png'])
     fig.figure.savefig(fname)
+    split = sns.violinplot(data=df, x='RT', y='nobrainer')
+    split.set_xlabel('Reaction time in seconds')
+    split.set_ylabel('Trial type')
+    split.set_title('Reaction times ("no-brainer" trials versus standard trials)')
+    fname = _construct_path(
+        [figdir, 'group', 'memento_aggregate_reaction_times_nobrainer.png'])
+    split.figure.savefig(fname)
 
 
 
