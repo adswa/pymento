@@ -589,6 +589,14 @@ def _eval_decoding_perf(accuracies, span):
     return areas, peaks
 
 
+def mean_str(col):
+    from pandas.api.types import is_numeric_dtype
+    if is_numeric_dtype(col):
+        return col.mean()
+    else:
+        return col.unique()[0] if col.nunique() == 1 else np.NaN
+
+
 def aggregate_evals(
         figdir='/data/project/brainpeach/decoding',
         subject='all',
@@ -607,11 +615,7 @@ def aggregate_evals(
         df = pd.read_csv(file)
         dfs.append(df)
     df_results = pd.concat(dfs)
-    means = df_results.groupby(df_results.index).mean()
-    # a few columns don't survive the averaging, but we can resurrect them from
-    # any single data frame and add them back (they are identical between subs)
-    cols = df[['windowtype', 'nsample', 'dimreduction']]
-    means = means.join(cols)
+    means = df_results.groupby(df_results.index).agg(mean_str)
     _all_plots(figdir=figdir, subject=subject, df_results=means, aggregate=True)
 
 
