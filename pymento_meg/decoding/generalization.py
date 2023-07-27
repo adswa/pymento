@@ -296,8 +296,8 @@ def plot_generalization(scoring, description, condition, target,
                  'extent': np.array([0, 3400, -500, 500])}
     if fixed_cbar:
         # set cbar limits to 0, 1
-        pltkwargs['vmin'] = 0.
-        pltkwargs['vmax'] = 1.
+        pltkwargs['vmin'] = 0. if subject != 'group' else 0.35
+        pltkwargs['vmax'] = 1. if subject != 'group' else 0.65
     im = ax.matshow(scoring, cmap='RdBu_r', **pltkwargs)
     ax.axhline(0, color='k', linestyle='dotted', label='motor response')
     ax.axvline(700, color='k', label='stimulus offset')
@@ -390,7 +390,7 @@ def aggregate_generalization(
             plot_generalization(avg_trues, description=description,
                                 condition=condition, target=target,
                                 fpath=figdir, subject='group', mask=binary_mask,
-                                fixed_cbar=False)
+                                fixed_cbar=True)
             if condition == 'medium':
                 continue
             for sub in np.arange(1, 23):
@@ -454,7 +454,7 @@ def aggregate_generalization(
     plot_generalization(avg_estimates, description=description,
                         condition='trials', target='all',
                         fpath=figdir, subject='group', mask=binary_mask,
-                        fixed_cbar=False)
+                        fixed_cbar=True)
 
     # finally, compute group aggregates for the estimated plots
     for condition in ['flip', 'non-flip']:
@@ -498,7 +498,7 @@ def aggregate_generalization(
         plot_generalization(avg_estimates, description=description,
                             condition='trials', target='all',
                             fpath=figdir, subject='group', mask=binary_mask,
-                            fixed_cbar=False)
+                            fixed_cbar=True)
 
 
 def generalization_integrating_behavior(subject,
