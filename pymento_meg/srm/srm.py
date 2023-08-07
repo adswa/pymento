@@ -486,7 +486,7 @@ def plot_trial_components_from_srm(subject,
     :param timespan: str, an identifier of the time span of data to be used for
     model fitting. Must be one of 'decision' (time locked around the decision
     in each trial), 'firststim' (time locked to the first stimulus, for the
-    stimulus duration), 'fulltrial' (entire 7second epoch), 'secondstim',
+    stimulus duration), 'fulltrial' (entire epoch), 'secondstim',
     'delay'.
     :return:
     models, dict with feature number as keys and corresponding models as values
