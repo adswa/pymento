@@ -300,14 +300,14 @@ def parse_args_srm():
         "--condition",
         "-c",
         help="""The condition to split the trials over""",
-        choices=['left-right', 'nobrain-brain'],
+        choices=['left-right', 'nobrain-brain', 'all'],
         default='left-right'
     )
     parser.add_argument(
         "--timespan",
         "-t",
         help="""The timespan to use""",
-        choices=['fulltrial', 'decision', 'firststim'],
+        choices=['fulltrial', 'decision', 'firststim', 'all'],
         default='fulltrial'
     )
 
