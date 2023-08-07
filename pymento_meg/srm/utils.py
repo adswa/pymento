@@ -57,6 +57,9 @@ def get_nobrainer_trials(subject, bidsdir):
                            bidsdir=bidsdir)
     # where is the both Magnitude and Probability of reward greater for one
     # option over the other? -> nobrainer trials
+    # TODO: maybe loosen the definition of a no-brainer trial to allow larger or
+    # TODO: equal values in Magnitude and reward. Lucas notes say 47% of trial
+    # TODO: would be no-brainer values, but with the rules below its rather 15%
     right = df['trial_no'][(df.RoptMag > df.LoptMag) &
                            (df.RoptProb > df.LoptProb)].values
     left = df['trial_no'][(df.LoptMag > df.RoptMag) &
