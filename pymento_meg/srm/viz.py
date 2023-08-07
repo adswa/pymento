@@ -1809,6 +1809,7 @@ def plot_srm_model(df,
         'Duration of the first stimulus' if timespan == 'firststim' else \
             '400ms +/- decision time' if timespan == 'decision' else None
     # TODO: this needs some indication of which subjects the plot is made from
+    sns.set(rc={'figure.figsize': (8, 4)})
     for i in range(nfeatures):
         if type(subject) == list:
             if len(subject) == 1:
@@ -1816,20 +1817,9 @@ def plot_srm_model(df,
             else:
                 subject = 'group'
         fname = _construct_path([Path(figdir), f'sub-{subject}', 'meg',
-                                 f'{subject}_{mdl}_{nfeatures}-feat_task-{cond}_model-{timespan}_comp_{i}.png'])
-        if cond == 'left-right':
-            fig = sns.lineplot(data=df[df['trial_type'] == 'right (2)'][i])
-            sns.lineplot(data=df[df['trial_type'] == 'left (1)'][i]).set_title(
-                title)
-            fig.legend(title='Condition', loc='upper left',
-                       labels=['left choice', 'right choice'])
-        elif cond == 'nobrain-brain':
-            fig = sns.lineplot(data=df[df['trial_type'] == 'brainer'][i])
-            sns.lineplot(data=df[(df['trial_type'] == 'nobrainer_left') |
-                                 (df['trial_type'] == 'nobrainer_right')][
-                i]).set_title(title)
-            fig.legend(title='Condition', loc='upper left',
-                       labels=['brainer', 'nobrainer'])
+                                 f'sub-{subject}_{mdl}_{nfeatures}-feat_task-{cond}_model-{timespan}_comp_{i}.png'])
+        ax = sns.lineplot(data=df, y=i, x=df.index, hue='trial_type')
+        ax.set(xlabel='samples', ylabel=f'comp. {i+1} (a.U.)', ylim=(-10, 10), title=title)
         if timespan == 'fulltrial':
             # define the timing of significant events in the trial time course:
             # onset and offset of visual stimuli
@@ -1837,7 +1827,13 @@ def plot_srm_model(df,
             # plot horizontal lines to mark the end of visual stimulation
             [pylab.axvline(ev, linewidth=1, color='grey', linestyle='dashed')
              for ev in events]
-
-        plot = fig.get_figure()
+        if timespan == 'decision':
+            # mark the decision
+            pylab.axvline(0.4 * freq, color='grey', linestyle='dashed')
+            locations, labels = plt.xticks()
+            plt.xticks(locations, [str(int(l)) for l in locations - 400])
+        plt.tight_layout()
+        plot = ax.get_figure()
+        logging.info(f'Saving figure {fname}')
         plot.savefig(fname)
         plot.clear()
