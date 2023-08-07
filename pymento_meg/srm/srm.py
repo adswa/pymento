@@ -521,7 +521,9 @@ def plot_trial_components_from_srm(subject,
                        freq=1000)
         models[f] = model
     for idx, model in models.items():
-        plot_distance_matrix(model, idx, figdir)
+        plot_distance_matrix(model, idx, figdir,
+                             freq=1000, subject=subject,
+                             condition=condition, timespan=timespan)
     return models, data
 
 

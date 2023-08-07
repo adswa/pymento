@@ -1759,7 +1759,7 @@ def plot_trialtype_distance_matrix(data,
         return dist_mat
 
 
-def plot_distance_matrix(model, idx, figdir):
+def plot_distance_matrix(model, idx, figdir, freq, subject, condition, timespan):
     """
     plot a distance matrix between time points from the shared response.
     :param model:
@@ -1769,13 +1769,13 @@ def plot_distance_matrix(model, idx, figdir):
     """
     dist_mat = sp_distance.squareform(sp_distance.pdist(model.s_.T,
                                                         metric='correlation'))
-    plt.xlabel('t (100 = 1sec)')
-    plt.ylabel('t (100 = 1sec)')
+    plt.xlabel(f't ({freq} = 1sec)')
+    plt.ylabel(f't ({freq} = 1sec)')
     plt.imshow(dist_mat, cmap='BrBG')
     # TODO: maybe add vertical lines in experiment landmarks
     plt.colorbar()
-    fname = _construct_path([Path(figdir), 'group', 'meg',
-                             f'group_task-memento_srm-{idx}_distances.png'])
+    fname = _construct_path([Path(figdir), f'sub-{subject}', 'meg',
+                             f'sub-{subject}_task-memento_srm-{idx}_{condition}-{timespan}_distances.png'])
     plt.savefig(fname)
     plt.close()
 
