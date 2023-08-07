@@ -745,7 +745,6 @@ def _get_timewindows_from_spec(timespan):
     return t
 
 
-
 def get_decision_timespan_on_and_offsets(subject,
                                          bidsdir):
     """
