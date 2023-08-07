@@ -690,6 +690,10 @@ def combine_data(epochs,
         trial_type = trials_to_trialtypes.get(trial_no, None)
         if trial_type is None:
             continue
+        if timespan == 'decision' and trial_no not in trials_to_rts.keys():
+            logging.info(f'Could not use epoch {trial_no} because the reaction '
+                         f'was not fast enough.')
+            continue
 
         tmin, tmax = _get_timewindows_from_spec(
             trials_to_rts[trial_no] if timespan == 'decision' else timespan
@@ -761,9 +765,9 @@ def get_decision_timespan_on_and_offsets(subject,
     logging.info('Setting nan reaction times to implausibly large values.')
     np.nan_to_num(trials_and_rts, nan=100, copy=False)
     # collect the trial numbers where reaction times are too large to fit into
-    # the trial. For now, this is at 3 seconds.
+    # the trial. For now, this is at 1.9 seconds for 5 second epochs.
     trials_to_remove = trials_and_rts[np.where(
-        trials_and_rts[:, 1] > 3)][:, 0]
+        trials_and_rts[:, 1] > 1.9)][:, 0]
     # initialize a dict to hold all information
     trials_to_rts = {}
     for trial, rt in trials_and_rts:
