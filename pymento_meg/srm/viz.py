@@ -1833,7 +1833,6 @@ def plot_srm_model(df,
         if timespan == 'fulltrial':
             # define the timing of significant events in the trial time course:
             # onset and offset of visual stimuli
-            # TODO: added flexible freq later, check that this works
             events = [0, 0.7 * freq, 2.7 * freq, 3.4 * freq]
             # plot horizontal lines to mark the end of visual stimulation
             [pylab.axvline(ev, linewidth=1, color='grey', linestyle='dashed')
