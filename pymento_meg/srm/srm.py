@@ -497,7 +497,7 @@ def plot_trial_components_from_srm(subject,
                                                   bidsdir=bidsdir,
                                                   condition=condition,
                                                   timespan=timespan)
-
+    del fullsample
     logging.info(f'Fitting shared response models based on data from subjects '
                  f'{subject}')
     # use a wide range of features to see if anything makes a visible difference
