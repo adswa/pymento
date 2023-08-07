@@ -357,9 +357,22 @@ def SRM(subject,
 
     if model == 'srm':
         from pymento_meg.srm.srm import plot_trial_components_from_srm
-        plot_trial_components_from_srm(subject=subject,
-                                       datadir=datadir,
-                                       bidsdir=bidsdir,
-                                       figdir=figdir,
-                                       condition=condition,
-                                       timespan=timespan)
+        if condition == 'all' and timespan == 'all':
+            # special case; loop over all combinations
+            for condition in ['left-right', 'nobrain-brain']:
+                for timespan in ['decision', 'firststim', 'fulltrial']:
+                    plot_trial_components_from_srm(subject=subject,
+                                                   datadir=datadir,
+                                                   bidsdir=bidsdir,
+                                                   figdir=figdir,
+                                                   condition=condition,
+                                                   timespan=timespan,
+                                                   )
+        else:
+            plot_trial_components_from_srm(subject=subject,
+                                           datadir=datadir,
+                                           bidsdir=bidsdir,
+                                           figdir=figdir,
+                                           condition=condition,
+                                           timespan=timespan,
+                                           )
