@@ -501,7 +501,7 @@ def plot_trial_components_from_srm(subject,
     logging.info(f'Fitting shared response models based on data from subjects '
                  f'{subject}')
     # use a wide range of features to see if anything makes a visible difference
-    features = [5, 10, 20, 100]
+    features = [5, 10, 20]
     models = {}
     for f in features:
         # fit the model. List comprehension to retrieve the data as a list of
