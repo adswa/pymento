@@ -1837,3 +1837,4 @@ def plot_srm_model(df,
         logging.info(f'Saving figure {fname}')
         plot.savefig(fname)
         plot.clear()
+        plt.rcParams.update(plt.rcParamsDefault)
