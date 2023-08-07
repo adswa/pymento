@@ -1771,7 +1771,7 @@ def plot_distance_matrix(model, idx, figdir, freq, subject, condition, timespan)
                                                         metric='correlation'))
     plt.xlabel(f't ({freq} = 1sec)')
     plt.ylabel(f't ({freq} = 1sec)')
-    plt.imshow(dist_mat, cmap='BrBG')
+    plt.imshow(dist_mat, cmap='BrBG',  clim=[0, 2])
     # TODO: maybe add vertical lines in experiment landmarks
     plt.colorbar()
     fname = _construct_path([Path(figdir), f'sub-{subject}', 'meg',
