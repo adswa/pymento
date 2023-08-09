@@ -702,10 +702,11 @@ def aggregate_decoding(
             subject = f'00{sub}' if sub < 10 else f'0{sub}'
             for target, ylim, chance in \
                     [['choice', (0.3, 0.99), 0.5],
-                     ['magnitude', (0.15, 0.45), 0.25],
-                     ['probability', (0.15, 0.45), 0.25],
-                     ['expectedvalue', (0.25, 0.5), 0.33],
-                     ['identity', (0, 0.3), 0.11]]:
+                     ['magnitude', (0.2, 0.35), 0.25],
+                     ['probability', (0.2, 0.35), 0.25],
+                     ['expectedvalue', (0.3, 0.4), 0.33],
+                     #['identity', (0, 0.3), 0.11]
+                      ]:
                 timespan = [-1.25, 1.25] if target == 'choice' else [0, 4500]
                 dfs = []
                 for dimreduction in [None, 'srm', 'pca', 'spectralsrm']:
