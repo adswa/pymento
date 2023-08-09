@@ -642,10 +642,11 @@ def aggregate_decoding(
         # aggregate over subjects
         hue = y = 'subject'
         for target, ylim, chance in \
-            [['choice', (0.3, 0.99), 0.5], ['magnitude', (0.15, 0.45), 0.25],
-             ['probability',  (0.15, 0.45), 0.25],
-             ['expectedvalue', (0.25, 0.5), 0.33],
-             ['identity', (0, 0.3), 0.11]]:
+            [['choice', (0.3, 0.99), 0.5], ['magnitude', (0.2, 0.35), 0.25],
+             ['probability',  (0.2, 0.35), 0.25],
+             ['expectedvalue', (0.3, 0.4), 0.33],
+             #['identity', (0, 0.3), 0.11]
+             ]:
             for dimreduction in [None, 'srm', 'pca', 'spectralsrm']:
                 # hardcode the parameters used in decoding
                 slidingwindow = 10
