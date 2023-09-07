@@ -129,7 +129,7 @@ def _plot_raw_comparison(data, dataset, adderror=False, stderror=False,
     palette, fig, ax, fname = \
         _plot_helper(1,
                      suptitle='Average raw signal over all subjects per sensor',
-                     name=f"avg-signal_raw-sensors.png",
+                     name=f"avg-signal_raw-sensors.svg",
                      figdir=figdir,
                      npalette=1,
                      figsize=(10, 5)
@@ -145,7 +145,7 @@ def _plot_raw_comparison(data, dataset, adderror=False, stderror=False,
     palette, fig, ax, fname = \
         _plot_helper(1,
                      suptitle='Average raw signal over all subjects & sensors',
-                     name=f"avg-signal_raw-avg.png",
+                     name=f"avg-signal_raw-avg.svg",
                      figdir=figdir,
                      npalette=1,
                      figsize=(10, 5)
@@ -169,7 +169,7 @@ def _plot_raw_comparison(data, dataset, adderror=False, stderror=False,
         _plot_helper(1,
                      suptitle='Averaged raw signal, over all subjects, '
                               'per sensor, response-locked',
-                     name=f"avg-signal_raw-sensors_response-locked.png",
+                     name=f"avg-signal_raw-sensors_response-locked.svg",
                      figdir=figdir,
                      npalette=1,
                      vline=win / 2,
@@ -193,7 +193,7 @@ def _plot_raw_comparison(data, dataset, adderror=False, stderror=False,
         _plot_helper(1,
                      suptitle='Averaged raw signal, over all subjects and '
                               'sensors, response-locked',
-                     name=f"avg-signal_raw-avg_response-locked.png",
+                     name=f"avg-signal_raw-avg_response-locked.svg",
                      figdir=figdir,
                      npalette=1,
                      vline=win / 2,
@@ -217,7 +217,7 @@ def _plot_raw_comparison(data, dataset, adderror=False, stderror=False,
         _plot_helper(1,
                      suptitle='Average raw signal, response-locked, left vs. '
                               'right',
-                     name=f"avg-signal_raw-avg_response-locked_leftvsright.png",
+                     name=f"avg-signal_raw-avg_response-locked_leftvsright.svg",
                      figdir=figdir,
                      npalette=2,
                      vline=win / 2,
@@ -280,7 +280,7 @@ def _plot_transformed_components(transformed,
         _plot_helper(k,
                      suptitle='Averaged signal in shared space, component-wise',
                      name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per"
-                          f"-comp{custom_name_component}.png",
+                          f"-comp{custom_name_component}.svg",
                      figdir=figdir,
                      npalette=k,
                      )
@@ -323,7 +323,7 @@ def _plot_transformed_components(transformed,
                      suptitle='Average signal in shared space for left & '
                               'right choices, component-wise',
                      name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per"
-                          f"-comp_leftvsright.png",
+                          f"-comp_leftvsright.svg",
                      figdir=figdir,
                      npalette=k * 2,
                      )
@@ -687,7 +687,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             data=data,
             title="Transformed components, per trial type",
             name=f"trialtype-wise_avg-signal_shared-shape_spectral-srm_{k}"
-                 f"-feat_per-comp{custom_name_component}.png",
+                 f"-feat_per-comp{custom_name_component}.svg",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -704,7 +704,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into magnitude "
                   "bins",
             name=f"trialtype-magnitude_avg-signal_shared-shape_spectral-srm_{k}"
-                 f"-feat_per-comp{custom_name_component}.png",
+                 f"-feat_per-comp{custom_name_component}.svg",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -721,7 +721,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into "
                   "probability bins",
             name=f"trialtype-probability_avg-signal_shared-shape_spectral-srm_"
-                 f"{k}-feat_per-comp{custom_name_component}.png",
+                 f"{k}-feat_per-comp{custom_name_component}.svg",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -738,7 +738,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into expected "
                   "value bins",
             name=f"trialtype-exp-value_avg-signal_shared-shape_spectral-srm_{k}"
-                 f"-feat_per-comp{custom_name_component}.png",
+                 f"-feat_per-comp{custom_name_component}.svg",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -768,7 +768,7 @@ def _plot_transformed_components_by_trialtype(transformed,
                          suptitle='Transformed components, with trials '
                                   'grouped by eventual response',
                          name=f'event-choice_avg-signal_shared-shape_spectral'
-                              f'-srm_{k}-feat_per-comp{custom_name_component}.png',
+                              f'-srm_{k}-feat_per-comp{custom_name_component}.svg',
                          figdir=figdir,
                          npalette=2,
                          )
@@ -810,7 +810,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into magnitude "
                   "bins by eventual choice",
             name=f"trialtype-magnitude-bychoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.svg",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -828,7 +828,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into "
                   "probability bins by eventual choice",
             name=f"trialtype-probability-bychoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.svg",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -846,7 +846,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into expected "
                   "value bins by eventual choice",
             name=f"trialtype-expectedvalue-bychoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.svg",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -863,7 +863,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into eventual "
                   "choice by previous choice",
             name=f"trialtype-choice-byprevchoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.svg",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -881,7 +881,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into magnitude "
                   "bins by previous choice",
             name=f"trialtype-magnitude-byprevchoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.svg",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -899,7 +899,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into "
                   "probability bins by previous choice",
             name=f"trialtype-probability-byprevchoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.svg",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -917,7 +917,7 @@ def _plot_transformed_components_by_trialtype(transformed,
             title="Transformed components, with trials grouped into excepted "
                   "value bins by previous choice",
             name=f"trialtype-expectedvalue-byprevchoice_avg-signal_shared"
-                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.png",
+                 f"-shape_spectral-srm_{k}-feat_per-comp{custom_name_component}.svg",
             transformed=transformed,
             k=k,
             figdir=figdir,
@@ -961,7 +961,7 @@ def _plot_transformed_components_centered(transformed,
                      suptitle='Average signal in shared space, '
                               'response-locked, component-wise',
                      name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per"
-                          f"-comp_response-locked.png",
+                          f"-comp_response-locked.svg",
                      figdir=figdir,
                      npalette=k * 2,
                      vline=win / 2
@@ -1001,7 +1001,7 @@ def _plot_transformed_components_centered(transformed,
                               'response-locked, left vs. right, '
                               'component-wise',
                      name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per"
-                          f"-comp_response-locked_leftvsright.png",
+                          f"-comp_response-locked_leftvsright.svg",
                      figdir=figdir,
                      npalette=k * 2,
                      vline=win / 2
@@ -1045,7 +1045,7 @@ def _plot_transformed_components_centered(transformed,
                               'response-locked, brainer vs nobrainer, '
                               'component-wise',
                      name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per"
-                          f"-comp_response-locked_brainervsnobrainer.png",
+                          f"-comp_response-locked_brainervsnobrainer.svg",
                      figdir=figdir,
                      npalette=k * 2,
                      vline=win / 2
@@ -1090,7 +1090,7 @@ def _plot_transformed_components_centered(transformed,
                               'response-locked, pos vs neg feedback, '
                               'component-wise',
                      name=f"avg-signal_shared-shape_spectral-srm_{k}-feat_per"
-                          f"-comp_response-locked_feedback.png",
+                          f"-comp_response-locked_feedback.svg",
                      figdir=figdir,
                      npalette=k * 2,
                      vline=win / 2
@@ -1159,7 +1159,7 @@ def plot_model_basis_topographies(datadir, model, figdir):
                 Path(figdir),
                 "group",
                 "meg",
-                f"viz-model-{k}_comp-{c}_sub-{subject + 1}.png"])
+                f"viz-model-{k}_comp-{c}_sub-{subject + 1}.svg"])
             fig.savefig(fname)
 
 
@@ -1192,7 +1192,7 @@ def plot_many_distance_matrices(results,
         title = f'Correlation distance of trialtypes ({triallength * 10}ms) \n'\
                 f'in shared space ({n} components), fit on left and right \n' \
                 f'averaged training data. Trials ordered by {description}'# Created: {timestr}'
-        name = f'corr-dist_avg-traindata_full-stim_{n}-components_order-{description}.png'
+        name = f'corr-dist_avg-traindata_full-stim_{n}-components_order-{description}.svg'
         models[n]['full'] = plot_trialtype_distance_matrix(
             results['averaged_trials']['train']['full'],
             n,
@@ -1216,7 +1216,7 @@ def plot_many_distance_matrices(results,
         title = f'Correlation distance of trialtypes ({triallength * 10}ms) \n'\
                 f'in shared space ({n} components), fit on left  \n' \
                 f'averaged training data. Trials ordered by {description}'# Created: {timestr}'
-        name = f'corr-dist_avg-traindata_left-stim_{n}-components_order-{description}.png'
+        name = f'corr-dist_avg-traindata_left-stim_{n}-components_order-{description}.svg'
         models[n]['left'] = plot_trialtype_distance_matrix(
             results['averaged_trials']['train']['left'],
             n,
@@ -1242,7 +1242,7 @@ def plot_many_distance_matrices(results,
         title = f'Correlation distance of trialtypes ({triallength * 10}ms) \n'\
                 f'in shared space ({n} components), fit on left and right \n' \
                 f'original training data. Trials ordered by {description}'# Created: {timestr}'
-        name = f'corr-dist_orig-traindata_full-stim_{n}-components_order-{description}.png'
+        name = f'corr-dist_orig-traindata_full-stim_{n}-components_order-{description}.svg'
         plot_trialtype_distance_matrix(
             results['original_trials']['train']['full'],
             n,
@@ -1272,7 +1272,7 @@ def plot_many_distance_matrices(results,
         trialtypes=18,
         triallength=triallength,
         feature='avg-train',
-        nametmpl='group_raw_avg-train_trialdist_18.png',
+        nametmpl='group_raw_avg-train_trialdist_18.svg',
         y_label='trialtype',
         x_label='trialtype',
         timestr=timestr,
@@ -1293,7 +1293,7 @@ def plot_many_distance_matrices(results,
         trialtypes=18,
         triallength=triallength,
         feature='avg-test',
-        nametmpl='group_raw_avg-test_trialdist_18.png',
+        nametmpl='group_raw_avg-test_trialdist_18.svg',
         y_label='trialtype',
         x_label='trialtype',
         timestr=timestr,
@@ -1323,7 +1323,7 @@ def plot_many_distance_matrices(results,
             trialtypes=18,
             triallength=triallength,
             feature='transformed-avg-test',
-            nametmpl=f'group_srm-{n}_transformed-avg-test_trialdist-18.png',
+            nametmpl=f'group_srm-{n}_transformed-avg-test_trialdist-18.svg',
             y_label='trialtype',
             x_label='trialtype',
             timestr=timestr,
@@ -1343,7 +1343,7 @@ def plot_many_distance_matrices(results,
         title = f"Trialtype-by-trialtype distance between averaged \n" \
                 f"transformed ({n} components) test data. Trials ordered by {description}"
         name = \
-            f'group_avg-transformed_transformed-n-{n}-avg-test_trialdist-18_order-{description}.png'
+            f'group_avg-transformed_transformed-n-{n}-avg-test_trialdist-18_order-{description}.svg'
         mean_shared_test_dist = plot_trialtype_distance_matrix(
             mean_shared_test,
             n='group',
@@ -1382,7 +1382,7 @@ def plot_many_distance_matrices(results,
             trialtypes=18,
             triallength=triallength,
             feature='transformed-avg-train',
-            nametmpl=f'group_srm-{n}_transformed-avg-train_trialdist-18.png',
+            nametmpl=f'group_srm-{n}_transformed-avg-train_trialdist-18.svg',
             y_label='trialtype',
             x_label='trialtype',
             timestr=timestr,
@@ -1400,7 +1400,7 @@ def plot_many_distance_matrices(results,
                 f"transformed ({n} components) train data. Trials ordered by {description}"
         name = \
             f'group_avg-transformed_transformed-n-{n}-avg-train_' \
-            f'trialdist-18_order-{description}.png'
+            f'trialdist-18_order-{description}.svg'
         plot_trialtype_distance_matrix(
             mean_shared_train,
             n='group',
@@ -1433,7 +1433,7 @@ def plot_many_distance_matrices(results,
         assert mean.shape[0] == 306
         title = f'Trialtype-by-trialtype correlation distance on \n' \
                 f'{label} data. Trials ordered by {description}'#Created: {timestr}'
-        name = f'groupavg_{label}_trialdist-18_order-{description}.png'
+        name = f'groupavg_{label}_trialdist-18_order-{description}.svg'
         # make the distance matrix
         plot_trialtype_distance_matrix(mean,
                                        n='group',
@@ -1528,7 +1528,7 @@ def compute_raw_distances(data,
                           trialtypes,
                           triallength,
                           feature=None,
-                          nametmpl='group_task-memento_raw_avg.png',
+                          nametmpl='group_task-memento_raw_avg.svg',
                           y_label='trialtype',
                           x_label='trialtype',
                           subjecttitle=None,
@@ -1573,7 +1573,7 @@ def compute_raw_distances(data,
             # the following is necessary to update the subject id in the title
             prev_subjecttitle = subjecttitle
         ttype = 'full-stim' if trialtypes in [18, 270] else 'left-stim'
-        name = f'sub-{sub}_corr-dist_{feature}data_{ttype}_order-{description}.png'
+        name = f'sub-{sub}_corr-dist_{feature}data_{ttype}_order-{description}.svg'
         distmat[sub] = \
             plot_trialtype_distance_matrix(data[idx],
                                            n=sub,
@@ -1744,7 +1744,7 @@ def plot_trialtype_distance_matrix(data,
     if name is None:
         datatype = 'srm' if on_model_data else 'raw'
         name = f'trialtype-distance_{datatype}-data_{trialtypes}-trials_n-{n}' \
-               f'_feature-{feature}.png '
+               f'_feature-{feature}.svg '
     fname = _construct_path([Path(figdir),  f'group/meg' , name])
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -1775,7 +1775,7 @@ def plot_distance_matrix(model, idx, figdir, freq, subject, condition, timespan)
     # TODO: maybe add vertical lines in experiment landmarks
     plt.colorbar()
     fname = _construct_path([Path(figdir), f'sub-{subject}', 'meg',
-                             f'sub-{subject}_task-memento_srm-{idx}_{condition}-{timespan}_distances.png'])
+                             f'sub-{subject}_task-memento_srm-{idx}_{condition}-{timespan}_distances.svg'])
     plt.savefig(fname)
     plt.close()
 
@@ -1817,7 +1817,7 @@ def plot_srm_model(df,
             else:
                 subject = 'group'
         fname = _construct_path([Path(figdir), f'sub-{subject}', 'meg',
-                                 f'sub-{subject}_{mdl}_{nfeatures}-feat_task-{cond}_model-{timespan}_comp_{i}.png'])
+                                 f'sub-{subject}_{mdl}_{nfeatures}-feat_task-{cond}_model-{timespan}_comp_{i}.svg'])
         ax = sns.lineplot(data=df, y=i, x=df.index, hue='trial_type')
         ax.set(xlabel='samples', ylabel=f'comp. {i+1} (a.U.)', ylim=(-10, 10), title=title)
         if timespan == 'fulltrial':
