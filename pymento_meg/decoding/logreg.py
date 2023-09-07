@@ -475,6 +475,7 @@ def eval_decoding(subject,
     # plotting
     _all_plots(figdir, subject, df_results)
 
+
 def _all_plots(figdir, subject, df_results, aggregate=False):
     fname = _construct_path([Path(figdir), f'sub-{subject}',
                              f'parameter_optimization_sub-{subject}.png'])

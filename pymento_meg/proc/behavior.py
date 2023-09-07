@@ -222,7 +222,7 @@ def print_coefs(data, means, names, sub, acc, figdir='/tmp'):
     plt.title(f'Log. reg of stimulus params on choice, sub-{sub}.'
               f' Acc: {acc:.2f}')
     fname = _construct_path(
-        [figdir, f'sub-{sub}', f'logreg_stimulus-params-choice_subject-{sub}.png'])
+        [figdir, f'sub-{sub}', f'logreg_stimulus-params-choice_subject-{sub}.svg'])
     logging.info(f'Saving a boxplot of parameter importance into {fname}.')
     plt.savefig(fname)
     plt.close('all')
@@ -236,7 +236,8 @@ def plot_relative_property_importance_group(coefs, labels, figdir):
     ax.set_xlabel('stimulus property (Left or Right)')
     ax.set_title('Relative influence on choice by stimulus properties')
     ax.yaxis.grid(True, linestyle='--', color='grey', alpha=0.25)
-    fname = _construct_path([figdir, 'group', 'average_property_importance.png'])
+    fig.tight_layout()
+    fname = _construct_path([figdir, 'group', 'average_property_importance.svg'])
     fig.savefig(fname)
 
 
@@ -266,7 +267,7 @@ def plot_speed_stats(bidsdir, figdir='/tmp'):
     fig.set_xlabel('Reaction time in seconds')
     fig.set_title('Reaction times')
     fname = _construct_path(
-        [figdir, 'group', 'memento_aggregate_reaction_times.png'])
+        [figdir, 'group', 'memento_aggregate_reaction_times.svg'])
     fig.figure.savefig(fname)
     plt.figure()
     split = sns.violinplot(data=df, x='RT', y='nobrainer')
@@ -274,7 +275,7 @@ def plot_speed_stats(bidsdir, figdir='/tmp'):
     split.set_ylabel('Trial type')
     split.set_title('Reaction times ("no-brainer" trials versus standard trials)')
     fname = _construct_path(
-        [figdir, 'group', 'memento_aggregate_reaction_times_nobrainer.png'])
+        [figdir, 'group', 'memento_aggregate_reaction_times_nobrainer.svg'])
     split.figure.savefig(fname)
 
 
