@@ -321,7 +321,7 @@ def plot_generalization(scoring, description, condition, target,
     ax.legend(bbox_to_anchor=(0, 0, 1, 0.2))
     ax.set_aspect('auto')
     fname = fpath / \
-            f'sub-{subject}_generalization_{target}-{condition}_{description}.png'
+            f'sub-{subject}_generalization_{target}-{condition}_{description}.svg'
     logging.info(f"Saving generalization plot into {fname}")
     fig.savefig(fname)
     if mask is None:
@@ -331,7 +331,7 @@ def plot_generalization(scoring, description, condition, target,
     ax.xaxis.set_ticks_position('bottom')
     ax.set_aspect('auto')
     fname = fpath / \
-            f'sub-{subject}_generalization_{target}-{condition}_{description}_pval-mask.png'
+            f'sub-{subject}_generalization_{target}-{condition}_{description}_pval-mask.svg'
     logging.info(f"Saving generalization plot into {fname}")
     fig.savefig(fname)
 
