@@ -224,7 +224,7 @@ def temporal_decoding(sub,
     while i < scores.shape[-1]-(100/dec_factor):
         confm = sum_confusion_matrices(scores, slices=(i, int(i+100/dec_factor)))
         fname = Path(fpath) / \
-                f'sub-{sub}_conf-matrix_{target}_{i*dec_factor}-{int((i+100/dec_factor)*dec_factor)}ms.png'
+                f'sub-{sub}_conf-matrix_{target}_{i*dec_factor}-{int((i+100/dec_factor)*dec_factor)}ms.svg'
         plot_confusion_matrix(confm,
                               labels=known_targets[target]['label'],
                               fname=fname)
@@ -323,11 +323,11 @@ def plot_topographies(activation_patterns, sub, target, fpath, datadir):
                                            colorbar=False,
                                            size=2
                                            )
-        fname = Path(fpath) / f'sub-{sub}_decoding-{target}_topographies_k-{k}.png'
+        fname = Path(fpath) / f'sub-{sub}_decoding-{target}_topographies_k-{k}.svg'
         fig.savefig(fname)
 
 
-def plot_confusion_matrix(confm, labels, normalize=True, fname='/tmp/confm.png'):
+def plot_confusion_matrix(confm, labels, normalize=True, fname='/tmp/confm.svg'):
     if normalize:
         confm = confm.astype('float') / confm.sum(axis=1)[:, np.newaxis]
     cm = sns.heatmap(confm, xticklabels=labels, yticklabels=labels,
@@ -396,7 +396,7 @@ def plot_decoding_over_all_classes(scores,
                 ax.ax.fill_between([x, x-slidingwindow], 0, 1, color='gray',
                                    alpha=0.3)
     ax.add_legend()
-    fname = f'decoding_{metric.replace(" ","_")}_l2logreg_{subject}_{label}.png'
+    fname = f'decoding_{metric.replace(" ","_")}_l2logreg_{subject}_{label}.svg'
     print(f'saving figure to {figdir}/{fname}...')
     ax.fig.savefig(f'{figdir}/{fname}')
     plt.close('all')
@@ -478,7 +478,7 @@ def eval_decoding(subject,
 
 def _all_plots(figdir, subject, df_results, aggregate=False):
     fname = _construct_path([Path(figdir), f'sub-{subject}',
-                             f'parameter_optimization_sub-{subject}.png'])
+                             f'parameter_optimization_sub-{subject}.svg'])
     logging.info(f'generating figure {fname}...')
     fig, ax = plt.subplots(figsize=(9, 5))
     sns.scatterplot(data=df_results[~df_results.k.notna()], x='areas',
@@ -499,7 +499,7 @@ def _all_plots(figdir, subject, df_results, aggregate=False):
     fig.figure.savefig(fname)
 
     fname = _construct_path([Path(figdir), f'sub-{subject}',
-            f'parameter_optimization_srm_sub-{subject}.png'])
+            f'parameter_optimization_srm_sub-{subject}.svg'])
     logging.info(f'generating figure {fname}...')
     fig = sns.relplot(data=df_results[df_results.dimreduction == 'srm'],
                       x='areas', y='peaks', col='windowtype', row='ntrial',
@@ -518,7 +518,7 @@ def _all_plots(figdir, subject, df_results, aggregate=False):
     fig.figure.savefig(fname)
 
     fname = _construct_path([Path(figdir), f'sub-{subject}',
-            f'parameter_optimization_spectralsrm_sub-{subject}.png'])
+            f'parameter_optimization_spectralsrm_sub-{subject}.svg'])
     logging.info(f'generating figure {fname}...')
     fig = sns.relplot(data=df_results[df_results.dimreduction == 'spectralsrm'],
                       x='areas', y='peaks', col='windowtype', row='ntrial',
@@ -537,7 +537,7 @@ def _all_plots(figdir, subject, df_results, aggregate=False):
     fig.figure.savefig(fname)
 
     fname = _construct_path([Path(figdir), f'sub-{subject}',
-            f'parameter_optimization_pca_sub-{subject}.png'])
+            f'parameter_optimization_pca_sub-{subject}.svg'])
     print(f'generating figure {fname}...')
     fig = sns.relplot(data=df_results[df_results.dimreduction == 'pca'],
                       x='areas', y='peaks', col='windowtype', row='ntrial',
@@ -683,7 +683,7 @@ def aggregate_decoding(
                 ax = _plot_aggregated(dfs, y, hue, target, dimreduction,
                                       slidingwindow, dec_factor, chance, ylim,
                                       )
-                fname = f'decoding_balanced-accuracy_l2logreg_{target}_dimreduction-{dimreduction}.png'
+                fname = f'decoding_balanced-accuracy_l2logreg_{target}_dimreduction-{dimreduction}.svg'
                 print(f'saving figure to {figdir}/{fname}...')
                 ax.fig.savefig(f'{figdir}/{fname}')
                 plt.close('all')
@@ -691,7 +691,7 @@ def aggregate_decoding(
                 ax = _plot_aggregated(dfs, y, hue, target, dimreduction,
                                       slidingwindow, dec_factor, chance, ylim,
                                       average=True)
-                fname = f'averaged-decoding_balanced-accuracy_l2logreg_{target}_dimreduction-{dimreduction}.png'
+                fname = f'averaged-decoding_balanced-accuracy_l2logreg_{target}_dimreduction-{dimreduction}.svg'
                 print(f'saving figure to {figdir}/{fname}...')
                 ax.fig.savefig(f'{figdir}/{fname}')
                 plt.close('all')
@@ -744,7 +744,7 @@ def aggregate_decoding(
                                       chance=chance,
                                       ylim=ylim,
                                       )
-                fname = f'sub-{subject}_decoding_balanced-accuracy_l2logreg_{target}_dimreduction-all.png'
+                fname = f'sub-{subject}_decoding_balanced-accuracy_l2logreg_{target}_dimreduction-all.svg'
                 print(f'saving figure to {figdir}/sub-{subject}/{fname}...')
                 ax.fig.savefig(f'{figdir}/sub-{subject}/{fname}')
                 # repeat, but average
@@ -754,7 +754,7 @@ def aggregate_decoding(
                                       dec_factor=dec_factor,
                                       chance=chance, ylim=ylim,
                                       average=True)
-                fname = f'sub-{subject}_averaged-decoding_balanced-accuracy_l2logreg_{target}.png'
+                fname = f'sub-{subject}_averaged-decoding_balanced-accuracy_l2logreg_{target}.svg'
                 print(f'saving figure to {figdir}/sub-{subject}/{fname}...')
                 ax.fig.savefig(f'{figdir}/sub-{subject}/{fname}')
                 plt.close('all')
@@ -893,4 +893,4 @@ def regress_behavior_on_reinstatement(bidsdir, decoding_dir):
             ax.refline(x=x, color=color, label=l)
         ax.set(title=f"Relationship of neural representation of {target},"
                      f" and influence of stimulus parameter on choice")
-        ax.savefig(f'/home/adina/scratch/test-{target}.png')
+        ax.savefig(f'/home/adina/scratch/test-{target}.svg')
