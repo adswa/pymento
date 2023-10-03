@@ -3,17 +3,8 @@ pymento
 =======
 
 
-.. image:: https://img.shields.io/pypi/v/pymento.svg
-        :target: https://pypi.python.org/pypi/pymento
-
-.. image:: https://img.shields.io/travis/adswa/pymento.svg
-        :target: https://travis-ci.com/adswa/pymento
-
-.. image:: https://readthedocs.org/projects/pymento/badge/?version=latest
-        :target: https://pymento.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
-
-
+.. image:: https://img.shields.io/pypi/v/pymento-meg.svg
+        :target: https://pypi.org/project/pymento-meg/
 
 
 A Python package to analyze Memento MEG data
